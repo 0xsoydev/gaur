@@ -2336,6 +2336,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.loadingInfo = true
 						m.pendingInfoPackage = m.filteredInstalled[m.selectedIndex].Name
 						return m, debouncePackageInfo(m.pendingInfoPackage)
+					} else if m.mode == modeUpdateSelect && len(m.filtered) > 0 {
+						m.loadingInfo = true
+						m.pendingInfoPackage = m.filtered[m.selectedIndex].Name
+						return m, debouncePackageInfo(m.pendingInfoPackage)
 					}
 				}
 				return m, nil
@@ -2346,6 +2350,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					maxIndex = len(m.filtered) - 1
 				} else if m.mode == modeUninstall {
 					maxIndex = len(m.filteredInstalled) - 1
+				} else if m.mode == modeUpdateSelect {
+					maxIndex = len(m.filtered) - 1
 				}
 				if m.selectedIndex < maxIndex {
 					m.selectedIndex++
@@ -2356,6 +2362,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					} else if m.mode == modeUninstall && len(m.filteredInstalled) > 0 {
 						m.loadingInfo = true
 						m.pendingInfoPackage = m.filteredInstalled[m.selectedIndex].Name
+						return m, debouncePackageInfo(m.pendingInfoPackage)
+					} else if m.mode == modeUpdateSelect && len(m.filtered) > 0 {
+						m.loadingInfo = true
+						m.pendingInfoPackage = m.filtered[m.selectedIndex].Name
 						return m, debouncePackageInfo(m.pendingInfoPackage)
 					}
 				}
