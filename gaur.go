@@ -3475,6 +3475,8 @@ func (m model) View() string {
 		modeText = "UNINSTALL"
 	case modeUpdate:
 		modeText = "UPDATE"
+	case modeUpdateSelect:
+		modeText = "SELECT UPDATES"
 	}
 
 	header := titleStyle.Render(" GAUR - " + modeText + " ")
@@ -3509,6 +3511,18 @@ func (m model) View() string {
 			infoContent = fmt.Sprintf("%d update(s) available. Press [enter] to review and update.", len(m.pendingUpdates))
 		} else {
 			infoContent = "System is up to date. Press [u] to check again."
+		}
+	} else if m.mode == modeUpdateSelect {
+		if m.loading {
+			infoContent = "Loading updates..."
+		} else {
+			total := len(m.updatableAll)
+			marked := len(m.markedPackages)
+			if marked > 0 {
+				infoContent = fmt.Sprintf("%d total, %d marked for update", total, marked)
+			} else {
+				infoContent = fmt.Sprintf("%d total packages available to update", total)
+			}
 		}
 	} else if m.loadingInfo {
 		infoContent = fmt.Sprintf("Loading details for %s...", m.infoForPackage)
@@ -3547,6 +3561,8 @@ func (m model) View() string {
 		pkgList = m.filtered
 	} else if m.mode == modeUninstall {
 		pkgList = m.filteredInstalled
+	} else if m.mode == modeUpdateSelect {
+		pkgList = m.filtered
 	}
 
 	if m.loading {
@@ -3572,6 +3588,8 @@ func (m model) View() string {
 			matchIndicesMap = m.matchIndices
 		} else if m.mode == modeUninstall {
 			matchIndicesMap = m.installedMatchIndices
+		} else if m.mode == modeUpdateSelect {
+			matchIndicesMap = m.matchIndices
 		}
 
 		// Build lines in reverse order (most relevant at bottom, near input field)
