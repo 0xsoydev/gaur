@@ -2158,6 +2158,23 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.confirmPackages = nil
 					return m, executeRemoveOrphansInTerminal(orphans)
 				}
+			case "s":
+				// Return to selection mode (only for update confirmation)
+				if m.confirmType == confirmUpdate {
+					m.showConfirmation = false
+					m.confirmScrollOffset = 0
+					m.confirmPackages = nil
+					m.mode = modeUpdateSelect
+					m.filtered = m.updatableAll
+					m.matchIndices = computeAllMatchIndices(m.filtered, m.textInput.Value())
+					m.selectedIndex = 0
+					m.markedPackages = make(map[string]bool)
+					m.textInput.SetValue("")
+					m.textInput.Placeholder = "Filter updates to select..."
+					m.textInput.Focus()
+					m.statusMessage = "Select packages: [tab] mark/unmark, [enter] confirm, [esc] cancel"
+					return m, nil
+				}
 			case "n", "N", "esc":
 				m.showConfirmation = false
 				m.confirmPackages = nil
@@ -4146,46 +4163,146 @@ func (m model) renderConfirmationDialog(contentWidth, contentHeight int, activeC
 		if endIdx > len(packages) {
 			endIdx = len(packages)
 		}
+		visibleCount := endIdx - startIdx
 
-		// Show scroll indicator at top if needed
-		if startIdx > 0 {
-			content.WriteString(scrollHintStyle.Render(fmt.Sprintf("  ↑ %d more above\n", startIdx)))
+		// Compute inner width for content (dialog width minus borders and padding)
+		innerWidth := dialogWidth - 6
+		if innerWidth < 10 {
+			innerWidth = 10
 		}
 
-		// List packages
-		for i := startIdx; i < endIdx; i++ {
-			pkg := packages[i]
-			if m.confirmType == confirmUpdate {
-				// Show source and version info for updates
-				sourceBadge := sourceStyle(pkg.Source).Render(fmt.Sprintf("[%s]", pkg.Source))
-				content.WriteString(fmt.Sprintf("  • %s %s %s\n",
-					sourceBadge,
-					packageNameStyle.Render(pkg.Name),
-					packageVersionStyle.Render(pkg.Version)))
-			} else {
-				// Just show package name for install/uninstall
-				content.WriteString(fmt.Sprintf("  • %s\n", packageNameStyle.Render(pkg.Name)))
+		showScrollbar := len(packages) > maxVisible
+
+		// Build list entries
+		type listEntry struct {
+			text  string
+			isPkg bool
+		}
+		var entries []listEntry
+
+		if showScrollbar {
+			// For scrollable lists, always include top and bottom hint placeholders
+			// to maintain constant height while scrolling
+			topHintText := ""
+			if startIdx > 0 {
+				topHintText = fmt.Sprintf("  ↑ %d more above", startIdx)
+			}
+			entries = append(entries, listEntry{text: topHintText})
+
+			// Package lines in forward order (scrolling down reveals more below)
+			for i := startIdx; i < endIdx; i++ {
+				pkg := packages[i]
+				var line string
+				if m.confirmType == confirmUpdate {
+					sourceBadge := sourceStyle(pkg.Source).Render(fmt.Sprintf("[%s]", pkg.Source))
+					line = fmt.Sprintf("  • %s %s %s",
+						sourceBadge,
+						packageNameStyle.Render(pkg.Name),
+						packageVersionStyle.Render(pkg.Version))
+				} else {
+					line = fmt.Sprintf("  • %s", packageNameStyle.Render(pkg.Name))
+				}
+				entries = append(entries, listEntry{text: line, isPkg: true})
+			}
+
+			bottomHintText := ""
+			remaining := len(packages) - endIdx
+			if remaining > 0 {
+				bottomHintText = fmt.Sprintf("  ↓ %d more below", remaining)
+			}
+			entries = append(entries, listEntry{text: bottomHintText})
+		} else {
+			// Non-scrollable lists: just package lines in normal order, no placeholders
+			for i := 0; i < len(packages); i++ {
+				pkg := packages[i]
+				var line string
+				if m.confirmType == confirmUpdate {
+					sourceBadge := sourceStyle(pkg.Source).Render(fmt.Sprintf("[%s]", pkg.Source))
+					line = fmt.Sprintf("  • %s %s %s",
+						sourceBadge,
+						packageNameStyle.Render(pkg.Name),
+						packageVersionStyle.Render(pkg.Version))
+				} else {
+					line = fmt.Sprintf("  • %s", packageNameStyle.Render(pkg.Name))
+				}
+				entries = append(entries, listEntry{text: line, isPkg: true})
 			}
 		}
 
-		// Show scroll indicator at bottom if needed
-		remaining := len(packages) - endIdx
-		if remaining > 0 {
-			content.WriteString(scrollHintStyle.Render(fmt.Sprintf("  ↓ %d more below\n", remaining)))
+		// Calculate scrollbar metrics if needed
+		var thumbSize, thumbTop int
+		// Track height is the number of package rows we scroll through (maxVisible)
+		// The top/bottom hints are placeholders and not part of the scroll track
+		trackHeight := maxVisible
+		if showScrollbar && len(packages) > maxVisible {
+			// Thumb size proportional to visible fraction
+			thumbSize = (visibleCount * trackHeight) / len(packages)
+			if thumbSize < 1 {
+				thumbSize = 1
+			}
+			if thumbSize > trackHeight {
+				thumbSize = trackHeight
+			}
+			// Thumb top based on scroll offset; offset by +1 to account for top hint row
+			if len(packages) > maxVisible {
+				thumbTop = 1 + startIdx*(trackHeight-thumbSize)/(len(packages)-maxVisible)
+			}
 		}
 
-		// Scroll hint if list is scrollable
+		// Scrollbar styles
+		scrollbarTrackStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("236"))
+		scrollbarThumbStyle := lipgloss.NewStyle().Foreground(activeColor).Bold(true)
+
+		// Render entries with fixed width and optional scrollbar
+		for i, entry := range entries {
+			contentWidth := innerWidth
+			var sbChar string
+			if showScrollbar {
+				contentWidth = innerWidth - 1 // reserve space for scrollbar
+				if entry.isPkg {
+					if i >= thumbTop && i < thumbTop+thumbSize {
+						sbChar = scrollbarThumbStyle.Render("█")
+					} else {
+						sbChar = scrollbarTrackStyle.Render("│")
+					}
+				} else {
+					sbChar = " " // placeholder to keep width alignment, no scrollbar
+				}
+			}
+			line := lipgloss.NewStyle().Width(contentWidth).Render(entry.text)
+			if sbChar != "" {
+				line = line + sbChar
+			}
+			content.WriteString(line + "\n")
+		}
+
+		// Scroll usage hint (separate, no scrollbar)
 		if len(packages) > maxVisible {
+			// Add blank line before hint (as in original)
 			content.WriteString("\n")
-			content.WriteString(scrollHintStyle.Render("  Use [↑/↓] or [j/k] to scroll"))
+			hint := scrollHintStyle.Render("  Use [↑/↓] or [j/k] to scroll")
+			// Ensure it fits within innerWidth
+			if lipgloss.Width(hint) > innerWidth {
+				hint = lipgloss.NewStyle().Width(innerWidth).Render(hint)
+			}
+			content.WriteString(hint)
 		}
 	}
 
 	// Prompt - build as single line to prevent wrapping issues
 	content.WriteString("\n\n")
-	promptLine := fmt.Sprintf("Proceed? %ses  %so",
-		keyStyle.Render("[y]"),
-		keyStyle.Render("[n]"))
+	var promptLine string
+	if m.confirmType == confirmUpdate {
+		promptLine = fmt.Sprintf("Proceed? %ses  %so  %s%s",
+			keyStyle.Render("[y]"),
+			keyStyle.Render("[n]"),
+			keyStyle.Render("[s]"),
+			"elect")
+	} else {
+		promptLine = fmt.Sprintf("Proceed? %ses  %so",
+			keyStyle.Render("[y]"),
+			keyStyle.Render("[n]"))
+	}
 	content.WriteString(promptStyle.Render(promptLine))
 
 	// Render dialog box
