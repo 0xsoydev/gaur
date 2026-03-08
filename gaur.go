@@ -829,11 +829,26 @@ var (
 				Foreground(currentTheme.DashboardDesc)
 )
 
-func initialModel() model {
+func initialModel(initialMode viewMode) model {
 	ti := textinput.New()
-	ti.Placeholder = "Search packages..."
 	ti.CharLimit = textInputCharLimit
 	ti.Width = textInputDefaultWidth
+
+	// Set placeholder and status based on mode
+	statusMsg := "Loading package database..."
+	placeholder := "Search packages..."
+	switch initialMode {
+	case modeUninstall:
+		placeholder = "Filter installed packages..."
+		statusMsg = "Loading installed packages..."
+	case modeUpdate:
+		placeholder = "Checking for updates..."
+		statusMsg = "Checking for updates..."
+	case modeInstalled:
+		placeholder = "View installed packages"
+		statusMsg = "Loading installed packages..."
+	}
+	ti.Placeholder = placeholder
 
 	return model{
 		textInput:      ti,
@@ -844,14 +859,32 @@ func initialModel() model {
 		installed:      []Package{},
 		markedPackages: make(map[string]bool),
 		selectedIndex:  0,
-		mode:           modeInstall,
+		mode:           initialMode,
 		loading:        true,
-		statusMessage:  "Loading package database...",
+		statusMessage:  statusMsg,
 	}
 }
 
 func (m model) Init() tea.Cmd {
-	return tea.Batch(textinput.Blink, loadRepoPackages())
+	cmds := []tea.Cmd{textinput.Blink, loadRepoPackages()}
+
+	// Load mode-specific initial data
+	switch m.mode {
+	case modeInstalled:
+		// Dashboard mode - load dashboard statistics
+		cmds = append(cmds, getDashboardData())
+	case modeUninstall:
+		// Remove mode - load installed packages list
+		cmds = append(cmds, getInstalledPackages())
+	case modeUpdate:
+		// Update mode - check for available updates
+		cmds = append(cmds, checkUpdates())
+	case modeInstall:
+		// Install mode (default) - repo packages already loaded
+		// Optionally could trigger AUR search for empty query, but not needed
+	}
+
+	return tea.Batch(cmds...)
 }
 
 // currentPackageList returns the appropriate package list based on current mode.
@@ -4330,6 +4363,14 @@ func main() {
 
 	themeFlag := flag.String("theme", "", "Color theme (use --list-themes to see options)")
 	listThemesFlag := flag.Bool("list-themes", false, "List available themes and exit")
+	installFlag := flag.Bool("install", false, "Start in install mode (search and install packages)")
+	installFlagShort := flag.Bool("i", false, "Short flag for install mode")
+	removeFlag := flag.Bool("remove", false, "Start in remove mode (uninstall packages)")
+	removeFlagShort := flag.Bool("r", false, "Short flag for remove mode")
+	updateFlag := flag.Bool("update", false, "Start in update mode (system updates)")
+	updateFlagShort := flag.Bool("u", false, "Short flag for update mode")
+	infoFlag := flag.Bool("info", false, "Start in info mode (view installed packages)")
+	infoFlagShort := flag.Bool("I", false, "Short flag for info mode (dashboard)")
 	flag.Parse()
 
 	// Handle --list-themes
@@ -4339,6 +4380,20 @@ func main() {
 			fmt.Printf("  - %s\n", name)
 		}
 		return
+	}
+
+	// Determine initial mode from flags
+	// Priority order: install > remove > update > info (first match wins)
+	initialMode := modeInstall // default
+	switch {
+	case *installFlag || *installFlagShort:
+		initialMode = modeInstall
+	case *removeFlag || *removeFlagShort:
+		initialMode = modeUninstall
+	case *updateFlag || *updateFlagShort:
+		initialMode = modeUpdate
+	case *infoFlag || *infoFlagShort:
+		initialMode = modeInstalled
 	}
 
 	// Apply theme if specified
@@ -4354,7 +4409,7 @@ func main() {
 		}
 	}
 
-	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
+	p := tea.NewProgram(initialModel(initialMode), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Error running program: %v\n", err)
 		os.Exit(1)
