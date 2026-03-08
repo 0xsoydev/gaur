@@ -1958,22 +1958,40 @@ func updateSystem() tea.Cmd {
 // checkUpdates fetches available updates using paru -Qu
 func checkUpdates() tea.Cmd {
 	return func() tea.Msg {
-		// First, get all foreign (AUR) packages in one call
+		// Step 1: Build foreign (AUR) packages map via pacman -Qm
 		cmd := exec.Command("pacman", "-Qm")
 		var foreignOut bytes.Buffer
 		cmd.Stdout = &foreignOut
-		if err := cmd.Run(); err != nil {
-			// If this fails, we'll continue without foreign detection (all will be marked as repo/unknown)
-		}
 		foreignPkgs := make(map[string]bool)
-		for _, name := range strings.Split(foreignOut.String(), "\n") {
-			name = strings.TrimSpace(name)
-			if name != "" {
-				foreignPkgs[name] = true
+		if err := cmd.Run(); err == nil {
+			for _, name := range strings.Split(foreignOut.String(), "\n") {
+				name = strings.TrimSpace(name)
+				if name != "" {
+					foreignPkgs[name] = true
+				}
 			}
 		}
+		// If this fails, we'll continue without foreign detection
 
-		// Now get the updates list
+		// Step 2: Build repo map via pacman -Sl (maps package name -> repository)
+		cmd = exec.Command("pacman", "-Sl")
+		var repoOut bytes.Buffer
+		cmd.Stdout = &repoOut
+		repoMap := make(map[string]string)
+		if err := cmd.Run(); err == nil {
+			for _, line := range strings.Split(repoOut.String(), "\n") {
+				parts := strings.Fields(line)
+				if len(parts) >= 2 {
+					// Format: "repo name version [installed]"
+					repoName := parts[0]
+					pkgName := parts[1]
+					repoMap[pkgName] = repoName
+				}
+			}
+		}
+		// If this fails, we'll still try to provide updates with "unknown" source where needed
+
+		// Step 3: Get the updates list from paru
 		cmd = exec.Command("paru", "-Qu")
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
@@ -1989,6 +2007,7 @@ func checkUpdates() tea.Cmd {
 			return updateCheckMsg{packages: nil, err: fmt.Errorf("failed to check for updates: %w", err)}
 		}
 
+		// Step 4: Parse updates and assign accurate source
 		var packages []Package
 		for _, line := range strings.Split(strings.TrimSpace(stdout.String()), "\n") {
 			if line == "" {
@@ -2002,17 +2021,18 @@ func checkUpdates() tea.Cmd {
 					continue
 				}
 				pkg := Package{
-					Name:    pkgName,
-					Version: strings.Join(parts[1:], " "), // "oldver -> newver" format
+					Name:      pkgName,
+					Version:   strings.Join(parts[1:], " "), // "oldver -> newver" format
+					Installed: true,                         // updates imply installed
 				}
-				// Determine source using foreign set lookup
+				// Determine source using both maps (AUR takes precedence)
 				if foreignPkgs[pkgName] {
 					pkg.Source = "aur"
+				} else if repoName, ok := repoMap[pkgName]; ok {
+					pkg.Source = repoName
 				} else {
-					pkg.Source = "repo"
+					pkg.Source = "unknown" // fallback if not found in either map
 				}
-				// Also check if installed (should always be true for updates, but set anyway)
-				pkg.Installed = true
 				packages = append(packages, pkg)
 			}
 		}
