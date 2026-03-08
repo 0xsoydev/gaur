@@ -2438,6 +2438,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					} else {
 						m.statusMessage = fmt.Sprintf("%d installed packages", len(m.installed))
 					}
+				} else if m.mode == modeUpdateSelect && len(m.filtered) > 0 {
+					pkg := m.filtered[m.selectedIndex]
+					if m.markedPackages[pkg.Name] {
+						delete(m.markedPackages, pkg.Name)
+					} else {
+						m.markedPackages[pkg.Name] = true
+					}
+					markedCount := len(m.markedPackages)
+					if markedCount > 0 {
+						m.statusMessage = fmt.Sprintf("%d packages marked", markedCount)
+					} else {
+						m.statusMessage = "Select packages to update"
+					}
 				}
 				return m, nil
 			}
