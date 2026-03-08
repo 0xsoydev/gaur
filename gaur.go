@@ -60,11 +60,11 @@ type Theme struct {
 	Name string
 
 	// Base colors
-	BorderColor     lipgloss.Color
-	SelectedColor   lipgloss.Color
-	TextColor       lipgloss.Color
-	SubtleColor     lipgloss.Color
-	TitleColor      lipgloss.Color
+	BorderColor   lipgloss.Color
+	SelectedColor lipgloss.Color
+	TextColor     lipgloss.Color
+	SubtleColor   lipgloss.Color
+	TitleColor    lipgloss.Color
 
 	// Mode colors
 	InstallColor   lipgloss.Color
@@ -669,22 +669,22 @@ type debounceTickMsg struct {
 
 // DashboardData holds system package statistics
 type DashboardData struct {
-	TotalPackages       int
-	ExplicitlyInstalled int
-	ForeignPackages     int
-	TotalSize           string
-	TotalSizeBytes      int64 // For comparison
-	CleanerSize         string
-	CleanerSizeBytes    int64 // For comparison and coloring
-	PacmanCacheSize     string
+	TotalPackages        int
+	ExplicitlyInstalled  int
+	ForeignPackages      int
+	TotalSize            string
+	TotalSizeBytes       int64 // For comparison
+	CleanerSize          string
+	CleanerSizeBytes     int64 // For comparison and coloring
+	PacmanCacheSize      string
 	PacmanCacheSizeBytes int64
-	PacmanCachePath     string
-	ParuCacheSize       string
-	ParuCacheSizeBytes  int64
-	ParuCachePath       string
-	Orphans             int
-	MissingFromAUR      int
-	TopPackages         []PackageSize // Top 10 packages by size
+	PacmanCachePath      string
+	ParuCacheSize        string
+	ParuCacheSizeBytes   int64
+	ParuCachePath        string
+	Orphans              int
+	MissingFromAUR       int
+	TopPackages          []PackageSize // Top 10 packages by size
 }
 
 // PackageSize holds package name and its installed size
@@ -734,19 +734,18 @@ type model struct {
 	lastAURQuery          string // Last query sent to AUR search
 	searchingAUR          bool   // Whether AUR search is in progress
 	dashboard             DashboardData
-	dashboardSelected     int // Selected item in dashboard (0=foreign, 1=cache, 2=orphans)
 	// Confirmation dialog state
-	showConfirmation      bool
-	confirmType           confirmationType
-	confirmPackages       []string  // Package names to operate on
-	pendingUpdates        []Package // Updates available (for update confirmation)
-	confirmScrollOffset   int       // Scroll offset for confirmation package list
-	lastCompletedOp       string    // Description of last completed operation
+	showConfirmation    bool
+	confirmType         confirmationType
+	confirmPackages     []string  // Package names to operate on
+	pendingUpdates      []Package // Updates available (for update confirmation)
+	confirmScrollOffset int       // Scroll offset for confirmation package list
+	lastCompletedOp     string    // Description of last completed operation
 	// Error overlay state
-	showErrorOverlay      bool
-	errorTitle            string
-	errorMessage          string
-	errorDetails          string
+	showErrorOverlay bool
+	errorTitle       string
+	errorMessage     string
+	errorDetails     string
 }
 
 // getModeColors returns the mode colors based on current theme
@@ -917,10 +916,10 @@ func highlightMatches(s string, matchedIndices []int) string {
 // - Non-matched characters in normal text color
 func highlightMatchesWithSourceColor(pkg Package, matchedIndices []int) string {
 	pkgStr := pkg.Source + "/" + pkg.Name
-	
+
 	// Get source color
 	sourceColor, hasSourceColor := sourceColors[pkg.Source]
-	
+
 	// If no matches, just apply source coloring
 	if len(matchedIndices) == 0 {
 		if hasSourceColor {
@@ -941,7 +940,7 @@ func highlightMatchesWithSourceColor(pkg Package, matchedIndices []int) string {
 	var result strings.Builder
 	result.Grow(len(pkgStr) * 2)
 	runes := []rune(pkgStr)
-	
+
 	for i, r := range runes {
 		if _, matched := matchSet[i]; matched {
 			// Matched character - use highlight color
@@ -974,7 +973,7 @@ func loadRepoPackages() tea.Cmd {
 		var installedOut bytes.Buffer
 		installedCmd.Stdout = &installedOut
 		_ = installedCmd.Run()
-		
+
 		installedSet := make(map[string]bool)
 		for _, name := range strings.Split(installedOut.String(), "\n") {
 			name = strings.TrimSpace(name)
@@ -1024,17 +1023,17 @@ var uninstallFilterChars = map[rune]string{
 // Returns (repoFilters, searchQuery) where repoFilters is empty if no filter specified
 func parseRepoFilter(input string) (map[string]bool, string) {
 	input = strings.TrimSpace(input)
-	
+
 	// Look for colon to identify filter prefix
 	colonIdx := strings.Index(input, ":")
 	if colonIdx == -1 {
 		return nil, input
 	}
-	
+
 	// Extract prefix before colon
 	prefix := strings.ToLower(input[:colonIdx])
 	searchQuery := strings.TrimSpace(input[colonIdx+1:])
-	
+
 	// Parse each character in prefix as a repo filter
 	repoFilters := make(map[string]bool)
 	for _, ch := range prefix {
@@ -1042,12 +1041,12 @@ func parseRepoFilter(input string) (map[string]bool, string) {
 			repoFilters[repo] = true
 		}
 	}
-	
+
 	// If no valid repo chars found, treat as regular search
 	if len(repoFilters) == 0 {
 		return nil, input
 	}
-	
+
 	return repoFilters, searchQuery
 }
 
@@ -1070,17 +1069,17 @@ func formatRepoFilters(filters map[string]bool) string {
 // Supports 'a:' for AUR/foreign packages and 'l:' for local/official packages
 func parseUninstallFilter(input string) (map[string]bool, string) {
 	input = strings.TrimSpace(input)
-	
+
 	// Look for colon to identify filter prefix
 	colonIdx := strings.Index(input, ":")
 	if colonIdx == -1 {
 		return nil, input
 	}
-	
+
 	// Extract prefix before colon
 	prefix := strings.ToLower(input[:colonIdx])
 	searchQuery := strings.TrimSpace(input[colonIdx+1:])
-	
+
 	// Parse each character in prefix as a source filter
 	sourceFilters := make(map[string]bool)
 	for _, ch := range prefix {
@@ -1088,12 +1087,12 @@ func parseUninstallFilter(input string) (map[string]bool, string) {
 			sourceFilters[source] = true
 		}
 	}
-	
+
 	// If no valid filter chars found, treat as regular search
 	if len(sourceFilters) == 0 {
 		return nil, input
 	}
-	
+
 	return sourceFilters, searchQuery
 }
 
@@ -1131,12 +1130,12 @@ func (m *model) filterAllPackages(query string) {
 
 	// Parse repo filter from query
 	repoFilters, searchQuery := parseRepoFilter(query)
-	
+
 	// Combine repo and AUR packages
 	allPackages := make([]Package, 0, len(m.repoPackages)+len(m.aurPackages))
 	allPackages = append(allPackages, m.repoPackages...)
 	allPackages = append(allPackages, m.aurPackages...)
-	
+
 	// Apply repo filters if specified
 	if len(repoFilters) > 0 {
 		var filtered []Package
@@ -1147,7 +1146,7 @@ func (m *model) filterAllPackages(query string) {
 		}
 		allPackages = filtered
 	}
-	
+
 	if len(allPackages) == 0 {
 		m.filtered = []Package{}
 		m.matchIndices = nil
@@ -1160,10 +1159,10 @@ func (m *model) filterAllPackages(query string) {
 		m.matchIndices = nil
 		return
 	}
-	
+
 	// Fuzzy filter all packages together - fzf will rank by relevance
 	m.filtered = fuzzyFilter(allPackages, searchQuery)
-	
+
 	// Compute match indices for highlighting (use searchQuery, not full query with prefix)
 	m.matchIndices = computeAllMatchIndices(m.filtered, searchQuery)
 }
@@ -1266,7 +1265,7 @@ func parseSearchOutput(output string) []Package {
 			if len(fields) == 0 {
 				continue
 			}
-			
+
 			// Find the field containing "/" (source/name)
 			pkgField := ""
 			pkgFieldIdx := 0
@@ -1618,7 +1617,7 @@ func parseSizeToBytes(size string) int64 {
 	var value float64
 	var unit string
 	_, _ = fmt.Sscanf(size, "%f %s", &value, &unit)
-	
+
 	unit = strings.ToLower(unit)
 	switch {
 	case strings.HasPrefix(unit, "kib") || strings.HasPrefix(unit, "kb"):
@@ -1694,7 +1693,7 @@ func removeOrphans() tea.Cmd {
 		if err := cmd.Run(); err != nil || orphanList.Len() == 0 {
 			return removeOrphansMsg{output: "No orphans to remove", err: nil}
 		}
-		
+
 		// Validate orphan names before using them (defense in depth)
 		orphans := strings.Fields(orphanList.String())
 		validOrphans, _ := sanitizePackageNames(orphans)
@@ -2299,34 +2298,34 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				query := m.textInput.Value()
 				if query != m.lastQuery {
 					m.lastQuery = query
-					
+
 					// Parse repo filter to check query length correctly
 					repoFilters, searchQuery := parseRepoFilter(query)
 					effectiveQueryLen := len(searchQuery)
-					
+
 					// Allow filtering with just repo prefix (e.g., "a:" shows all AUR)
 					hasRepoFilter := len(repoFilters) > 0
-					
+
 					if effectiveQueryLen >= minSearchQueryLen || hasRepoFilter {
 						// Fuzzy filter combined repo + AUR packages (also computes match indices)
 						m.filterAllPackages(query)
 						m.selectedIndex = 0
-						
+
 						// Trigger AUR search only if:
 						// 1. No repo filter OR filter includes AUR
 						// 2. Have a search query (not just "a:")
 						// 3. Haven't searched this query yet
 						includesAUR := len(repoFilters) == 0 || repoFilters["aur"]
-						shouldSearchAUR := includesAUR && 
+						shouldSearchAUR := includesAUR &&
 							effectiveQueryLen >= minSearchQueryLen &&
 							searchQuery != m.lastAURQuery
-						
+
 						if shouldSearchAUR {
 							m.lastAURQuery = searchQuery
 							m.searchingAUR = true
 							cmds = append(cmds, searchAUR(searchQuery))
 						}
-						
+
 						if len(m.filtered) > 0 {
 							status := fmt.Sprintf("Found %d packages", len(m.filtered))
 							if hasRepoFilter {
@@ -2375,10 +2374,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						// Parse source filter from query
 						sourceFilters, searchQuery := parseUninstallFilter(query)
 						hasSourceFilter := len(sourceFilters) > 0
-						
+
 						// Start with all installed packages
 						basePackages := m.installed
-						
+
 						// Apply source filters if specified
 						if hasSourceFilter {
 							var filtered []Package
@@ -2403,7 +2402,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 							}
 							basePackages = filtered
 						}
-						
+
 						// Apply fuzzy filtering if there's a search query
 						if searchQuery != "" {
 							m.filteredInstalled = fuzzyFilter(basePackages, searchQuery)
@@ -2412,7 +2411,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 							m.filteredInstalled = basePackages
 							m.installedMatchIndices = nil
 						}
-						
+
 						// Update status message
 						if hasSourceFilter {
 							m.statusMessage = fmt.Sprintf("Found %d %s packages", len(m.filteredInstalled), formatUninstallFilters(sourceFilters))
@@ -2733,7 +2732,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.statusMessage = fmt.Sprintf("Failed to load packages: %v", msg.err)
 		} else {
 			m.repoPackages = msg.packages
-			
+
 			// Update installed set for quick lookup
 			m.installedSet = make(map[string]bool)
 			for _, pkg := range m.repoPackages {
@@ -2741,19 +2740,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.installedSet[pkg.Name] = true
 				}
 			}
-			
+
 			// Re-apply current search filter if there's a query
 			query := m.textInput.Value()
 			if m.mode == modeInstall && query != "" {
 				repoFilters, searchQuery := parseRepoFilter(query)
 				hasRepoFilter := len(repoFilters) > 0
 				effectiveQueryLen := len(searchQuery)
-				
+
 				if effectiveQueryLen >= minSearchQueryLen || hasRepoFilter {
 					m.filterAllPackages(query)
 					// Reset selection to top
 					m.selectedIndex = 0
-					
+
 					if len(m.filtered) > 0 {
 						status := fmt.Sprintf("Found %d packages", len(m.filtered))
 						if hasRepoFilter {
@@ -2797,14 +2796,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		currentQuery := m.textInput.Value()
 		isExactMatch := msg.query == m.lastAURQuery
 		isUsefulPrefix := strings.HasPrefix(strings.ToLower(currentQuery), strings.ToLower(msg.query))
-		
+
 		if !isExactMatch && !isUsefulPrefix {
 			// Truly stale results - discard
 			return m, nil
 		}
-		
+
 		if msg.err == nil {
-			// If this is a prefix query's results (e.g., "hello" for "helloa"), 
+			// If this is a prefix query's results (e.g., "hello" for "helloa"),
 			// only use them if we don't have better results already
 			if !isExactMatch && isUsefulPrefix {
 				// Only add prefix results if we don't have AUR packages yet
@@ -2818,7 +2817,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				// If empty, keep existing aurPackages (they'll be filtered)
 			}
-			
+
 			// Re-filter all packages together for unified relevance ranking
 			query := m.textInput.Value()
 			if len(query) >= minSearchQueryLen {
@@ -2828,9 +2827,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if !wasOnFirst && m.selectedIndex < len(m.filtered) {
 					prevSelected = m.filtered[m.selectedIndex].Name
 				}
-				
+
 				m.filterAllPackages(query)
-				
+
 				// If user was on first option, stay on first (to see new most relevant)
 				// Otherwise try to keep the same package selected
 				if wasOnFirst {
@@ -2846,7 +2845,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.selectedIndex >= len(m.filtered) {
 					m.selectedIndex = 0
 				}
-				
+
 				if len(m.filtered) > 0 {
 					m.statusMessage = fmt.Sprintf("Found %d packages (%d from AUR)", len(m.filtered), len(msg.packages))
 					// Load info for selected result
@@ -2910,13 +2909,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.statusMessage = fmt.Sprintf("Error loading packages: %v", msg.err)
 		} else {
 			m.installed = msg.packages
-			
+
 			// Update installedSet for quick lookup (used by install view)
 			m.installedSet = make(map[string]bool)
 			for _, pkg := range m.installed {
 				m.installedSet[pkg.Name] = true
 			}
-			
+
 			// Also update the Installed flag on repo packages for install view
 			for i := range m.repoPackages {
 				m.repoPackages[i].Installed = m.installedSet[m.repoPackages[i].Name]
@@ -2925,14 +2924,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			for i := range m.filtered {
 				m.filtered[i].Installed = m.installedSet[m.filtered[i].Name]
 			}
-			
+
 			// Check if there's a pre-set filter (from dashboard shortcuts)
 			query := m.textInput.Value()
 			if query != "" {
 				// Apply the filter
 				sourceFilters, searchQuery := parseUninstallFilter(query)
 				hasSourceFilter := len(sourceFilters) > 0
-				
+
 				basePackages := m.installed
 				if hasSourceFilter {
 					var filtered []Package
@@ -2953,7 +2952,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 					basePackages = filtered
 				}
-				
+
 				if searchQuery != "" {
 					m.filteredInstalled = fuzzyFilter(basePackages, searchQuery)
 					m.installedMatchIndices = computeAllMatchIndices(m.filteredInstalled, searchQuery)
@@ -2961,10 +2960,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.filteredInstalled = basePackages
 					m.installedMatchIndices = nil
 				}
-				
+
 				// Reset selection to top
 				m.selectedIndex = 0
-				
+
 				if hasSourceFilter {
 					status := fmt.Sprintf("Found %d %s packages", len(m.filteredInstalled), formatUninstallFilters(sourceFilters))
 					if m.lastCompletedOp != "" {
@@ -2986,7 +2985,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				m.statusMessage = status
 			}
-			
+
 			if len(m.filteredInstalled) > 0 {
 				m.loadingInfo = true
 				m.infoForPackage = m.filteredInstalled[0].Name
@@ -3072,7 +3071,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.loading = false
 		m.confirmPackages = nil
 		m.pendingUpdates = nil
-		
+
 		// Check if operation failed and show error overlay
 		if msg.err != nil {
 			opName := ""
@@ -3088,21 +3087,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case confirmRemoveOrphans:
 				opName = "Orphan Removal"
 			}
-			
+
 			m.showErrorOverlay = true
 			m.errorTitle = fmt.Sprintf("%s Failed", opName)
 			m.errorMessage = "The operation exited with a non-zero exit code."
-			
+
 			// Get error details
 			if exitErr, ok := msg.err.(*exec.ExitError); ok {
 				m.errorDetails = fmt.Sprintf("Exit code: %d\n\nThe error output was displayed in the terminal.\nPlease check the terminal output for details.", exitErr.ExitCode())
 			} else {
 				m.errorDetails = fmt.Sprintf("Error: %v\n\nThe error output was displayed in the terminal.\nPlease check the terminal output for details.", msg.err)
 			}
-			
+
 			m.statusMessage = fmt.Sprintf("%s failed", opName)
 			m.lastCompletedOp = ""
-			
+
 			// Still refresh the appropriate data
 			switch msg.operation {
 			case confirmInstall:
@@ -3116,7 +3115,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		}
-		
+
 		// Operation succeeded
 		switch msg.operation {
 		case confirmInstall:
@@ -3538,7 +3537,7 @@ func (m model) overlaySelectionsPanel(content string, contentWidth int) string {
 		}
 
 		// calculate maximum width available for the name itself
-		innerWidth := panelWidth - 4 // subtract borders and padding
+		innerWidth := panelWidth - 4   // subtract borders and padding
 		nameMaxWidth := innerWidth - 2 // subtract prefix width
 		if nameMaxWidth < 1 {
 			nameMaxWidth = 1
@@ -3662,13 +3661,13 @@ func (m model) renderConfirmationDialog(contentWidth, contentHeight int, activeC
 	if dialogWidth > 80 {
 		dialogWidth = 80
 	}
-	
+
 	// Determine packages to display and title
 	var packages []Package
 	var title string
 	var actionDesc string
 	var simpleConfirm bool // For confirmations without package lists
-	
+
 	switch m.confirmType {
 	case confirmInstall:
 		title = "📦 Confirm Installation"
@@ -3697,70 +3696,70 @@ func (m model) renderConfirmationDialog(contentWidth, contentHeight int, activeC
 			packages = append(packages, Package{Name: name})
 		}
 	}
-	
+
 	// Styles
 	dialogBorderStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(activeColor).
 		Padding(1, 2)
-	
+
 	titleStyle := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(activeColor).
 		MarginBottom(1)
-	
+
 	packageNameStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("39"))
-	
+
 	packageVersionStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("241"))
-	
+
 	sourceStyle := func(source string) lipgloss.Style {
 		if color, ok := sourceColors[source]; ok {
 			return lipgloss.NewStyle().Foreground(color)
 		}
 		return lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
 	}
-	
+
 	countStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("214")).
 		Bold(true)
-	
+
 	promptStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("252")).
 		MarginTop(1)
-	
+
 	keyStyle := lipgloss.NewStyle().
 		Foreground(activeColor).
 		Bold(true)
-	
+
 	scrollHintStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("241"))
-	
+
 	// Build dialog content
 	var content strings.Builder
-	
+
 	// Title
 	content.WriteString(titleStyle.Render(title))
 	content.WriteString("\n\n")
-	
+
 	// Handle simple confirmations (no package list)
 	if simpleConfirm {
 		if m.confirmType == confirmCleanCache {
 			content.WriteString("This will remove cached packages that are no longer installed.\n\n")
-			
+
 			// Pacman cache info
 			content.WriteString(packageNameStyle.Render("Pacman Cache (system):\n"))
 			content.WriteString(fmt.Sprintf("  Path: %s\n", scrollHintStyle.Render(m.dashboard.PacmanCachePath)))
 			content.WriteString(fmt.Sprintf("  Size: %s\n\n", countStyle.Render(m.dashboard.PacmanCacheSize)))
-			
+
 			// Paru cache info
 			content.WriteString(packageNameStyle.Render("Paru Cache (user):\n"))
 			content.WriteString(fmt.Sprintf("  Path: %s\n", scrollHintStyle.Render(m.dashboard.ParuCachePath)))
 			content.WriteString(fmt.Sprintf("  Size: %s\n\n", countStyle.Render(m.dashboard.ParuCacheSize)))
-			
+
 			// Total
-			content.WriteString(fmt.Sprintf("Total cache size: %s\n", 
+			content.WriteString(fmt.Sprintf("Total cache size: %s\n",
 				lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("214")).Render(m.dashboard.CleanerSize)))
 		}
 	} else {
@@ -3768,10 +3767,10 @@ func (m model) renderConfirmationDialog(contentWidth, contentHeight int, activeC
 		if len(packages) == 1 {
 			content.WriteString(fmt.Sprintf("The following package will be %sd:\n\n", actionDesc))
 		} else {
-			content.WriteString(fmt.Sprintf("The following %s packages will be %sd:\n\n", 
+			content.WriteString(fmt.Sprintf("The following %s packages will be %sd:\n\n",
 				countStyle.Render(fmt.Sprintf("%d", len(packages))), actionDesc))
 		}
-		
+
 		// Package list with scrolling
 		maxVisible := 10
 		startIdx := m.confirmScrollOffset
@@ -3779,12 +3778,12 @@ func (m model) renderConfirmationDialog(contentWidth, contentHeight int, activeC
 		if endIdx > len(packages) {
 			endIdx = len(packages)
 		}
-		
+
 		// Show scroll indicator at top if needed
 		if startIdx > 0 {
 			content.WriteString(scrollHintStyle.Render(fmt.Sprintf("  ↑ %d more above\n", startIdx)))
 		}
-		
+
 		// List packages
 		for i := startIdx; i < endIdx; i++ {
 			pkg := packages[i]
@@ -3800,34 +3799,34 @@ func (m model) renderConfirmationDialog(contentWidth, contentHeight int, activeC
 				content.WriteString(fmt.Sprintf("  • %s\n", packageNameStyle.Render(pkg.Name)))
 			}
 		}
-		
+
 		// Show scroll indicator at bottom if needed
 		remaining := len(packages) - endIdx
 		if remaining > 0 {
 			content.WriteString(scrollHintStyle.Render(fmt.Sprintf("  ↓ %d more below\n", remaining)))
 		}
-		
+
 		// Scroll hint if list is scrollable
 		if len(packages) > maxVisible {
 			content.WriteString("\n")
 			content.WriteString(scrollHintStyle.Render("  Use [↑/↓] or [j/k] to scroll"))
 		}
 	}
-	
+
 	// Prompt - build as single line to prevent wrapping issues
 	content.WriteString("\n\n")
 	promptLine := fmt.Sprintf("Proceed? %ses  %so",
 		keyStyle.Render("[y]"),
 		keyStyle.Render("[n]"))
 	content.WriteString(promptStyle.Render(promptLine))
-	
+
 	// Render dialog box
 	dialogContent := content.String()
 	dialog := dialogBorderStyle.Width(dialogWidth).Render(dialogContent)
-	
+
 	// Center the dialog on screen
 	dialogHeight := strings.Count(dialog, "\n") + 1
-	
+
 	// Calculate vertical and horizontal padding
 	vertPadding := (contentHeight - dialogHeight) / 2
 	if vertPadding < 0 {
@@ -3837,22 +3836,22 @@ func (m model) renderConfirmationDialog(contentWidth, contentHeight int, activeC
 	if horizPadding < 0 {
 		horizPadding = 0
 	}
-	
+
 	// Build final output with centering
 	var output strings.Builder
-	
+
 	// Add top padding
 	for i := 0; i < vertPadding; i++ {
 		output.WriteString("\n")
 	}
-	
+
 	// Add dialog with horizontal padding
 	for _, line := range strings.Split(dialog, "\n") {
 		output.WriteString(strings.Repeat(" ", horizPadding))
 		output.WriteString(line)
 		output.WriteString("\n")
 	}
-	
+
 	return output.String()
 }
 
@@ -3860,7 +3859,7 @@ func (m model) renderConfirmationDialog(contentWidth, contentHeight int, activeC
 func (m model) renderErrorOverlay(contentWidth, contentHeight int) string {
 	// Error color (red)
 	errorColor := lipgloss.Color("#FF5555")
-	
+
 	// Dialog dimensions
 	dialogWidth := contentWidth - 20
 	if dialogWidth < 50 {
@@ -3869,61 +3868,61 @@ func (m model) renderErrorOverlay(contentWidth, contentHeight int) string {
 	if dialogWidth > 80 {
 		dialogWidth = 80
 	}
-	
+
 	// Styles
 	titleStyle := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(errorColor).
 		Width(dialogWidth - 4).
 		Align(lipgloss.Center)
-	
+
 	messageStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#FFFFFF")).
 		Width(dialogWidth - 4).
 		Align(lipgloss.Center)
-	
+
 	detailsStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#999999")).
-		Width(dialogWidth - 4).
+		Width(dialogWidth-4).
 		Padding(1, 0)
-	
+
 	hintStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#666666")).
 		Width(dialogWidth - 4).
 		Align(lipgloss.Center)
-	
+
 	dialogBorderStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(errorColor).
 		Padding(1, 2)
-	
+
 	// Build content
 	var content strings.Builder
-	
+
 	// Error icon and title
 	content.WriteString(titleStyle.Render("⚠  " + m.errorTitle + "  ⚠"))
 	content.WriteString("\n\n")
-	
+
 	// Error message
 	content.WriteString(messageStyle.Render(m.errorMessage))
 	content.WriteString("\n")
-	
+
 	// Error details
 	if m.errorDetails != "" {
 		content.WriteString(detailsStyle.Render(m.errorDetails))
 		content.WriteString("\n")
 	}
-	
+
 	// Dismiss hint
 	content.WriteString(hintStyle.Render("Press [esc], [enter], or [q] to dismiss"))
-	
+
 	// Render dialog box
 	dialogContent := content.String()
 	dialog := dialogBorderStyle.Width(dialogWidth).Render(dialogContent)
-	
+
 	// Center the dialog on screen
 	dialogHeight := strings.Count(dialog, "\n") + 1
-	
+
 	// Calculate vertical and horizontal padding
 	vertPadding := (contentHeight - dialogHeight) / 2
 	if vertPadding < 0 {
@@ -3933,22 +3932,22 @@ func (m model) renderErrorOverlay(contentWidth, contentHeight int) string {
 	if horizPadding < 0 {
 		horizPadding = 0
 	}
-	
+
 	// Build final output with centering
 	var output strings.Builder
-	
+
 	// Add top padding
 	for i := 0; i < vertPadding; i++ {
 		output.WriteString("\n")
 	}
-	
+
 	// Add dialog with horizontal padding
 	for _, line := range strings.Split(dialog, "\n") {
 		output.WriteString(strings.Repeat(" ", horizPadding))
 		output.WriteString(line)
 		output.WriteString("\n")
 	}
-	
+
 	return output.String()
 }
 
@@ -3997,37 +3996,37 @@ func (m model) renderDashboard(helpText string, contentWidth, contentHeight int)
 	// ═══════════════════════════════════════════════════════
 	// GROUP 1: Package Counts (with shortcuts to filter in remove mode)
 	// ═══════════════════════════════════════════════════════
-	
+
 	// Build package counts content as simple lines
 	countsLines := []string{
-		fmt.Sprintf(" %s Total    │ %s",
+		fmt.Sprintf("  %s Total    │ %s",
 			shortcutStyle.Render("[t]"),
 			lipgloss.NewStyle().Bold(true).Foreground(cyanColor).Render(fmt.Sprintf("%d", m.dashboard.TotalPackages))),
-		fmt.Sprintf(" %s Explicit │ %s",
+		fmt.Sprintf("  %s Explicit │ %s",
 			shortcutStyle.Render("[e]"),
 			lipgloss.NewStyle().Bold(true).Foreground(greenColor).Render(fmt.Sprintf("%d", m.dashboard.ExplicitlyInstalled))),
-		fmt.Sprintf(" %s Foreign  │ %s",
+		fmt.Sprintf("  %s Foreign  │ %s",
 			shortcutStyle.Render("[f]"),
 			lipgloss.NewStyle().Bold(true).Foreground(yellowColor).Render(fmt.Sprintf("%d", m.dashboard.ForeignPackages))),
 	}
-	
+
 	// Orphan line with optional remove hint
 	orphanStyle := lipgloss.NewStyle().Bold(true).Foreground(greenColor)
 	if m.dashboard.Orphans > 0 {
 		orphanStyle = lipgloss.NewStyle().Bold(true).Foreground(redColor)
 	}
-	orphanLine := fmt.Sprintf(" %s Orphans  │ %s",
+	orphanLine := fmt.Sprintf("  %s Orphans  │ %s",
 		shortcutStyle.Render("[o]"),
 		orphanStyle.Render(fmt.Sprintf("%d", m.dashboard.Orphans)))
 	if m.dashboard.Orphans > 0 {
-		orphanLine += shortcutStyle.Render(" [R]rm")
+		orphanLine += shortcutStyle.Render(" [R]remove")
 	}
 	countsLines = append(countsLines, orphanLine)
 
 	// ═══════════════════════════════════════════════════════
 	// GROUP 2: Storage Info
 	// ═══════════════════════════════════════════════════════
-	
+
 	// Cache coloring: warm colors if > 10 GiB
 	cacheStyle := lipgloss.NewStyle().Bold(true).Foreground(greenColor)
 	const tenGiB = 10 * 1024 * 1024 * 1024
@@ -4037,7 +4036,7 @@ func (m model) renderDashboard(helpText string, contentWidth, contentHeight int)
 	if m.dashboard.CleanerSizeBytes > tenGiB*2 {
 		cacheStyle = lipgloss.NewStyle().Bold(true).Foreground(redColor)
 	}
-	
+
 	// Missing from AUR style
 	missingStyle := lipgloss.NewStyle().Bold(true).Foreground(greenColor)
 	if m.dashboard.MissingFromAUR > 0 {
@@ -4057,17 +4056,17 @@ func (m model) renderDashboard(helpText string, contentWidth, contentHeight int)
 
 	// Render boxes manually with Unicode box drawing
 	borderColor := lipgloss.NewStyle().Foreground(activeColor)
-	
+
 	// Helper to render a box with title
 	renderBox := func(title string, lines []string, width int) string {
 		var b strings.Builder
-		
+
 		// Ensure minimum content width
 		innerWidth := width - 4 // Account for border chars and padding
 		if innerWidth < 20 {
 			innerWidth = 20
 		}
-		
+
 		// Top border with title
 		titleLen := lipgloss.Width(title)
 		topLeft := borderColor.Render("╭─")
@@ -4077,7 +4076,7 @@ func (m model) renderDashboard(helpText string, contentWidth, contentHeight int)
 			topPadding = 0
 		}
 		b.WriteString(topLeft + title + borderColor.Render(strings.Repeat("─", topPadding)) + topRight + "\n")
-		
+
 		// Content lines
 		leftBorder := borderColor.Render("│ ")
 		rightBorder := borderColor.Render(" │")
@@ -4090,10 +4089,10 @@ func (m model) renderDashboard(helpText string, contentWidth, contentHeight int)
 			}
 			b.WriteString(leftBorder + line + strings.Repeat(" ", padding) + rightBorder + "\n")
 		}
-		
+
 		// Bottom border
 		b.WriteString(borderColor.Render("╰" + strings.Repeat("─", innerWidth+2) + "╯"))
-		
+
 		return b.String()
 	}
 
@@ -4109,7 +4108,7 @@ func (m model) renderDashboard(helpText string, contentWidth, contentHeight int)
 	// Layout boxes side by side
 	countsBoxLines := strings.Split(countsBox, "\n")
 	storageBoxLines := strings.Split(storageBox, "\n")
-	
+
 	// Ensure same number of lines
 	maxLines := len(countsBoxLines)
 	if len(storageBoxLines) > maxLines {
@@ -4121,7 +4120,7 @@ func (m model) renderDashboard(helpText string, contentWidth, contentHeight int)
 	for len(storageBoxLines) < maxLines {
 		storageBoxLines = append(storageBoxLines, strings.Repeat(" ", boxWidth))
 	}
-	
+
 	// Join boxes horizontally
 	for i := 0; i < maxLines; i++ {
 		dashboard.WriteString(countsBoxLines[i] + "  " + storageBoxLines[i] + "\n")
@@ -4131,10 +4130,10 @@ func (m model) renderDashboard(helpText string, contentWidth, contentHeight int)
 	// ═══════════════════════════════════════════════════════
 	// Bar Layout Constants - ensures all bars align perfectly
 	// ═══════════════════════════════════════════════════════
-	const barLeftMargin = 2                    // Spaces before label
-	const barLabelWidth = 8                    // Fixed width for labels (e.g., "System", "Cache")
-	const barSeparator = "│"                   // Separator between label and bar
-	const barSuffixReserve = 30                // Reserve space for suffix text (e.g., "1234/5678 (100% explicit)")
+	const barLeftMargin = 2     // Spaces before label
+	const barLabelWidth = 8     // Fixed width for labels (e.g., "System", "Cache")
+	const barSeparator = "│"    // Separator between label and bar
+	const barSuffixReserve = 30 // Reserve space for suffix text (e.g., "1234/5678 (100% explicit)")
 	barStartCol := barLeftMargin + barLabelWidth + len(barSeparator)
 	availableBarWidth := contentWidth - barStartCol - barSuffixReserve
 	if availableBarWidth < 20 {
@@ -4155,22 +4154,22 @@ func (m model) renderDashboard(helpText string, contentWidth, contentHeight int)
 	if m.dashboard.TotalPackages == 0 {
 		explicitRatio = 0
 	}
-	
+
 	filledWidth := int(explicitRatio * float64(availableBarWidth))
 	if filledWidth > availableBarWidth {
 		filledWidth = availableBarWidth
 	}
-	
+
 	filledBar := lipgloss.NewStyle().Background(greenColor).Foreground(lipgloss.Color("0")).
 		Render(strings.Repeat(" ", filledWidth))
 	emptyBar := lipgloss.NewStyle().Background(lipgloss.Color("238")).
 		Render(strings.Repeat(" ", availableBarWidth-filledWidth))
-	
+
 	ratioTitle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("229")).
 		Render("📊 Explicit vs Dependencies")
 	ratioSuffix := fmt.Sprintf("%d/%d (%.0f%% explicit)", m.dashboard.ExplicitlyInstalled, dependencies, explicitRatio*100)
 	ratioBar := renderBarLine("", filledBar+emptyBar, ratioSuffix)
-	
+
 	dashboard.WriteString(ratioTitle + "\n")
 	dashboard.WriteString(ratioBar + "\n\n")
 
@@ -4180,7 +4179,7 @@ func (m model) renderDashboard(helpText string, contentWidth, contentHeight int)
 	chartTitle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("229")).
 		Render("📈 Size Comparison")
 	dashboard.WriteString(chartTitle + "\n")
-	
+
 	maxSize := m.dashboard.TotalSizeBytes
 	if m.dashboard.CleanerSizeBytes > maxSize {
 		maxSize = m.dashboard.CleanerSizeBytes
@@ -4188,7 +4187,7 @@ func (m model) renderDashboard(helpText string, contentWidth, contentHeight int)
 	if maxSize == 0 {
 		maxSize = 1
 	}
-	
+
 	systemBarWidth := int(float64(m.dashboard.TotalSizeBytes) / float64(maxSize) * float64(availableBarWidth))
 	cacheBarWidth := int(float64(m.dashboard.CleanerSizeBytes) / float64(maxSize) * float64(availableBarWidth))
 	if systemBarWidth < 1 {
@@ -4197,10 +4196,10 @@ func (m model) renderDashboard(helpText string, contentWidth, contentHeight int)
 	if cacheBarWidth < 1 && m.dashboard.CleanerSizeBytes > 0 {
 		cacheBarWidth = 1
 	}
-	
+
 	systemBar := lipgloss.NewStyle().Background(cyanColor).Render(strings.Repeat(" ", systemBarWidth))
 	cacheBar := lipgloss.NewStyle().Background(orangeColor).Render(strings.Repeat(" ", cacheBarWidth))
-	
+
 	dashboard.WriteString(renderBarLine("System", systemBar, m.dashboard.TotalSize) + "\n")
 	dashboard.WriteString(renderBarLine("Cache", cacheBar, m.dashboard.CleanerSize) + "\n\n")
 
@@ -4211,12 +4210,12 @@ func (m model) renderDashboard(helpText string, contentWidth, contentHeight int)
 		topTitle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("229")).
 			Render("🏆 Top 10 Packages by Size")
 		dashboard.WriteString(topTitle + "\n")
-		
+
 		for i, pkg := range m.dashboard.TopPackages {
 			rankStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
 			nameStyle := lipgloss.NewStyle().Foreground(cyanColor)
 			sizeStyle := lipgloss.NewStyle().Foreground(yellowColor)
-			
+
 			dashboard.WriteString(fmt.Sprintf("  %s %s %s\n",
 				rankStyle.Render(fmt.Sprintf("%2d.", i+1)),
 				nameStyle.Render(fmt.Sprintf("%-30s", pkg.Name)),
@@ -4236,7 +4235,7 @@ func (m model) renderDashboard(helpText string, contentWidth, contentHeight int)
 	// }
 	// actions = append(actions, "[esc] back")
 	// actions = append(actions, "[q] quit")
-	
+
 	// actionsText := actionsStyle.Render("  " + strings.Join(actions, " │ "))
 	// dashboard.WriteString(actionsText)
 
