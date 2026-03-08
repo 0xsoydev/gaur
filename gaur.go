@@ -24,6 +24,7 @@ const (
 	modeInstalled
 	modeUninstall
 	modeUpdate
+	modeUpdateSelect // Package selection for updates
 )
 
 // Confirmation operation types
