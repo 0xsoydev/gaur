@@ -2313,6 +2313,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.textInput.Focused() {
 			switch msg.String() {
 			case "esc":
+				if m.mode == modeUpdateSelect {
+					// Exit selection mode back to normal update mode
+					m.mode = modeUpdate
+					m.markedPackages = make(map[string]bool)
+					m.filtered = nil
+					m.matchIndices = nil
+					m.textInput.SetValue("")
+					m.statusMessage = "Selection cancelled"
+				}
 				m.textInput.Blur()
 				return m, nil
 			case "down":
