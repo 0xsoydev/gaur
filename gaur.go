@@ -1964,10 +1964,14 @@ func checkUpdates() tea.Cmd {
 		cmd.Stdout = &foreignOut
 		foreignPkgs := make(map[string]bool)
 		if err := cmd.Run(); err == nil {
-			for _, name := range strings.Split(foreignOut.String(), "\n") {
-				name = strings.TrimSpace(name)
-				if name != "" {
-					foreignPkgs[name] = true
+			for _, line := range strings.Split(foreignOut.String(), "\n") {
+				line = strings.TrimSpace(line)
+				if line != "" {
+					// pacman -Qm output: "package-name version"
+					parts := strings.Fields(line)
+					if len(parts) >= 1 {
+						foreignPkgs[parts[0]] = true
+					}
 				}
 			}
 		}
