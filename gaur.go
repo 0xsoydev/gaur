@@ -2665,7 +2665,34 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.statusMessage = "Checking for updates..."
 				m.updateOutput = ""
 				m.pendingUpdates = nil
+				m.updatableAll = nil
+				m.filtered = nil
+				m.matchIndices = nil
 				return m, checkUpdates()
+			}
+
+		case "s":
+			// Enter selective update mode - choose packages to update
+			if m.mode == modeUpdate && !m.loading && len(m.updatableAll) > 0 {
+				m.mode = modeUpdateSelect
+				m.filtered = m.updatableAll
+				m.matchIndices = computeAllMatchIndices(m.filtered, m.textInput.Value())
+				m.selectedIndex = 0
+				m.markedPackages = make(map[string]bool) // clear marks; pendingUpdates still holds all
+				m.textInput.SetValue("")
+				m.textInput.Placeholder = "Filter updates to select..."
+				m.statusMessage = "Select packages: [tab] mark/unmark, [enter] confirm, [esc] cancel"
+				return m, nil
+			}
+
+		case "a":
+			// Select all updates and show confirmation
+			if m.mode == modeUpdate && !m.loading && len(m.pendingUpdates) > 0 {
+				m.showConfirmation = true
+				m.confirmType = confirmUpdate
+				m.confirmScrollOffset = 0
+				m.statusMessage = fmt.Sprintf("Confirm update of %d packages", len(m.pendingUpdates))
+				return m, nil
 			}
 
 		case "i":
