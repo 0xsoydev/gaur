@@ -1492,51 +1492,57 @@ func parseInstalledPackages(output string) ([]Package, error) {
 func getDashboardData() tea.Cmd {
 	return func() tea.Msg {
 		var data DashboardData
+		var errs []error
 
 		// Total Packages: paru -Q
 		cmd := exec.Command("paru", "-Q")
 		var out bytes.Buffer
 		cmd.Stdout = &out
-		if err := cmd.Run(); err != nil {
-			return dashboardMsg{err: fmt.Errorf("failed to get total packages: %w", err)}
+		if err := cmd.Run(); err == nil {
+			data.TotalPackages = countLines(out.String())
+		} else {
+			errs = append(errs, fmt.Errorf("total packages: %w", err))
 		}
-		data.TotalPackages = countLines(out.String())
 
 		// Explicitly Installed: paru -Qe
 		out.Reset()
 		cmd = exec.Command("paru", "-Qe")
 		cmd.Stdout = &out
-		if err := cmd.Run(); err != nil {
-			return dashboardMsg{err: fmt.Errorf("failed to get explicitly installed packages: %w", err)}
+		if err := cmd.Run(); err == nil {
+			data.ExplicitlyInstalled = countLines(out.String())
+		} else {
+			errs = append(errs, fmt.Errorf("explicitly installed: %w", err))
 		}
-		data.ExplicitlyInstalled = countLines(out.String())
 
 		// Foreign Packages: paru -Qm
 		out.Reset()
 		cmd = exec.Command("paru", "-Qm")
 		cmd.Stdout = &out
-		if err := cmd.Run(); err != nil {
-			return dashboardMsg{err: fmt.Errorf("failed to get foreign packages: %w", err)}
+		if err := cmd.Run(); err == nil {
+			data.ForeignPackages = countLines(out.String())
+		} else {
+			errs = append(errs, fmt.Errorf("foreign packages: %w", err))
 		}
-		data.ForeignPackages = countLines(out.String())
 
 		// Orphans: paru -Qdt
 		out.Reset()
 		cmd = exec.Command("paru", "-Qdt")
 		cmd.Stdout = &out
-		if err := cmd.Run(); err != nil {
-			return dashboardMsg{err: fmt.Errorf("failed to get orphan packages: %w", err)}
+		if err := cmd.Run(); err == nil {
+			data.Orphans = countLines(out.String())
+		} else {
+			errs = append(errs, fmt.Errorf("orphans: %w", err))
 		}
-		data.Orphans = countLines(out.String())
 
 		// Stats from paru -Ps (Total Size, Missing from AUR, Top 10 packages)
 		out.Reset()
 		cmd = exec.Command("paru", "-Ps")
 		cmd.Stdout = &out
-		if err := cmd.Run(); err != nil {
-			return dashboardMsg{err: fmt.Errorf("failed to get package statistics: %w", err)}
+		if err := cmd.Run(); err == nil {
+			data.TotalSize, data.TotalSizeBytes, data.MissingFromAUR, data.TopPackages = parseParuStats(out.String())
+		} else {
+			errs = append(errs, fmt.Errorf("package statistics: %w", err))
 		}
-		data.TotalSize, data.TotalSizeBytes, data.MissingFromAUR, data.TopPackages = parseParuStats(out.String())
 
 		// Calculate Pacman Cache (System)
 		pacmanCachePath := "/var/cache/pacman/pkg"
@@ -1561,6 +1567,10 @@ func getDashboardData() tea.Cmd {
 		data.CleanerSizeBytes = totalCacheBytes
 		data.CleanerSize = formatBytes(totalCacheBytes)
 
+		// If any errors occurred, return them
+		if len(errs) > 0 {
+			return dashboardMsg{data: data, err: fmt.Errorf("errors loading dashboard: %v", errs)}
+		}
 		return dashboardMsg{data: data}
 	}
 }
@@ -1914,11 +1924,17 @@ func checkUpdates() tea.Cmd {
 	return func() tea.Msg {
 		cmd := exec.Command("paru", "-Qu")
 		var stdout bytes.Buffer
+		var stderr bytes.Buffer
 		cmd.Stdout = &stdout
+		cmd.Stderr = &stderr
 		if err := cmd.Run(); err != nil {
-			// paru -Qu returns exit code 1 if no updates, but could also fail for other reasons
-			// We'll treat any error as a failure to check updates
-			return updateCheckMsg{packages: []Package{}, err: fmt.Errorf("failed to check for updates: %w", err)}
+			// paru -Qu returns exit code 1 when there are no updates - that's expected
+			if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
+				// No updates available - return empty list without error
+				return updateCheckMsg{packages: []Package{}}
+			}
+			// Any other error is a real failure
+			return updateCheckMsg{packages: nil, err: fmt.Errorf("failed to check for updates: %w", err)}
 		}
 
 		var packages []Package
@@ -3046,10 +3062,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case dashboardMsg:
 		m.loading = false
+		// Always set the data, even if there were errors (partial data is better than none)
+		m.dashboard = msg.data
 		if msg.err != nil {
-			m.statusMessage = fmt.Sprintf("Error loading dashboard: %v", msg.err)
+			m.statusMessage = fmt.Sprintf("Dashboard loaded with warnings: %v", msg.err)
 		} else {
-			m.dashboard = msg.data
 			// Preserve lastCompletedOp message if set, otherwise show default
 			if m.lastCompletedOp != "" {
 				m.statusMessage = m.lastCompletedOp
