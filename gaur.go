@@ -2182,6 +2182,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.confirmScrollOffset = 0
 				m.statusMessage = "Operation cancelled"
 				return m, nil
+			case "q":
+				// Quit from confirmation dialog
+				return m, tea.Quit
 			case "down", "j":
 				// Scroll down in package list
 				var maxVisible int
