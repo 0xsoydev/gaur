@@ -742,6 +742,8 @@ type model struct {
 	pendingUpdates      []Package // Updates available (for update confirmation)
 	confirmScrollOffset int       // Scroll offset for confirmation package list
 	lastCompletedOp     string    // Description of last completed operation
+	// Update selection state
+	updatableAll []Package // All packages available for update (before selection)
 	// Error overlay state
 	showErrorOverlay bool
 	errorTitle       string
