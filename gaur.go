@@ -2184,10 +2184,28 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			case "down", "j":
 				// Scroll down in package list
-				maxScroll := len(m.confirmPackages) - 10
+				var maxVisible int
 				if m.confirmType == confirmUpdate {
-					maxScroll = len(m.pendingUpdates) - 10
+					// Compute visible count based on terminal height
+					contentHeight := m.height - 4
+					innerHeight := contentHeight - 2
+					if innerHeight < 5 {
+						innerHeight = 5
+					}
+					maxVisible = innerHeight - 8
+					if maxVisible < 1 {
+						maxVisible = 1
+					}
+				} else {
+					maxVisible = 10
 				}
+				var total int
+				if m.confirmType == confirmUpdate {
+					total = len(m.pendingUpdates)
+				} else {
+					total = len(m.confirmPackages)
+				}
+				maxScroll := total - maxVisible
 				if maxScroll < 0 {
 					maxScroll = 0
 				}
@@ -3430,7 +3448,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Store all available updates
 			m.updatableAll = msg.packages
 			m.pendingUpdates = msg.packages // Initially all are pending
-			m.statusMessage = fmt.Sprintf("%d updates available. Press [s] to select, [a] to update all", len(msg.packages))
+			// Show full-screen confirmation directly
+			m.showConfirmation = true
+			m.confirmType = confirmUpdate
+			m.confirmScrollOffset = 0
+			m.statusMessage = fmt.Sprintf("%d updates available", len(msg.packages))
 			m.updateOutput = ""
 		}
 
@@ -4038,7 +4060,12 @@ func truncateWithAnsi(s string, maxWidth int) string {
 
 // renderConfirmationDialog renders a centered confirmation dialog for install/uninstall/update
 func (m model) renderConfirmationDialog(contentWidth, contentHeight int, activeColor lipgloss.Color) string {
-	// Dialog dimensions
+	// For system update confirmation, render full-screen instead of centered modal
+	if m.confirmType == confirmUpdate {
+		return m.renderUpdateFullScreen(contentWidth, contentHeight, activeColor)
+	}
+
+	// Dialog dimensions (for other confirmation types)
 	dialogWidth := contentWidth - 20
 	if dialogWidth < 50 {
 		dialogWidth = 50
@@ -4736,6 +4763,183 @@ func (m model) renderDashboard(helpText string, contentWidth, contentHeight int)
 		Render(dashContent)
 
 	return lipgloss.JoinVertical(lipgloss.Left, dashPanel, footerLine)
+}
+
+// renderUpdateFullScreen renders the system update confirmation as a full-screen panel.
+func (m model) renderUpdateFullScreen(contentWidth, contentHeight int, activeColor lipgloss.Color) string {
+	// Compute inner dimensions
+	innerWidth := contentWidth - 2
+	innerHeight := contentHeight - 2
+	if innerWidth < 10 {
+		innerWidth = 10
+	}
+	if innerHeight < 5 {
+		innerHeight = 5
+	}
+
+	// Compute visible package count based on available height
+	maxVisible := innerHeight - 8
+	if maxVisible < 1 {
+		maxVisible = 1
+	}
+
+	// Package list
+	packages := m.pendingUpdates
+	startIdx := m.confirmScrollOffset
+	endIdx := startIdx + maxVisible
+	if endIdx > len(packages) {
+		endIdx = len(packages)
+	}
+	visibleCount := endIdx - startIdx
+
+	// Styles
+	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(activeColor).MarginBottom(1)
+	pkgNameStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("39"))
+	pkgVersionStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
+	sourceStyle := func(source string) lipgloss.Style {
+		if color, ok := sourceColors[source]; ok {
+			return lipgloss.NewStyle().Foreground(color)
+		}
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
+	}
+	countStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Bold(true)
+	keyStyle := lipgloss.NewStyle().Foreground(activeColor).Bold(true)
+	scrollHintStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
+
+	var content strings.Builder
+
+	// Title
+	content.WriteString(titleStyle.Render("  Confirm System Update"))
+	content.WriteString("\n\n")
+
+	// Package count
+	if len(packages) == 1 {
+		content.WriteString("The following package will be updated:\n\n")
+	} else {
+		content.WriteString(fmt.Sprintf("The following %s packages will be updated:\n\n",
+			countStyle.Render(fmt.Sprintf("%d", len(packages)))))
+	}
+
+	// Build entries
+	type listEntry struct {
+		text  string
+		isPkg bool
+	}
+	var entries []listEntry
+
+	showScrollbar := len(packages) > maxVisible
+
+	if showScrollbar {
+		// Top hint
+		topHint := ""
+		if startIdx > 0 {
+			topHint = fmt.Sprintf("  ↑ %d more above", startIdx)
+		}
+		entries = append(entries, listEntry{text: topHint})
+
+		// Package lines in forward order
+		for i := startIdx; i < endIdx; i++ {
+			pkg := packages[i]
+			line := fmt.Sprintf("  • %s %s %s",
+				sourceStyle(pkg.Source).Render(fmt.Sprintf("[%s]", pkg.Source)),
+				pkgNameStyle.Render(pkg.Name),
+				pkgVersionStyle.Render(pkg.Version))
+			entries = append(entries, listEntry{text: line, isPkg: true})
+		}
+
+		// Bottom hint
+		bottomHint := ""
+		remaining := len(packages) - endIdx
+		if remaining > 0 {
+			bottomHint = fmt.Sprintf("  ↓ %d more below", remaining)
+		}
+		entries = append(entries, listEntry{text: bottomHint})
+	} else {
+		// Non-scrollable: list all in normal order
+		for i := 0; i < len(packages); i++ {
+			pkg := packages[i]
+			line := fmt.Sprintf("  • %s %s %s",
+				sourceStyle(pkg.Source).Render(fmt.Sprintf("[%s]", pkg.Source)),
+				pkgNameStyle.Render(pkg.Name),
+				pkgVersionStyle.Render(pkg.Version))
+			entries = append(entries, listEntry{text: line, isPkg: true})
+		}
+	}
+
+	// Scrollbar metrics
+	var thumbSize, thumbTop int
+	trackHeight := maxVisible
+	if showScrollbar && len(packages) > maxVisible {
+		thumbSize = (visibleCount * trackHeight) / len(packages)
+		if thumbSize < 1 {
+			thumbSize = 1
+		}
+		if thumbSize > trackHeight {
+			thumbSize = trackHeight
+		}
+		if len(packages) > maxVisible {
+			thumbTop = 1 + startIdx*(trackHeight-thumbSize)/(len(packages)-maxVisible)
+		}
+	}
+
+	// Scrollbar styles
+	scrollbarTrackStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("236"))
+	scrollbarThumbStyle := lipgloss.NewStyle().Foreground(activeColor).Bold(true)
+
+	// Render entries
+	for i, entry := range entries {
+		// Content width inside the padded inner box
+		entryWidth := innerWidth - 2
+		var sbChar string
+		if showScrollbar {
+			entryWidth -= 1
+			if entry.isPkg {
+				if i >= thumbTop && i < thumbTop+thumbSize {
+					sbChar = scrollbarThumbStyle.Render("█")
+				} else {
+					sbChar = scrollbarTrackStyle.Render("│")
+				}
+			} else {
+				sbChar = " "
+			}
+		}
+		line := lipgloss.NewStyle().Width(entryWidth).Render(entry.text)
+		if sbChar != "" {
+			line = line + sbChar
+		}
+		content.WriteString(line + "\n")
+	}
+
+	// Scroll hint
+	if showScrollbar {
+		content.WriteString("\n")
+		hint := scrollHintStyle.Render("  Use [↑/↓] or [j/k] to scroll")
+		if lipgloss.Width(hint) > innerWidth-2 {
+			hint = lipgloss.NewStyle().Width(innerWidth - 2).Render(hint)
+		}
+		content.WriteString(hint)
+	}
+
+	// Prompt
+	content.WriteString("\n\n")
+	prompt := fmt.Sprintf("Proceed? %ses  %so  %s%s",
+		keyStyle.Render("[y]"),
+		keyStyle.Render("[n]"),
+		keyStyle.Render("[s]"),
+		"elect")
+	content.WriteString(prompt)
+
+	// Wrap with padding and border
+	innerBox := lipgloss.NewStyle().
+		Width(innerWidth).
+		Height(innerHeight).
+		Padding(0, 1).
+		Render(content.String())
+	dialog := baseBorderStyle.BorderForeground(activeColor).
+		Width(contentWidth).
+		Height(contentHeight).
+		Render(innerBox)
+	return dialog
 }
 
 func main() {
