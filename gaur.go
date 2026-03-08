@@ -1958,7 +1958,23 @@ func updateSystem() tea.Cmd {
 // checkUpdates fetches available updates using paru -Qu
 func checkUpdates() tea.Cmd {
 	return func() tea.Msg {
-		cmd := exec.Command("paru", "-Qu")
+		// First, get all foreign (AUR) packages in one call
+		cmd := exec.Command("pacman", "-Qm")
+		var foreignOut bytes.Buffer
+		cmd.Stdout = &foreignOut
+		if err := cmd.Run(); err != nil {
+			// If this fails, we'll continue without foreign detection (all will be marked as repo/unknown)
+		}
+		foreignPkgs := make(map[string]bool)
+		for _, name := range strings.Split(foreignOut.String(), "\n") {
+			name = strings.TrimSpace(name)
+			if name != "" {
+				foreignPkgs[name] = true
+			}
+		}
+
+		// Now get the updates list
+		cmd = exec.Command("paru", "-Qu")
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 		cmd.Stdout = &stdout
@@ -1989,18 +2005,14 @@ func checkUpdates() tea.Cmd {
 					Name:    pkgName,
 					Version: strings.Join(parts[1:], " "), // "oldver -> newver" format
 				}
-				// Determine source (foreign = aur)
-				checkCmd := exec.Command("pacman", "-Qq", pkgName)
-				if err := checkCmd.Run(); err == nil {
-					// Check if foreign
-					foreignCmd := exec.Command("pacman", "-Qm", pkgName)
-					if err := foreignCmd.Run(); err == nil {
-						pkg.Source = "aur"
-					} else {
-						pkg.Source = "repo"
-					}
+				// Determine source using foreign set lookup
+				if foreignPkgs[pkgName] {
+					pkg.Source = "aur"
+				} else {
+					pkg.Source = "repo"
 				}
-				// If checkCmd fails, pkg.Source remains empty (unknown)
+				// Also check if installed (should always be true for updates, but set anyway)
+				pkg.Installed = true
 				packages = append(packages, pkg)
 			}
 		}
