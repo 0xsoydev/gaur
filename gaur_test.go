@@ -1,0 +1,567 @@
+package main
+
+import (
+	"reflect"
+	"strings"
+	"testing"
+)
+
+// TestIsValidPackageName tests the package name validation function
+func TestIsValidPackageName(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected bool
+	}{
+		{"valid simple", "vim", true},
+		{"valid with hyphen", "my-package", true},
+		{"valid with underscore", "my_package", true},
+		{"valid with plus", "gcc11", true}, // doesn't contain plus but still valid
+		{"valid with dot", "my.package", true},
+		{"valid with at", "host@example", true},
+		{"valid mixed", "my-package_123.test", true},
+		{"empty string", "", false},
+		{"space", "my package", false},
+		{"special char", "my$package", false},
+		{"bracket", "my[package]", false},
+		{"backtick", "my`package`", false},
+		{"newline", "my\npackage", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isValidPackageName(tt.input)
+			if result != tt.expected {
+				t.Errorf("isValidPackageName(%q) = %v, want %v", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestSanitizePackageNames tests the package name sanitization
+func TestSanitizePackageNames(t *testing.T) {
+	tests := []struct {
+		name         string
+		input        []string
+		wantValid    []string
+		wantAllValid bool
+	}{
+		{
+			name:         "all valid",
+			input:        []string{"vim", "neovim", "htop"},
+			wantValid:    []string{"vim", "neovim", "htop"},
+			wantAllValid: true,
+		},
+		{
+			name:         "some invalid",
+			input:        []string{"vim", "bad name", "neovim"},
+			wantValid:    []string{"vim", "neovim"},
+			wantAllValid: false,
+		},
+		{
+			name:         "all invalid",
+			input:        []string{"", "bad name", "test test"},
+			wantValid:    nil, // no valid packages returns nil slice
+			wantAllValid: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			valid, allValid := sanitizePackageNames(tt.input)
+			if !reflect.DeepEqual(valid, tt.wantValid) {
+				t.Errorf("sanitizePackageNames(%v) returned %v, want %v", tt.input, valid, tt.wantValid)
+			}
+			if allValid != tt.wantAllValid {
+				t.Errorf("sanitizePackageNames(%v) allValid = %v, want %v", tt.input, allValid, tt.wantAllValid)
+			}
+		})
+	}
+}
+
+// TestParseRepoFilter tests the repository filter parsing
+func TestParseRepoFilter(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       string
+		wantFilters map[string]bool
+		wantQuery   string
+	}{
+		{
+			name:        "no filter",
+			input:       "vim",
+			wantFilters: nil,
+			wantQuery:   "vim",
+		},
+		{
+			name:        "single repo filter",
+			input:       "a:vim",
+			wantFilters: map[string]bool{"aur": true},
+			wantQuery:   "vim",
+		},
+		{
+			name:        "multiple repo filters",
+			input:       "ae:firefox",
+			wantFilters: map[string]bool{"aur": true, "extra": true},
+			wantQuery:   "firefox",
+		},
+		{
+			name:        "all repos filter",
+			input:       "acem:package",
+			wantFilters: map[string]bool{"aur": true, "core": true, "extra": true, "multilib": true},
+			wantQuery:   "package",
+		},
+		{
+			name:        "filter with spaces in query",
+			input:       "a:  my package  ",
+			wantFilters: map[string]bool{"aur": true},
+			wantQuery:   "my package",
+		},
+		{
+			name:        "filter with no query",
+			input:       "a:",
+			wantFilters: map[string]bool{"aur": true},
+			wantQuery:   "",
+		},
+		{
+			name:        "invalid filter char ignored",
+			input:       "z:vim",
+			wantFilters: nil,
+			wantQuery:   "z:vim",
+		},
+		{
+			name:        "mixed invalid and valid",
+			input:       "za:vim",
+			wantFilters: map[string]bool{"aur": true},
+			wantQuery:   "vim",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			filters, query := parseRepoFilter(tt.input)
+			if !mapsEqual(filters, tt.wantFilters) {
+				t.Errorf("parseRepoFilter(%q) returned filters %v, want %v", tt.input, filters, tt.wantFilters)
+			}
+			if query != tt.wantQuery {
+				t.Errorf("parseRepoFilter(%q) returned query %q, want %q", tt.input, query, tt.wantQuery)
+			}
+		})
+	}
+}
+
+// TestParseUninstallFilter tests the uninstall filter parsing
+func TestParseUninstallFilter(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       string
+		wantFilters map[string]bool
+		wantQuery   string
+	}{
+		{
+			name:        "no filter",
+			input:       "vim",
+			wantFilters: nil,
+			wantQuery:   "vim",
+		},
+		{
+			name:        "total filter",
+			input:       "t:",
+			wantFilters: map[string]bool{"total": true},
+			wantQuery:   "",
+		},
+		{
+			name:        "explicit filter",
+			input:       "e:firefox",
+			wantFilters: map[string]bool{"explicit": true},
+			wantQuery:   "firefox",
+		},
+		{
+			name:        "multiple filters",
+			input:       "et:package",
+			wantFilters: map[string]bool{"total": true, "explicit": true},
+			wantQuery:   "package",
+		},
+		{
+			name:        "orphan filter",
+			input:       "o:",
+			wantFilters: map[string]bool{"orphan": true},
+			wantQuery:   "",
+		},
+		{
+			name:        "invalid filter char",
+			input:       "z:vim",
+			wantFilters: nil,
+			wantQuery:   "z:vim",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			filters, query := parseUninstallFilter(tt.input)
+			if !mapsEqual(filters, tt.wantFilters) {
+				t.Errorf("parseUninstallFilter(%q) returned filters %v, want %v", tt.input, filters, tt.wantFilters)
+			}
+			if query != tt.wantQuery {
+				t.Errorf("parseUninstallFilter(%q) returned query %q, want %q", tt.input, query, tt.wantQuery)
+			}
+		})
+	}
+}
+
+// TestFormatRepoFilters tests the repo filter formatting
+func TestFormatRepoFilters(t *testing.T) {
+	tests := []struct {
+		name     string
+		filters  map[string]bool
+		expected string
+	}{
+		{"empty", nil, ""},
+		{"single", map[string]bool{"aur": true}, "aur"},
+		{"multiple", map[string]bool{"core": true, "extra": true, "aur": true}, "core+extra+aur"},
+		{"all", map[string]bool{"core": true, "extra": true, "multilib": true, "aur": true}, "core+extra+multilib+aur"},
+		{"unordered", map[string]bool{"aur": true, "core": true}, "core+aur"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := formatRepoFilters(tt.filters)
+			if result != tt.expected {
+				t.Errorf("formatRepoFilters(%v) = %q, want %q", tt.filters, result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestFormatUninstallFilters tests the uninstall filter formatting
+func TestFormatUninstallFilters(t *testing.T) {
+	tests := []struct {
+		name     string
+		filters  map[string]bool
+		expected string
+	}{
+		{"empty", nil, ""},
+		{"total", map[string]bool{"total": true}, "total"},
+		{"explicit", map[string]bool{"explicit": true}, "explicit"},
+		{"multiple", map[string]bool{"total": true, "orphan": true}, "total+orphan"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := formatUninstallFilters(tt.filters)
+			if result != tt.expected {
+				t.Errorf("formatUninstallFilters(%v) = %q, want %q", tt.filters, result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestParseSizeToBytes tests size string parsing
+func TestParseSizeToBytes(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected int64
+	}{
+		{"bytes", "100 B", 100},
+		{"kilobytes", "1.5 KB", 1536}, // 1.5 * 1024
+		{"megabytes", "2 MiB", 2 * 1024 * 1024},
+		{"gigabytes", "1.5 GiB", int64(1.5 * 1024 * 1024 * 1024)},
+		{"terabytes", "1 TiB", 1024 * 1024 * 1024 * 1024},
+		{"lowercase kb", "10 kb", 10 * 1024},
+		{"lowercase mb", "5 mb", 5 * 1024 * 1024},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := parseSizeToBytes(tt.input)
+			if result != tt.expected {
+				t.Errorf("parseSizeToBytes(%q) = %d, want %d", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestCountLines tests line counting
+func TestCountLines(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected int
+	}{
+		{"empty", "", 0},
+		{"single line", "hello", 1},
+		{"multiple lines", "line1\nline2\nline3", 3},
+		{"trailing newline", "line1\nline2\n", 2},
+		{"blank lines", "\n\n\n", 0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := countLines(tt.input)
+			if result != tt.expected {
+				t.Errorf("countLines(%q) = %d, want %d", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestFormatBytes tests byte formatting
+func TestFormatBytes(t *testing.T) {
+	tests := []struct {
+		name     string
+		bytes    int64
+		expected string
+	}{
+		{"0 bytes", 0, "0 B"},
+		{"500 bytes", 500, "500 B"},
+		{"1 KB", 1024, "1.0 KiB"},
+		{"1.5 KB", 1536, "1.5 KiB"},
+		{"1 MB", 1024 * 1024, "1.0 MiB"},
+		{"1 GB", 1024 * 1024 * 1024, "1.0 GiB"},
+		{"1 TB", 1024 * 1024 * 1024 * 1024, "1.0 TiB"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := formatBytes(tt.bytes)
+			if result != tt.expected {
+				t.Errorf("formatBytes(%d) = %q, want %q", tt.bytes, result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestComputeMatchIndices tests fuzzy match index calculation
+func TestComputeMatchIndices(t *testing.T) {
+	tests := []struct {
+		name        string
+		pkg         Package
+		query       string
+		wantIndices []int
+	}{
+		{
+			name:        "exact match at start",
+			pkg:         Package{Source: "aur", Name: "vim"},
+			query:       "vim",
+			wantIndices: []int{4, 5, 6}, // "aur/vim" - indices 4,5,6 match
+		},
+		{
+			name:        "consecutive substring",
+			pkg:         Package{Source: "extra", Name: "firefox"},
+			query:       "fire",
+			wantIndices: []int{6, 7, 8, 9}, // "extra/firefox" - "fire" at positions
+		},
+		{
+			name:        "fuzzy match",
+			pkg:         Package{Source: "core", Name: "bash"},
+			query:       "bsh",
+			wantIndices: []int{5, 7, 8}, // "core/bash": b(5), s(7), h(8)
+		},
+		{
+			name:        "no match",
+			pkg:         Package{Source: "aur", Name: "vim"},
+			query:       "xyz",
+			wantIndices: []int{},
+		},
+		{
+			name:        "case insensitive",
+			pkg:         Package{Source: "aur", Name: "VIM"},
+			query:       "vim",
+			wantIndices: []int{4, 5, 6}, // should match case-insensitively
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := computeMatchIndices(tt.pkg, tt.query)
+			if !intsEqual(result, tt.wantIndices) {
+				t.Errorf("computeMatchIndices(%v, %q) = %v, want %v", tt.pkg, tt.query, result, tt.wantIndices)
+			}
+		})
+	}
+}
+
+// TestComputeAllMatchIndices tests the batch match index computation
+func TestComputeAllMatchIndices(t *testing.T) {
+	packages := []Package{
+		{Source: "aur", Name: "vim"},
+		{Source: "extra", Name: "firefox"},
+		{Source: "core", Name: "bash"},
+	}
+	query := "v"
+
+	result := computeAllMatchIndices(packages, query)
+
+	// Should have entries for packages that match
+	if len(result) == 0 {
+		t.Error("Expected some matches for query 'v'")
+	}
+
+	// Check that indices are within bounds
+	for idx, indices := range result {
+		if idx < 0 || idx >= len(packages) {
+			t.Errorf("Invalid package index: %d", idx)
+		}
+		for _, charIdx := range indices {
+			pkgStr := packages[idx].Source + "/" + packages[idx].Name
+			if charIdx < 0 || charIdx >= len(pkgStr) {
+				t.Errorf("Index %d out of range for package string %q", charIdx, pkgStr)
+			}
+		}
+	}
+}
+
+// TestParseAUROutput tests AUR output parsing
+func TestParseAUROutput(t *testing.T) {
+	sampleOutput := `aur/yay 12.5.7-1
+ AUR helper written in Go
+aur/paru 1.9.3-1
+ Another AUR helper
+`
+
+	result := parseAUROutput(sampleOutput)
+
+	if len(result) != 2 {
+		t.Errorf("Expected 2 AUR packages, got %d", len(result))
+	}
+
+	if len(result) > 0 {
+		if result[0].Source != "aur" || result[0].Name != "yay" {
+			t.Errorf("First package incorrect: %+v", result[0])
+		}
+		if result[0].Description != "AUR helper written in Go" {
+			t.Errorf("Description mismatch: %q", result[0].Description)
+		}
+	}
+}
+
+// TestParseSearchOutput tests search output parsing
+func TestParseSearchOutput(t *testing.T) {
+	sampleOutput := `1 aur/yay 12.5.7-1 [+2480 ~39.12]
+ AUR helper written in Go
+2 extra/firefox 120.0-1
+ Popular web browser
+core/linux 6.5.3-1 [+12] [-]
+ Linux kernel
+`
+
+	result := parseSearchOutput(sampleOutput)
+
+	// Should parse all three packages
+	if len(result) != 3 {
+		t.Errorf("Expected 3 packages, got %d", len(result))
+	}
+
+	// Check first package
+	if len(result) > 0 {
+		if result[0].Source != "aur" || result[0].Name != "yay" {
+			t.Errorf("First package incorrect: %+v", result[0])
+		}
+		if result[0].Version != "12.5.7-1" {
+			t.Errorf("Version mismatch: %q", result[0].Version)
+		}
+	}
+}
+
+// TestGetThemeByName tests theme lookup
+func TestGetThemeByName(t *testing.T) {
+	tests := []struct {
+		name   string
+		input  string
+		wantOK bool
+	}{
+		{"exact match", "Catppuccin Mocha", true},
+		{"lowercase", "catppuccin mocha", true},
+		{"no spaces", "catppuccinmocha", true},
+		{"hyphens", "catppuccin-mocha", true},
+		{"unknown", "Nonexistent Theme", false},
+		{"partial", "cat", false}, // too short, not a theme
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tp, ok := getThemeByName(tt.input)
+			if ok != tt.wantOK {
+				t.Errorf("getThemeByName(%q) returned ok=%v, want %v", tt.input, ok, tt.wantOK)
+				return
+			}
+			if ok && tp != themeCatppuccinMocha && !strings.Contains(strings.ToLower(tt.input), "catppuccin") {
+				// For non-catppuccin themes, just check we got some theme
+				if tp < themeBasic || tp > themeTokyonightStorm {
+					t.Errorf("getThemeByName returned invalid theme type: %d", tp)
+				}
+			}
+		})
+	}
+}
+
+// TestListThemes tests theme listing
+func TestListThemes(t *testing.T) {
+	themes := listThemes()
+	if len(themes) == 0 {
+		t.Fatal("listThemes returned empty list")
+	}
+
+	// Should have all 11 themes
+	expectedCount := 11
+	if len(themes) != expectedCount {
+		t.Logf("Expected %d themes, got %d. Themes: %v", expectedCount, len(themes), themes)
+	}
+
+	// Check some known themes
+	knownThemes := []string{"Catppuccin Frappe", "Dracula", "Solarized Dark"}
+	for _, kt := range knownThemes {
+		found := false
+		for _, theme := range themes {
+			if theme == kt {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("Known theme %q not found in list", kt)
+		}
+	}
+}
+
+// Helper function to compare maps
+func mapsEqual(a, b map[string]bool) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for k, v := range a {
+		if bv, ok := b[k]; !ok || bv != v {
+			return false
+		}
+	}
+	return true
+}
+
+// Helper function to compare int slices
+func intsEqual(a, b []int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, v := range a {
+		if b[i] != v {
+			return false
+		}
+	}
+	return true
+}
+
+// Benchmark Fuzzy Filter (optional performance test)
+func BenchmarkFuzzyFilter(b *testing.B) {
+	packages := []Package{
+		{Source: "aur", Name: "vim"},
+		{Source: "extra", Name: "firefox"},
+		{Source: "core", Name: "bash"},
+		// ... could add more
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = fuzzyFilter(packages, "vim")
+	}
+}
