@@ -2781,6 +2781,53 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.infoForPackage = m.filteredInstalled[m.selectedIndex].Name
 						cmds = append(cmds, getPackageInfo(m.filteredInstalled[m.selectedIndex]))
 					}
+			} else if m.mode == modeUpdateSelect {
+				query := m.textInput.Value()
+				if query != m.lastQuery {
+					m.lastQuery = query
+					basePackages := m.updatableAll
+
+					if len(query) >= minSearchQueryLen {
+						// Fuzzy filter
+						filtered := fuzzyFilter(basePackages, query)
+						// Sort by source then name
+						sort.Slice(filtered, func(i, j int) bool {
+							if filtered[i].Source == filtered[j].Source {
+								return strings.ToLower(filtered[i].Name) < strings.ToLower(filtered[j].Name)
+							}
+							return filtered[i].Source < filtered[j].Source
+						})
+						m.filtered = filtered
+						m.matchIndices = computeAllMatchIndices(m.filtered, query)
+						m.selectedIndex = 0
+
+						// Load info for first result
+						if len(m.filtered) > 0 {
+							m.loadingInfo = true
+							m.infoForPackage = m.filtered[0].Name
+							cmds = append(cmds, getPackageInfo(m.filtered[0]))
+						}
+						m.statusMessage = fmt.Sprintf("Found %d packages", len(m.filtered))
+					} else {
+						// Show all updates (sorted)
+						allSorted := make([]Package, len(basePackages))
+						copy(allSorted, basePackages)
+						sort.Slice(allSorted, func(i, j int) bool {
+							if allSorted[i].Source == allSorted[j].Source {
+								return strings.ToLower(allSorted[i].Name) < strings.ToLower(allSorted[j].Name)
+							}
+							return allSorted[i].Source < allSorted[j].Source
+						})
+						m.filtered = allSorted
+						m.matchIndices = computeAllMatchIndices(m.filtered, query)
+						m.selectedIndex = 0
+						m.statusMessage = fmt.Sprintf("Type %d+ chars to search", minSearchQueryLen)
+						if len(m.filtered) > 0 {
+							m.loadingInfo = true
+							m.infoForPackage = m.filtered[0].Name
+							cmds = append(cmds, getPackageInfo(m.filtered[0]))
+						}
+					}
 				}
 			}
 			return m, tea.Batch(cmds...)
@@ -3448,6 +3495,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.statusMessage = "System is up to date!"
 			m.updateOutput = "No updates available."
 		} else {
+			// Sort packages by source then name for consistent ordering
+			sort.Slice(msg.packages, func(i, j int) bool {
+				if msg.packages[i].Source == msg.packages[j].Source {
+					return strings.ToLower(msg.packages[i].Name) < strings.ToLower(msg.packages[j].Name)
+				}
+				return msg.packages[i].Source < msg.packages[j].Source
+			})
 			// Store all available updates
 			m.updatableAll = msg.packages
 			m.pendingUpdates = msg.packages // Initially all are pending
@@ -3668,14 +3722,12 @@ func (m model) View() string {
 	} else if m.mode == modeUpdateSelect {
 		if m.loading {
 			infoContent = "Loading updates..."
+		} else if m.loadingInfo {
+			infoContent = fmt.Sprintf("Loading details for %s...", m.infoForPackage)
+		} else if m.packageInfo != "" {
+			infoContent = m.packageInfo
 		} else {
-			total := len(m.updatableAll)
-			marked := len(m.markedPackages)
-			if marked > 0 {
-				infoContent = fmt.Sprintf("%d total, %d marked for update", total, marked)
-			} else {
-				infoContent = fmt.Sprintf("%d total packages available to update", total)
-			}
+			infoContent = "Select a package to see details"
 		}
 	} else if m.loadingInfo {
 		infoContent = fmt.Sprintf("Loading details for %s...", m.infoForPackage)
