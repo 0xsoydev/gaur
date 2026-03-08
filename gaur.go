@@ -3163,12 +3163,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.statusMessage = "System is up to date!"
 			m.updateOutput = "No updates available."
 		} else {
-			// Show confirmation dialog with available updates
-			m.pendingUpdates = msg.packages
-			m.showConfirmation = true
-			m.confirmType = confirmUpdate
-			m.confirmScrollOffset = 0
-			m.statusMessage = fmt.Sprintf("%d update(s) available", len(msg.packages))
+			// Store all available updates
+			m.updatableAll = msg.packages
+			m.pendingUpdates = msg.packages // Initially all are pending
+			m.statusMessage = fmt.Sprintf("%d updates available. Press [s] to select, [a] to update all", len(msg.packages))
+			m.updateOutput = ""
 		}
 
 	case execCompleteMsg:
