@@ -2235,6 +2235,61 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						} else {
 							m.statusMessage = "All marked packages are already installed"
 						}
+					} else if m.mode == modeUpdateSelect {
+						query := m.textInput.Value()
+						if query != m.lastQuery {
+							m.lastQuery = query
+
+							// Parse repo filter to check query length correctly
+							repoFilters, searchQuery := parseRepoFilter(query)
+							effectiveQueryLen := len(searchQuery)
+							hasRepoFilter := len(repoFilters) > 0
+
+							// Start with all updatable packages
+							allPkgs := m.updatableAll
+
+							// Apply repo filters if specified
+							if len(repoFilters) > 0 {
+								var filtered []Package
+								for _, pkg := range allPkgs {
+									if repoFilters[pkg.Source] {
+										filtered = append(filtered, pkg)
+									}
+								}
+								allPkgs = filtered
+							}
+
+							if len(allPkgs) == 0 {
+								m.filtered = []Package{}
+								m.matchIndices = nil
+								m.statusMessage = "No packages match filter"
+							} else if effectiveQueryLen >= minSearchQueryLen || hasRepoFilter {
+								// Fuzzy filter all packages together - fzf will rank by relevance
+								m.filtered = fuzzyFilter(allPkgs, searchQuery)
+								m.matchIndices = computeAllMatchIndices(m.filtered, searchQuery)
+								m.selectedIndex = 0
+
+								// Update status
+								status := fmt.Sprintf("Found %d packages", len(m.filtered))
+								if hasRepoFilter {
+									status = fmt.Sprintf("Found %d %s packages", len(m.filtered), formatRepoFilters(repoFilters))
+								}
+								m.statusMessage = status
+
+								// Load info for top package
+								if len(m.filtered) > 0 {
+									m.loadingInfo = true
+									m.infoForPackage = m.filtered[0].Name
+									cmds = append(cmds, getPackageInfo(m.filtered[0]))
+								}
+							} else {
+								// Show all matching repo filter (or all if no filter)
+								m.filtered = allPkgs
+								m.matchIndices = computeAllMatchIndices(m.filtered, searchQuery)
+								m.selectedIndex = 0
+								m.statusMessage = fmt.Sprintf("Type %d+ chars to fuzzy search", minSearchQueryLen)
+							}
+						}
 					} else if m.mode == modeUninstall {
 						var pkgsToUninstall []string
 						for name := range m.markedPackages {
