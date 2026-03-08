@@ -2408,6 +2408,47 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.confirmScrollOffset = 0
 						m.statusMessage = "Confirm removal"
 					}
+				} else if m.mode == modeUpdateSelect && len(m.filtered) > 0 {
+					// Build selected packages list from marks or single selection
+					var selectedNames []string
+					if len(m.markedPackages) > 0 {
+						for name := range m.markedPackages {
+							selectedNames = append(selectedNames, name)
+						}
+					} else {
+						// Single selected package
+						pkg := m.filtered[m.selectedIndex]
+						selectedNames = []string{pkg.Name}
+					}
+					if len(selectedNames) == 0 {
+						m.statusMessage = "No package selected"
+						return m, nil
+					}
+					// Resolve full Package objects from m.updatableAll
+					selectedFull := make([]Package, 0, len(selectedNames))
+					for _, name := range selectedNames {
+						for _, p := range m.updatableAll {
+							if p.Name == name {
+								selectedFull = append(selectedFull, p)
+								break
+							}
+						}
+					}
+					if len(selectedFull) == 0 {
+						m.statusMessage = "No packages selected"
+						return m, nil
+					}
+					m.pendingUpdates = selectedFull
+					// Exit selection mode, return to normal update mode
+					m.mode = modeUpdate
+					m.filtered = nil
+					m.matchIndices = nil
+					m.markedPackages = make(map[string]bool)
+					m.showConfirmation = true
+					m.confirmType = confirmUpdate
+					m.confirmScrollOffset = 0
+					m.statusMessage = fmt.Sprintf("Confirm update of %d package(s)", len(selectedFull))
+					return m, nil
 				}
 				return m, nil
 			case "tab":
