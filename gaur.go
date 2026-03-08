@@ -972,7 +972,9 @@ func loadRepoPackages() tea.Cmd {
 		installedCmd := exec.Command("pacman", "-Qq")
 		var installedOut bytes.Buffer
 		installedCmd.Stdout = &installedOut
-		_ = installedCmd.Run()
+		if err := installedCmd.Run(); err != nil {
+			return repoPackagesMsg{err: fmt.Errorf("failed to get installed packages list: %w", err)}
+		}
 
 		installedSet := make(map[string]bool)
 		for _, name := range strings.Split(installedOut.String(), "\n") {
@@ -1195,7 +1197,9 @@ func searchAUR(query string) tea.Cmd {
 		cmd := exec.Command("paru", "-Ss", "-a", searchQuery)
 		var stdout bytes.Buffer
 		cmd.Stdout = &stdout
-		_ = cmd.Run()
+		if err := cmd.Run(); err != nil {
+			return aurSearchMsg{packages: nil, query: query, err: fmt.Errorf("AUR search command failed: %w", err)}
+		}
 
 		if stdout.Len() == 0 {
 			return aurSearchMsg{packages: []Package{}, query: query}
@@ -1359,12 +1363,15 @@ func getInstalledPackages() tea.Cmd {
 			return installedPackagesMsg{err: err}
 		}
 
-		packages := parseInstalledPackages(out.String())
+		packages, err := parseInstalledPackages(out.String())
+		if err != nil {
+			return installedPackagesMsg{err: fmt.Errorf("failed to parse installed packages: %w", err)}
+		}
 		return installedPackagesMsg{packages: packages}
 	}
 }
 
-func parseInstalledPackages(output string) []Package {
+func parseInstalledPackages(output string) ([]Package, error) {
 	var packages []Package
 	blocks := strings.Split(output, "\n\n")
 
@@ -1408,13 +1415,14 @@ func parseInstalledPackages(output string) []Package {
 	cmd := exec.Command("pacman", "-Sl")
 	var repoOut bytes.Buffer
 	cmd.Stdout = &repoOut
-	if cmd.Run() == nil {
-		for _, line := range strings.Split(repoOut.String(), "\n") {
-			parts := strings.Fields(line)
-			if len(parts) >= 2 {
-				// Format: "repo name version [installed]"
-				repoMap[parts[1]] = parts[0]
-			}
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("failed to query package repositories: %w", err)
+	}
+	for _, line := range strings.Split(repoOut.String(), "\n") {
+		parts := strings.Fields(line)
+		if len(parts) >= 2 {
+			// Format: "repo name version [installed]"
+			repoMap[parts[1]] = parts[0]
 		}
 	}
 
@@ -1429,7 +1437,7 @@ func parseInstalledPackages(output string) []Package {
 	cmd = exec.Command("pacman", "-Qm")
 	var foreignOut bytes.Buffer
 	cmd.Stdout = &foreignOut
-	if cmd.Run() == nil {
+	if err := cmd.Run(); err == nil {
 		foreignPkgs := make(map[string]bool)
 		for _, line := range strings.Split(foreignOut.String(), "\n") {
 			parts := strings.Fields(line)
@@ -1442,13 +1450,13 @@ func parseInstalledPackages(output string) []Package {
 				packages[i].Source = "aur"
 			}
 		}
-	}
+	} // If command fails, we skip foreign marking - packages will keep their repo/local source
 
 	// Get explicitly installed packages
 	cmd = exec.Command("pacman", "-Qe")
 	var explicitOut bytes.Buffer
 	cmd.Stdout = &explicitOut
-	if cmd.Run() == nil {
+	if err := cmd.Run(); err == nil {
 		explicitPkgs := make(map[string]bool)
 		for _, line := range strings.Split(explicitOut.String(), "\n") {
 			parts := strings.Fields(line)
@@ -1459,13 +1467,13 @@ func parseInstalledPackages(output string) []Package {
 		for i := range packages {
 			packages[i].Explicit = explicitPkgs[packages[i].Name]
 		}
-	}
+	} // If command fails, explicit flags remain false
 
 	// Get orphan packages
 	cmd = exec.Command("pacman", "-Qdt")
 	var orphanOut bytes.Buffer
 	cmd.Stdout = &orphanOut
-	if cmd.Run() == nil {
+	if err := cmd.Run(); err == nil {
 		orphanPkgs := make(map[string]bool)
 		for _, line := range strings.Split(orphanOut.String(), "\n") {
 			parts := strings.Fields(line)
@@ -1476,9 +1484,9 @@ func parseInstalledPackages(output string) []Package {
 		for i := range packages {
 			packages[i].Orphan = orphanPkgs[packages[i].Name]
 		}
-	}
+	} // If command fails, orphan flags remain false
 
-	return packages
+	return packages, nil
 }
 
 func getDashboardData() tea.Cmd {
@@ -1489,41 +1497,46 @@ func getDashboardData() tea.Cmd {
 		cmd := exec.Command("paru", "-Q")
 		var out bytes.Buffer
 		cmd.Stdout = &out
-		if err := cmd.Run(); err == nil {
-			data.TotalPackages = countLines(out.String())
+		if err := cmd.Run(); err != nil {
+			return dashboardMsg{err: fmt.Errorf("failed to get total packages: %w", err)}
 		}
+		data.TotalPackages = countLines(out.String())
 
 		// Explicitly Installed: paru -Qe
 		out.Reset()
 		cmd = exec.Command("paru", "-Qe")
 		cmd.Stdout = &out
-		if err := cmd.Run(); err == nil {
-			data.ExplicitlyInstalled = countLines(out.String())
+		if err := cmd.Run(); err != nil {
+			return dashboardMsg{err: fmt.Errorf("failed to get explicitly installed packages: %w", err)}
 		}
+		data.ExplicitlyInstalled = countLines(out.String())
 
 		// Foreign Packages: paru -Qm
 		out.Reset()
 		cmd = exec.Command("paru", "-Qm")
 		cmd.Stdout = &out
-		if err := cmd.Run(); err == nil {
-			data.ForeignPackages = countLines(out.String())
+		if err := cmd.Run(); err != nil {
+			return dashboardMsg{err: fmt.Errorf("failed to get foreign packages: %w", err)}
 		}
+		data.ForeignPackages = countLines(out.String())
 
 		// Orphans: paru -Qdt
 		out.Reset()
 		cmd = exec.Command("paru", "-Qdt")
 		cmd.Stdout = &out
-		if err := cmd.Run(); err == nil {
-			data.Orphans = countLines(out.String())
+		if err := cmd.Run(); err != nil {
+			return dashboardMsg{err: fmt.Errorf("failed to get orphan packages: %w", err)}
 		}
+		data.Orphans = countLines(out.String())
 
 		// Stats from paru -Ps (Total Size, Missing from AUR, Top 10 packages)
 		out.Reset()
 		cmd = exec.Command("paru", "-Ps")
 		cmd.Stdout = &out
-		if err := cmd.Run(); err == nil {
-			data.TotalSize, data.TotalSizeBytes, data.MissingFromAUR, data.TopPackages = parseParuStats(out.String())
+		if err := cmd.Run(); err != nil {
+			return dashboardMsg{err: fmt.Errorf("failed to get package statistics: %w", err)}
 		}
+		data.TotalSize, data.TotalSizeBytes, data.MissingFromAUR, data.TopPackages = parseParuStats(out.String())
 
 		// Calculate Pacman Cache (System)
 		pacmanCachePath := "/var/cache/pacman/pkg"
@@ -1669,6 +1682,33 @@ func formatBytes(bytes int64) string {
 		exp++
 	}
 	return fmt.Sprintf("%.1f %ciB", float64(bytes)/float64(div), "KMGTPE"[exp])
+}
+
+// checkDependencies verifies that all required external commands are available
+func checkDependencies() error {
+	requiredCommands := []struct {
+		name     string
+		desc     string
+		required bool
+	}{
+		{"pacman", "system package manager", true},
+		{"paru", "AUR helper", true},
+		{"fzf", "fuzzy finder", true},
+	}
+
+	var missing []string
+	for _, cmd := range requiredCommands {
+		if _, err := exec.LookPath(cmd.name); err != nil {
+			if cmd.required {
+				missing = append(missing, fmt.Sprintf("%s (%s)", cmd.name, cmd.desc))
+			}
+		}
+	}
+
+	if len(missing) > 0 {
+		return fmt.Errorf("missing required dependencies:\n  %s", strings.Join(missing, "\n  "))
+	}
+	return nil
 }
 
 // cleanCache runs paru -Sc to clean package cache
@@ -1875,7 +1915,11 @@ func checkUpdates() tea.Cmd {
 		cmd := exec.Command("paru", "-Qu")
 		var stdout bytes.Buffer
 		cmd.Stdout = &stdout
-		_ = cmd.Run() // Returns error if no updates, that's ok
+		if err := cmd.Run(); err != nil {
+			// paru -Qu returns exit code 1 if no updates, but could also fail for other reasons
+			// We'll treat any error as a failure to check updates
+			return updateCheckMsg{packages: []Package{}, err: fmt.Errorf("failed to check for updates: %w", err)}
+		}
 
 		var packages []Package
 		for _, line := range strings.Split(strings.TrimSpace(stdout.String()), "\n") {
@@ -1895,15 +1939,16 @@ func checkUpdates() tea.Cmd {
 				}
 				// Determine source (foreign = aur)
 				checkCmd := exec.Command("pacman", "-Qq", pkgName)
-				if checkCmd.Run() == nil {
+				if err := checkCmd.Run(); err == nil {
 					// Check if foreign
 					foreignCmd := exec.Command("pacman", "-Qm", pkgName)
-					if foreignCmd.Run() == nil {
+					if err := foreignCmd.Run(); err == nil {
 						pkg.Source = "aur"
 					} else {
 						pkg.Source = "repo"
 					}
 				}
+				// If checkCmd fails, pkg.Source remains empty (unknown)
 				packages = append(packages, pkg)
 			}
 		}
@@ -2466,14 +2511,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmd := exec.Command("paru", "-Qdtq")
 				var orphanList bytes.Buffer
 				cmd.Stdout = &orphanList
-				if err := cmd.Run(); err == nil && orphanList.Len() > 0 {
-					orphans := strings.Fields(orphanList.String())
-					m.confirmPackages = orphans
-					m.showConfirmation = true
-					m.confirmType = confirmRemoveOrphans
-					m.confirmScrollOffset = 0
-					m.statusMessage = "Confirm orphan removal"
+				if err := cmd.Run(); err != nil {
+					m.statusMessage = fmt.Sprintf("Failed to get orphan list: %v", err)
+					return m, nil
 				}
+				if orphanList.Len() == 0 {
+					m.statusMessage = "No orphans to remove"
+					return m, nil
+				}
+				orphans := strings.Fields(orphanList.String())
+				m.confirmPackages = orphans
+				m.showConfirmation = true
+				m.confirmType = confirmRemoveOrphans
+				m.confirmScrollOffset = 0
+				m.statusMessage = "Confirm orphan removal"
 				return m, nil
 			}
 
@@ -4254,6 +4305,12 @@ func (m model) renderDashboard(helpText string, contentWidth, contentHeight int)
 }
 
 func main() {
+	// Check dependencies first
+	if err := checkDependencies(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+
 	themeFlag := flag.String("theme", "", "Color theme (use --list-themes to see options)")
 	listThemesFlag := flag.Bool("list-themes", false, "List available themes and exit")
 	flag.Parse()
