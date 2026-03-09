@@ -1,9 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 // TestIsValidPackageName tests the package name validation function
@@ -565,3 +568,637 @@ func BenchmarkFuzzyFilter(b *testing.B) {
 		_ = fuzzyFilter(packages, "vim")
 	}
 }
+
+// ============================================================================
+// Test helpers for bubbletea model tests
+// ============================================================================
+
+// keyMsg creates a tea.KeyMsg for a single rune key (e.g., 'y', 's', 'a')
+func keyMsg(key string) tea.KeyMsg {
+	switch key {
+	case "enter":
+		return tea.KeyMsg{Type: tea.KeyEnter}
+	case "esc":
+		return tea.KeyMsg{Type: tea.KeyEsc}
+	case "tab":
+		return tea.KeyMsg{Type: tea.KeyTab}
+	case "up":
+		return tea.KeyMsg{Type: tea.KeyUp}
+	case "down":
+		return tea.KeyMsg{Type: tea.KeyDown}
+	default:
+		return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(key)}
+	}
+}
+
+// newTestModelUpdate creates a model in modeUpdate state with the given packages loaded
+func newTestModelUpdate(packages []Package) model {
+	m := initialModel(modeUpdate)
+	m.loading = false
+	m.width = 120
+	m.height = 40
+	m.pendingUpdates = packages
+	m.updatableAll = packages
+	m.confirmScrollOffset = 0
+	m.statusMessage = fmt.Sprintf("%d updates available", len(packages))
+	return m
+}
+
+// testPackages returns a set of test packages for use in tests
+func testPackages() []Package {
+	return []Package{
+		{Source: "core", Name: "linux", Version: "6.5.3-1"},
+		{Source: "core", Name: "glibc", Version: "2.38-1"},
+		{Source: "extra", Name: "firefox", Version: "120.0-1"},
+		{Source: "extra", Name: "vlc", Version: "3.0.18-1"},
+		{Source: "aur", Name: "yay", Version: "12.5.7-1"},
+	}
+}
+
+// ============================================================================
+// modeUpdate key handling tests
+// ============================================================================
+
+// TestUpdateModeYKeyExecutesUpdate tests that pressing 'y' in modeUpdate
+// with pending updates triggers the update execution.
+func TestUpdateModeYKeyExecutesUpdate(t *testing.T) {
+	m := newTestModelUpdate(testPackages())
+
+	result, cmd := m.Update(keyMsg("y"))
+	resultModel := result.(model)
+
+	if resultModel.statusMessage != "Running system update..." {
+		t.Errorf("Expected status 'Running system update...', got %q", resultModel.statusMessage)
+	}
+	if cmd == nil {
+		t.Error("Expected a command to be returned for update execution")
+	}
+}
+
+// TestUpdateModeUpperYKeyExecutesUpdate tests that pressing 'Y' in modeUpdate
+// also triggers the update execution.
+func TestUpdateModeUpperYKeyExecutesUpdate(t *testing.T) {
+	m := newTestModelUpdate(testPackages())
+
+	result, cmd := m.Update(keyMsg("Y"))
+	resultModel := result.(model)
+
+	if resultModel.statusMessage != "Running system update..." {
+		t.Errorf("Expected status 'Running system update...', got %q", resultModel.statusMessage)
+	}
+	if cmd == nil {
+		t.Error("Expected a command to be returned for update execution")
+	}
+}
+
+// TestUpdateModeEnterKeyExecutesUpdate tests that pressing enter in modeUpdate
+// with pending updates triggers the update directly (no confirmation dialog).
+func TestUpdateModeEnterKeyExecutesUpdate(t *testing.T) {
+	m := newTestModelUpdate(testPackages())
+
+	result, cmd := m.Update(keyMsg("enter"))
+	resultModel := result.(model)
+
+	if resultModel.statusMessage != "Running system update..." {
+		t.Errorf("Expected status 'Running system update...', got %q", resultModel.statusMessage)
+	}
+	if cmd == nil {
+		t.Error("Expected a command to be returned for update execution")
+	}
+	// Should NOT show confirmation dialog
+	if resultModel.showConfirmation {
+		t.Error("Should not show confirmation dialog in modeUpdate; update should execute directly")
+	}
+}
+
+// TestUpdateModeAKeyExecutesUpdate tests that pressing 'a' in modeUpdate
+// triggers the update directly.
+func TestUpdateModeAKeyExecutesUpdate(t *testing.T) {
+	m := newTestModelUpdate(testPackages())
+
+	result, cmd := m.Update(keyMsg("a"))
+	resultModel := result.(model)
+
+	if resultModel.statusMessage != "Running system update..." {
+		t.Errorf("Expected status 'Running system update...', got %q", resultModel.statusMessage)
+	}
+	if cmd == nil {
+		t.Error("Expected a command to be returned for update execution")
+	}
+}
+
+// TestUpdateModeSKeyEntersSelectionMode tests that pressing 's' in modeUpdate
+// switches to modeUpdateSelect.
+func TestUpdateModeSKeyEntersSelectionMode(t *testing.T) {
+	m := newTestModelUpdate(testPackages())
+
+	result, cmd := m.Update(keyMsg("s"))
+	resultModel := result.(model)
+
+	if resultModel.mode != modeUpdateSelect {
+		t.Errorf("Expected mode modeUpdateSelect, got %d", resultModel.mode)
+	}
+	if len(resultModel.filtered) != len(testPackages()) {
+		t.Errorf("Expected filtered to have %d packages, got %d", len(testPackages()), len(resultModel.filtered))
+	}
+	if resultModel.selectedIndex != 0 {
+		t.Errorf("Expected selectedIndex 0, got %d", resultModel.selectedIndex)
+	}
+	// Should trigger package info loading for first item
+	if !resultModel.loadingInfo {
+		t.Error("Expected loadingInfo to be true after entering selection mode")
+	}
+	if resultModel.pendingInfoPackage != "linux" {
+		t.Errorf("Expected pendingInfoPackage 'linux', got %q", resultModel.pendingInfoPackage)
+	}
+	if cmd == nil {
+		t.Error("Expected a debounce command for package info loading")
+	}
+}
+
+// TestUpdateModeYKeyNoEffectWhenLoading tests that y/enter/a do nothing
+// when the model is still loading.
+func TestUpdateModeYKeyNoEffectWhenLoading(t *testing.T) {
+	m := newTestModelUpdate(testPackages())
+	m.loading = true
+
+	result, _ := m.Update(keyMsg("y"))
+	resultModel := result.(model)
+
+	// Status should not change since the key should have no effect
+	if resultModel.statusMessage == "Running system update..." {
+		t.Error("Should not trigger update while loading")
+	}
+}
+
+// TestUpdateModeYKeyNoEffectWhenNoUpdates tests that y/enter/a do nothing
+// when there are no pending updates.
+func TestUpdateModeYKeyNoEffectWhenNoUpdates(t *testing.T) {
+	m := newTestModelUpdate(nil) // No updates
+	m.statusMessage = "System is up to date!"
+
+	result, _ := m.Update(keyMsg("y"))
+	resultModel := result.(model)
+
+	if resultModel.statusMessage == "Running system update..." {
+		t.Error("Should not trigger update when no pending updates")
+	}
+}
+
+// TestUpdateModeSKeyNoEffectWhenLoading tests that s key does nothing
+// when the model is still loading.
+func TestUpdateModeSKeyNoEffectWhenLoading(t *testing.T) {
+	m := newTestModelUpdate(testPackages())
+	m.loading = true
+
+	result, _ := m.Update(keyMsg("s"))
+	resultModel := result.(model)
+
+	if resultModel.mode != modeUpdate {
+		t.Errorf("Should remain in modeUpdate when loading, got mode %d", resultModel.mode)
+	}
+}
+
+// ============================================================================
+// modeUpdate scroll tests
+// ============================================================================
+
+// TestUpdateModeDownKeyScrolls tests that down/j key scrolls the package list
+// in modeUpdate when packages are loaded.
+func TestUpdateModeDownKeyScrolls(t *testing.T) {
+	m := newTestModelUpdate(testPackages())
+	m.height = 12 // small enough so maxVisible < 5
+	m.confirmScrollOffset = 0
+
+	result, cmd := m.Update(keyMsg("down"))
+	resultModel := result.(model)
+
+	if resultModel.confirmScrollOffset != 1 {
+		t.Errorf("Expected confirmScrollOffset 1 after scrolling down, got %d", resultModel.confirmScrollOffset)
+	}
+	if cmd != nil {
+		t.Error("Expected no command from scrolling")
+	}
+}
+
+// TestUpdateModeJKeyScrolls tests that j key also scrolls down.
+func TestUpdateModeJKeyScrolls(t *testing.T) {
+	m := newTestModelUpdate(testPackages())
+	m.height = 12
+	m.confirmScrollOffset = 0
+
+	result, cmd := m.Update(keyMsg("j"))
+	resultModel := result.(model)
+
+	if resultModel.confirmScrollOffset != 1 {
+		t.Errorf("Expected confirmScrollOffset 1 after j key, got %d", resultModel.confirmScrollOffset)
+	}
+	if cmd != nil {
+		t.Error("Expected no command from scrolling")
+	}
+}
+
+// TestUpdateModeUpKeyScrolls tests that up/k key scrolls the package list up
+// in modeUpdate.
+func TestUpdateModeUpKeyScrolls(t *testing.T) {
+	m := newTestModelUpdate(testPackages())
+	m.height = 12
+	m.confirmScrollOffset = 3
+
+	result, cmd := m.Update(keyMsg("up"))
+	resultModel := result.(model)
+
+	if resultModel.confirmScrollOffset != 2 {
+		t.Errorf("Expected confirmScrollOffset 2 after scrolling up, got %d", resultModel.confirmScrollOffset)
+	}
+	if cmd != nil {
+		t.Error("Expected no command from scrolling")
+	}
+}
+
+// TestUpdateModeKKeyScrolls tests that k key also scrolls up.
+func TestUpdateModeKKeyScrolls(t *testing.T) {
+	m := newTestModelUpdate(testPackages())
+	m.height = 12
+	m.confirmScrollOffset = 3
+
+	result, cmd := m.Update(keyMsg("k"))
+	resultModel := result.(model)
+
+	if resultModel.confirmScrollOffset != 2 {
+		t.Errorf("Expected confirmScrollOffset 2 after k key, got %d", resultModel.confirmScrollOffset)
+	}
+	if cmd != nil {
+		t.Error("Expected no command from scrolling")
+	}
+}
+
+// TestUpdateModeUpKeyAtTopDoesNothing tests that scrolling up when already
+// at the top doesn't go negative.
+func TestUpdateModeUpKeyAtTopDoesNothing(t *testing.T) {
+	m := newTestModelUpdate(testPackages())
+	m.confirmScrollOffset = 0
+
+	result, _ := m.Update(keyMsg("up"))
+	resultModel := result.(model)
+
+	if resultModel.confirmScrollOffset != 0 {
+		t.Errorf("Expected confirmScrollOffset to stay 0, got %d", resultModel.confirmScrollOffset)
+	}
+}
+
+// TestUpdateModeScrollDoesNothingWhenLoading tests that scroll keys do nothing
+// for modeUpdate when loading.
+func TestUpdateModeScrollDoesNothingWhenLoading(t *testing.T) {
+	m := newTestModelUpdate(testPackages())
+	m.loading = true
+	m.confirmScrollOffset = 0
+
+	result, _ := m.Update(keyMsg("down"))
+	resultModel := result.(model)
+
+	// When loading, the modeUpdate scroll guard doesn't match, so it falls
+	// through to the default down handler which doesn't change confirmScrollOffset
+	if resultModel.confirmScrollOffset != 0 {
+		t.Errorf("Expected confirmScrollOffset to stay 0 when loading, got %d", resultModel.confirmScrollOffset)
+	}
+}
+
+// ============================================================================
+// updateCheckMsg handler tests
+// ============================================================================
+
+// TestUpdateCheckMsgStoresPackagesWithoutConfirmation tests that receiving
+// an updateCheckMsg stores packages but does NOT show the confirmation dialog.
+func TestUpdateCheckMsgStoresPackagesWithoutConfirmation(t *testing.T) {
+	m := initialModel(modeUpdate)
+	m.width = 120
+	m.height = 40
+
+	pkgs := testPackages()
+	result, _ := m.Update(updateCheckMsg{packages: pkgs})
+	resultModel := result.(model)
+
+	if resultModel.loading {
+		t.Error("Expected loading to be false after receiving packages")
+	}
+	if len(resultModel.pendingUpdates) != len(pkgs) {
+		t.Errorf("Expected %d pending updates, got %d", len(pkgs), len(resultModel.pendingUpdates))
+	}
+	if len(resultModel.updatableAll) != len(pkgs) {
+		t.Errorf("Expected %d updatable packages, got %d", len(pkgs), len(resultModel.updatableAll))
+	}
+	// Key assertion: should NOT show confirmation dialog
+	if resultModel.showConfirmation {
+		t.Error("updateCheckMsg should NOT trigger confirmation dialog; packages should be shown inline")
+	}
+	if resultModel.confirmScrollOffset != 0 {
+		t.Errorf("Expected confirmScrollOffset 0, got %d", resultModel.confirmScrollOffset)
+	}
+	if !strings.Contains(resultModel.statusMessage, "5 updates available") {
+		t.Errorf("Expected status to contain '5 updates available', got %q", resultModel.statusMessage)
+	}
+}
+
+// TestUpdateCheckMsgNoUpdates tests the case when no updates are available.
+func TestUpdateCheckMsgNoUpdates(t *testing.T) {
+	m := initialModel(modeUpdate)
+	m.width = 120
+	m.height = 40
+
+	result, _ := m.Update(updateCheckMsg{packages: []Package{}})
+	resultModel := result.(model)
+
+	if resultModel.loading {
+		t.Error("Expected loading to be false")
+	}
+	if resultModel.statusMessage != "System is up to date!" {
+		t.Errorf("Expected 'System is up to date!', got %q", resultModel.statusMessage)
+	}
+	if resultModel.updateOutput != "No updates available." {
+		t.Errorf("Expected 'No updates available.', got %q", resultModel.updateOutput)
+	}
+}
+
+// TestUpdateCheckMsgError tests the case when checking for updates fails.
+func TestUpdateCheckMsgError(t *testing.T) {
+	m := initialModel(modeUpdate)
+	m.width = 120
+	m.height = 40
+
+	result, _ := m.Update(updateCheckMsg{err: fmt.Errorf("network error")})
+	resultModel := result.(model)
+
+	if resultModel.loading {
+		t.Error("Expected loading to be false")
+	}
+	if !strings.Contains(resultModel.statusMessage, "Error checking updates") {
+		t.Errorf("Expected error status, got %q", resultModel.statusMessage)
+	}
+}
+
+// ============================================================================
+// modeUpdate View rendering tests
+// ============================================================================
+
+// TestUpdateViewShowsLoadingMessage tests that View() shows loading message
+// during update check.
+func TestUpdateViewShowsLoadingMessage(t *testing.T) {
+	m := initialModel(modeUpdate)
+	m.width = 120
+	m.height = 40
+
+	view := m.View()
+
+	if !strings.Contains(view, "Checking for updates...") {
+		t.Error("View should show 'Checking for updates...' when loading")
+	}
+}
+
+// TestUpdateViewShowsPackageList tests that View() renders the package list
+// in the top pane when updates are available.
+func TestUpdateViewShowsPackageList(t *testing.T) {
+	m := newTestModelUpdate(testPackages())
+
+	view := m.View()
+
+	// Should show package count
+	if !strings.Contains(view, "5") {
+		t.Error("View should show package count '5'")
+	}
+	if !strings.Contains(view, "packages will be updated") {
+		t.Error("View should show 'packages will be updated'")
+	}
+
+	// Should show package names
+	for _, pkg := range testPackages() {
+		if !strings.Contains(view, pkg.Name) {
+			t.Errorf("View should show package name %q", pkg.Name)
+		}
+	}
+}
+
+// TestUpdateViewShowsNoUpdatesMessage tests that View() shows appropriate
+// message when system is up to date.
+func TestUpdateViewShowsNoUpdatesMessage(t *testing.T) {
+	m := newTestModelUpdate(nil)
+	m.statusMessage = "System is up to date!"
+
+	view := m.View()
+
+	if !strings.Contains(view, "up to date") {
+		t.Error("View should show 'up to date' message when no updates")
+	}
+}
+
+// TestUpdateViewShowsFooterMenu tests that the footer with menu items
+// is visible in modeUpdate (not hidden like the old full-screen dialog).
+func TestUpdateViewShowsFooterMenu(t *testing.T) {
+	m := newTestModelUpdate(testPackages())
+
+	view := m.View()
+
+	// Footer should contain mode shortcuts
+	if !strings.Contains(view, "nstall") {
+		t.Error("Footer should contain '[i]nstall' text")
+	}
+	if !strings.Contains(view, "pdate") {
+		t.Error("Footer should contain '[u]pdate' text")
+	}
+	if !strings.Contains(view, "uit") {
+		t.Error("Footer should contain '[q]uit' text")
+	}
+}
+
+// TestUpdateViewDoesNotShowConfirmTitle tests that the "Confirm System Update"
+// title is no longer shown.
+func TestUpdateViewDoesNotShowConfirmTitle(t *testing.T) {
+	m := newTestModelUpdate(testPackages())
+
+	view := m.View()
+
+	if strings.Contains(view, "Confirm System Update") {
+		t.Error("View should NOT contain 'Confirm System Update' title; it was removed")
+	}
+}
+
+// TestUpdateViewShowsActionPrompts tests that action prompts are shown
+// in the input line area.
+func TestUpdateViewShowsActionPrompts(t *testing.T) {
+	m := newTestModelUpdate(testPackages())
+
+	view := m.View()
+
+	if !strings.Contains(view, "update all") {
+		t.Error("View should show 'update all' action prompt")
+	}
+	if !strings.Contains(view, "select") {
+		t.Error("View should show 'select' action prompt")
+	}
+	if !strings.Contains(view, "refresh") {
+		t.Error("View should show 'refresh' action prompt")
+	}
+}
+
+// ============================================================================
+// modeUpdateSelect info display tests
+// ============================================================================
+
+// TestUpdateSelectShowsPackageInfo tests that modeUpdateSelect displays
+// package details in the top pane when info is available.
+func TestUpdateSelectShowsPackageInfo(t *testing.T) {
+	m := newTestModelUpdate(testPackages())
+	m.mode = modeUpdateSelect
+	m.filtered = testPackages()
+	m.packageInfo = "Name            : linux\nVersion         : 6.5.3-1\nDescription     : The Linux kernel"
+
+	view := m.View()
+
+	if !strings.Contains(view, "Name") {
+		t.Error("View should show package info 'Name' field in top pane")
+	}
+	if !strings.Contains(view, "Description") {
+		t.Error("View should show package info 'Description' field in top pane")
+	}
+}
+
+// TestUpdateSelectShowsLoadingInfo tests that modeUpdateSelect shows
+// loading message while package info is being fetched.
+func TestUpdateSelectShowsLoadingInfo(t *testing.T) {
+	m := newTestModelUpdate(testPackages())
+	m.mode = modeUpdateSelect
+	m.filtered = testPackages()
+	m.loadingInfo = true
+	m.infoForPackage = "firefox"
+
+	view := m.View()
+
+	if !strings.Contains(view, "Loading details for firefox") {
+		t.Error("View should show 'Loading details for firefox...' in top pane")
+	}
+}
+
+// TestUpdateSelectShowsDefaultMessage tests that modeUpdateSelect shows
+// default message when no package info is loaded yet.
+func TestUpdateSelectShowsDefaultMessage(t *testing.T) {
+	m := newTestModelUpdate(testPackages())
+	m.mode = modeUpdateSelect
+	m.filtered = testPackages()
+	m.packageInfo = ""
+	m.loadingInfo = false
+
+	view := m.View()
+
+	if !strings.Contains(view, "Select a package to see details") {
+		t.Error("View should show 'Select a package to see details' in top pane")
+	}
+}
+
+// TestUpdateSelectShowsTextInput tests that modeUpdateSelect shows
+// the text input field for filtering.
+func TestUpdateSelectShowsTextInput(t *testing.T) {
+	m := newTestModelUpdate(testPackages())
+	m.mode = modeUpdateSelect
+	m.filtered = testPackages()
+	m.textInput.Placeholder = "Filter updates to select..."
+
+	view := m.View()
+
+	// The text input placeholder should be visible
+	if !strings.Contains(view, "Filter updates") {
+		t.Error("View should show text input placeholder in modeUpdateSelect")
+	}
+}
+
+// ============================================================================
+// Confirmation dialog behavior tests (from modeUpdateSelect)
+// ============================================================================
+
+// TestUpdateSelectConfirmationSKeyLoadsInfo tests that pressing 's' in the
+// updateConfirmation dialog enters selection mode and loads package info.
+func TestUpdateSelectConfirmationSKeyLoadsInfo(t *testing.T) {
+	m := newTestModelUpdate(testPackages())
+	m.showConfirmation = true
+	m.confirmType = confirmUpdate
+
+	result, cmd := m.Update(keyMsg("s"))
+	resultModel := result.(model)
+
+	if resultModel.showConfirmation {
+		t.Error("Confirmation dialog should be dismissed after pressing 's'")
+	}
+	if resultModel.mode != modeUpdateSelect {
+		t.Errorf("Expected modeUpdateSelect, got %d", resultModel.mode)
+	}
+	if !resultModel.loadingInfo {
+		t.Error("Expected loadingInfo to be true after entering selection from confirmation")
+	}
+	if cmd == nil {
+		t.Error("Expected debounce command for initial package info load")
+	}
+}
+
+// TestUpdateSelectEnterFromSelectionShowsConfirmation tests that pressing
+// enter in modeUpdateSelect with a selected package shows a confirmation
+// dialog (not a direct update).
+func TestUpdateSelectEnterFromSelectionShowsConfirmation(t *testing.T) {
+	m := newTestModelUpdate(testPackages())
+	m.mode = modeUpdateSelect
+	m.filtered = testPackages()
+	m.textInput.Focus()
+
+	result, _ := m.Update(keyMsg("enter"))
+	resultModel := result.(model)
+
+	// Should show confirmation dialog for the selected package
+	if !resultModel.showConfirmation {
+		t.Error("Expected confirmation dialog when pressing enter from modeUpdateSelect")
+	}
+	if resultModel.confirmType != confirmUpdate {
+		t.Errorf("Expected confirmUpdate type, got %d", resultModel.confirmType)
+	}
+}
+
+// TestUpdateSelectTabMarksPackage tests that tab key marks a package
+// in modeUpdateSelect.
+func TestUpdateSelectTabMarksPackage(t *testing.T) {
+	m := newTestModelUpdate(testPackages())
+	m.mode = modeUpdateSelect
+	m.filtered = testPackages()
+	m.textInput.Focus()
+
+	result, _ := m.Update(keyMsg("tab"))
+	resultModel := result.(model)
+
+	if len(resultModel.markedPackages) != 1 {
+		t.Errorf("Expected 1 marked package, got %d", len(resultModel.markedPackages))
+	}
+	// The selected package should be marked (selectedIndex=0 → "linux")
+	if !resultModel.markedPackages["linux"] {
+		t.Error("Expected 'linux' to be marked")
+	}
+}
+
+// ============================================================================
+// initialModel tests
+// ============================================================================
+
+// TestInitialModelUpdateMode tests that initialModel(modeUpdate) creates
+// a properly initialized model for update mode.
+func TestInitialModelUpdateMode(t *testing.T) {
+	m := initialModel(modeUpdate)
+
+	if m.mode != modeUpdate {
+		t.Errorf("Expected modeUpdate, got %d", m.mode)
+	}
+	if !m.loading {
+		t.Error("Expected loading to be true initially")
+	}
+	if m.statusMessage != "Checking for updates..." {
+		t.Errorf("Expected status 'Checking for updates...', got %q", m.statusMessage)
+	}
+	if m.textInput.Placeholder != "Checking for updates..." {
+		t.Errorf("Expected placeholder 'Checking for updates...', got %q", m.textInput.Placeholder)
+	}
+}
+
