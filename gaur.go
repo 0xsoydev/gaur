@@ -2173,6 +2173,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.textInput.Placeholder = "Filter updates to select..."
 					m.textInput.Focus()
 					m.statusMessage = "Select packages: [tab] mark/unmark, [enter] confirm, [esc] cancel"
+					// Load info for first package
+					if len(m.filtered) > 0 {
+						m.loadingInfo = true
+						m.pendingInfoPackage = m.filtered[0].Name
+						return m, debouncePackageInfo(m.pendingInfoPackage)
+					}
 					return m, nil
 				}
 			case "n", "N", "esc":
@@ -2923,7 +2929,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.textInput.Placeholder = "Filter updates to select..."
 				m.textInput.Focus() // Ensure input is focused for typing and navigation
 				m.statusMessage = "Select packages: [tab] mark/unmark, [enter] confirm, [esc] cancel"
-				return m, nil
+				// Load info for first package
+				m.loadingInfo = true
+				m.pendingInfoPackage = m.filtered[0].Name
+				return m, debouncePackageInfo(m.pendingInfoPackage)
 			}
 
 		case "a":
@@ -3793,16 +3802,12 @@ func (m model) View() string {
 			infoContent = "System is up to date. Press [u] to check again."
 		}
 	} else if m.mode == modeUpdateSelect {
-		if m.loading {
-			infoContent = "Loading updates..."
+		if m.loadingInfo {
+			infoContent = fmt.Sprintf("Loading details for %s...", m.infoForPackage)
+		} else if m.packageInfo != "" {
+			infoContent = m.packageInfo
 		} else {
-			total := len(m.updatableAll)
-			marked := len(m.markedPackages)
-			if marked > 0 {
-				infoContent = fmt.Sprintf("%d total, %d marked for update", total, marked)
-			} else {
-				infoContent = fmt.Sprintf("%d total packages available to update", total)
-			}
+			infoContent = "Select a package to see details"
 		}
 	} else if m.loadingInfo {
 		infoContent = fmt.Sprintf("Loading details for %s...", m.infoForPackage)
