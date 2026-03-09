@@ -23,8 +23,7 @@ const (
 	modeInstall viewMode = iota
 	modeInstalled
 	modeUninstall
-	modeUpdate
-	modeUpdateSelect // Package selection for updates
+	modeUpdate // Viewing available updates
 )
 
 // Confirmation operation types
@@ -2159,29 +2158,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, executeRemoveOrphansInTerminal(orphans)
 				}
 			case "s":
-				// Return to selection mode (only for update confirmation)
-				if m.confirmType == confirmUpdate {
-					m.showConfirmation = false
-					m.confirmScrollOffset = 0
-					m.confirmPackages = nil
-					m.mode = modeUpdateSelect
-					m.filtered = m.updatableAll
-					m.matchIndices = computeAllMatchIndices(m.filtered, m.textInput.Value())
-					m.selectedIndex = 0
-					m.markedPackages = make(map[string]bool)
-					m.textInput.SetValue("")
-					m.textInput.Placeholder = "Filter updates to select..."
-					m.textInput.Focus()
-					m.statusMessage = "Select packages: [tab] mark/unmark, [enter] confirm, [esc] cancel"
-					// Load info for first package
-					if len(m.filtered) > 0 {
-						m.loadingInfo = true
-						m.pendingInfoPackage = m.filtered[0].Name
-						return m, debouncePackageInfo(m.pendingInfoPackage)
-					}
-					return m, nil
-				}
-			case "n", "N", "esc":
+				// Used to transition to modeUpdateSelect, removed as part of update flow rework
+				return m, nil
 				m.showConfirmation = false
 				m.confirmPackages = nil
 				m.pendingUpdates = nil
@@ -2298,116 +2276,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						} else {
 							m.statusMessage = "All marked packages are already installed"
 						}
-					} else if m.mode == modeUpdateSelect {
-						query := m.textInput.Value()
-						if query != m.lastQuery {
-							m.lastQuery = query
-
-							// Parse repo filter to check query length correctly
-							repoFilters, searchQuery := parseRepoFilter(query)
-							effectiveQueryLen := len(searchQuery)
-							hasRepoFilter := len(repoFilters) > 0
-
-							// Start with all updatable packages
-							allPkgs := m.updatableAll
-
-							// Apply repo filters if specified
-							if len(repoFilters) > 0 {
-								var filtered []Package
-								for _, pkg := range allPkgs {
-									if repoFilters[pkg.Source] {
-										filtered = append(filtered, pkg)
-									}
-								}
-								allPkgs = filtered
-							}
-
-							if len(allPkgs) == 0 {
-								m.filtered = []Package{}
-								m.matchIndices = nil
-								m.statusMessage = "No packages match filter"
-							} else if effectiveQueryLen >= minSearchQueryLen || hasRepoFilter {
-								// Fuzzy filter all packages together - fzf will rank by relevance
-								m.filtered = fuzzyFilter(allPkgs, searchQuery)
-								m.matchIndices = computeAllMatchIndices(m.filtered, searchQuery)
-								m.selectedIndex = 0
-
-								// Update status
-								status := fmt.Sprintf("Found %d packages", len(m.filtered))
-								if hasRepoFilter {
-									status = fmt.Sprintf("Found %d %s packages", len(m.filtered), formatRepoFilters(repoFilters))
-								}
-								m.statusMessage = status
-
-								// Load info for top package
-								if len(m.filtered) > 0 {
-									m.loadingInfo = true
-									m.infoForPackage = m.filtered[0].Name
-									cmds = append(cmds, getPackageInfo(m.filtered[0]))
-								}
-							} else {
-								// Show all matching repo filter (or all if no filter)
-								m.filtered = allPkgs
-								m.matchIndices = computeAllMatchIndices(m.filtered, searchQuery)
-								m.selectedIndex = 0
-								m.statusMessage = fmt.Sprintf("Type %d+ chars to fuzzy search", minSearchQueryLen)
-							}
-						}
-					} else if m.mode == modeUpdateSelect {
-						query := m.textInput.Value()
-						if query != m.lastQuery {
-							m.lastQuery = query
-
-							// Parse repo filter to check query length correctly
-							repoFilters, searchQuery := parseRepoFilter(query)
-							effectiveQueryLen := len(searchQuery)
-							hasRepoFilter := len(repoFilters) > 0
-
-							// Start with all updatable packages
-							allPkgs := m.updatableAll
-
-							// Apply repo filters if specified
-							if len(repoFilters) > 0 {
-								var filtered []Package
-								for _, pkg := range allPkgs {
-									if repoFilters[pkg.Source] {
-										filtered = append(filtered, pkg)
-									}
-								}
-								allPkgs = filtered
-							}
-
-							if len(allPkgs) == 0 {
-								m.filtered = []Package{}
-								m.matchIndices = nil
-								m.statusMessage = "No packages match filter"
-							} else if effectiveQueryLen >= minSearchQueryLen || hasRepoFilter {
-								// Fuzzy filter all packages together - fzf will rank by relevance
-								m.filtered = fuzzyFilter(allPkgs, searchQuery)
-								m.matchIndices = computeAllMatchIndices(m.filtered, searchQuery)
-								m.selectedIndex = 0
-
-								// Update status
-								status := fmt.Sprintf("Found %d packages", len(m.filtered))
-								if hasRepoFilter {
-									status = fmt.Sprintf("Found %d %s packages", len(m.filtered), formatRepoFilters(repoFilters))
-								}
-								m.statusMessage = status
-
-								// Load info for top package
-								if len(m.filtered) > 0 {
-									m.loadingInfo = true
-									m.infoForPackage = m.filtered[0].Name
-									cmds = append(cmds, getPackageInfo(m.filtered[0]))
-								}
-							} else {
-								// Show all matching repo filter (or all if no filter)
-								m.filtered = allPkgs
-								m.matchIndices = computeAllMatchIndices(m.filtered, searchQuery)
-								m.selectedIndex = 0
-								m.statusMessage = fmt.Sprintf("Type %d+ chars to fuzzy search", minSearchQueryLen)
-							}
-						}
 					} else if m.mode == modeUninstall {
 						var pkgsToUninstall []string
 						for name := range m.markedPackages {
@@ -2431,16 +2299,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.textInput.Focused() {
 			switch msg.String() {
 			case "esc":
-				if m.mode == modeUpdateSelect {
-					// Exit selection mode back to normal update mode
-					m.mode = modeUpdate
-					m.markedPackages = make(map[string]bool)
-					m.filtered = nil
-					m.matchIndices = nil
-					m.textInput.SetValue("")
-					m.statusMessage = "Selection cancelled"
+				if m.mode == modeUpdate {
+					m.textInput.Blur()
+				} else {
+					m.textInput.Blur()
 				}
-				m.textInput.Blur()
 				return m, nil
 			case "down":
 				// Down moves toward more relevant (lower index, visually down)
@@ -2454,7 +2317,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.loadingInfo = true
 						m.pendingInfoPackage = m.filteredInstalled[m.selectedIndex].Name
 						return m, debouncePackageInfo(m.pendingInfoPackage)
-					} else if m.mode == modeUpdateSelect && len(m.filtered) > 0 {
+					} else if m.mode == modeUpdate && len(m.filtered) > 0 {
 						m.loadingInfo = true
 						m.pendingInfoPackage = m.filtered[m.selectedIndex].Name
 						return m, debouncePackageInfo(m.pendingInfoPackage)
@@ -2464,12 +2327,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "up":
 				// Up moves toward less relevant (higher index, visually up)
 				maxIndex := 0
-				if m.mode == modeInstall {
+				if m.mode == modeInstall || m.mode == modeUpdate {
 					maxIndex = len(m.filtered) - 1
 				} else if m.mode == modeUninstall {
 					maxIndex = len(m.filteredInstalled) - 1
-				} else if m.mode == modeUpdateSelect {
-					maxIndex = len(m.filtered) - 1
 				}
 				if m.selectedIndex < maxIndex {
 					m.selectedIndex++
@@ -2481,7 +2342,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.loadingInfo = true
 						m.pendingInfoPackage = m.filteredInstalled[m.selectedIndex].Name
 						return m, debouncePackageInfo(m.pendingInfoPackage)
-					} else if m.mode == modeUpdateSelect && len(m.filtered) > 0 {
+					} else if m.mode == modeUpdate && len(m.filtered) > 0 {
 						m.loadingInfo = true
 						m.pendingInfoPackage = m.filtered[m.selectedIndex].Name
 						return m, debouncePackageInfo(m.pendingInfoPackage)
@@ -2545,47 +2406,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.confirmScrollOffset = 0
 						m.statusMessage = "Confirm removal"
 					}
-				} else if m.mode == modeUpdateSelect && len(m.filtered) > 0 {
-					// Build selected packages list from marks or single selection
-					var selectedNames []string
-					if len(m.markedPackages) > 0 {
-						for name := range m.markedPackages {
-							selectedNames = append(selectedNames, name)
-						}
-					} else {
-						// Single selected package
-						pkg := m.filtered[m.selectedIndex]
-						selectedNames = []string{pkg.Name}
-					}
-					if len(selectedNames) == 0 {
-						m.statusMessage = "No package selected"
-						return m, nil
-					}
-					// Resolve full Package objects from m.updatableAll
-					selectedFull := make([]Package, 0, len(selectedNames))
-					for _, name := range selectedNames {
-						for _, p := range m.updatableAll {
-							if p.Name == name {
-								selectedFull = append(selectedFull, p)
-								break
-							}
-						}
-					}
-					if len(selectedFull) == 0 {
-						m.statusMessage = "No packages selected"
-						return m, nil
-					}
-					m.pendingUpdates = selectedFull
-					// Exit selection mode, return to normal update mode
-					m.mode = modeUpdate
-					m.filtered = nil
-					m.matchIndices = nil
-					m.markedPackages = make(map[string]bool)
+				} else if m.mode == modeUpdate && len(m.pendingUpdates) > 0 {
 					m.showConfirmation = true
 					m.confirmType = confirmUpdate
 					m.confirmScrollOffset = 0
-					m.statusMessage = fmt.Sprintf("Confirm update of %d package(s)", len(selectedFull))
-					return m, nil
+					
+					// Re-populate the confirmation list with all pending updates
+					var packageNames []string
+					for _, pkg := range m.pendingUpdates {
+						packageNames = append(packageNames, pkg.Name)
+					}
+					m.confirmPackages = packageNames
+					m.statusMessage = fmt.Sprintf("Confirm update for %d packages", len(m.pendingUpdates))
 				}
 				return m, nil
 			case "tab":
@@ -2615,19 +2447,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.statusMessage = fmt.Sprintf("%d packages marked", markedCount)
 					} else {
 						m.statusMessage = fmt.Sprintf("%d installed packages", len(m.installed))
-					}
-				} else if m.mode == modeUpdateSelect && len(m.filtered) > 0 {
-					pkg := m.filtered[m.selectedIndex]
-					if m.markedPackages[pkg.Name] {
-						delete(m.markedPackages, pkg.Name)
-					} else {
-						m.markedPackages[pkg.Name] = true
-					}
-					markedCount := len(m.markedPackages)
-					if markedCount > 0 {
-						m.statusMessage = fmt.Sprintf("%d packages marked", markedCount)
-					} else {
-						m.statusMessage = "Select packages to update"
 					}
 				}
 				return m, nil
@@ -2918,22 +2737,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case "s":
-			// Enter selective update mode - choose packages to update
-			if m.mode == modeUpdate && !m.loading && len(m.updatableAll) > 0 {
-				m.mode = modeUpdateSelect
-				m.filtered = m.updatableAll
-				m.matchIndices = computeAllMatchIndices(m.filtered, m.textInput.Value())
-				m.selectedIndex = 0
-				m.markedPackages = make(map[string]bool) // clear marks; pendingUpdates still holds all
-				m.textInput.SetValue("")
-				m.textInput.Placeholder = "Filter updates to select..."
-				m.textInput.Focus() // Ensure input is focused for typing and navigation
-				m.statusMessage = "Select packages: [tab] mark/unmark, [enter] confirm, [esc] cancel"
-				// Load info for first package
-				m.loadingInfo = true
-				m.pendingInfoPackage = m.filtered[0].Name
-				return m, debouncePackageInfo(m.pendingInfoPackage)
-			}
+			// Removed selective update mode
+			return m, nil
 
 		case "a":
 			// Update all packages directly
@@ -2963,23 +2768,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case "down", "j":
-			if m.mode == modeUpdate && !m.loading && len(m.pendingUpdates) > 0 {
-				// Scroll down in update package list
-				contentHeight := m.height - 4
-				infoHeight := contentHeight / 2
-				maxVisible := infoHeight - 4
-				if maxVisible < 1 {
-					maxVisible = 1
-				}
-				maxScroll := len(m.pendingUpdates) - maxVisible
-				if maxScroll < 0 {
-					maxScroll = 0
-				}
-				if m.confirmScrollOffset < maxScroll {
-					m.confirmScrollOffset++
-				}
-				return m, nil
-			}
 			// Down/j moves toward more relevant (lower index, visually down)
 			if m.selectedIndex > 0 {
 				m.selectedIndex--
@@ -2991,20 +2779,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.loadingInfo = true
 					m.pendingInfoPackage = m.filteredInstalled[m.selectedIndex].Name
 					return m, debouncePackageInfo(m.pendingInfoPackage)
+				} else if m.mode == modeUpdate && len(m.filtered) > 0 {
+					m.loadingInfo = true
+					m.pendingInfoPackage = m.filtered[m.selectedIndex].Name
+					return m, debouncePackageInfo(m.pendingInfoPackage)
 				}
 			}
 
 		case "up", "k":
-			if m.mode == modeUpdate && !m.loading && len(m.pendingUpdates) > 0 {
-				// Scroll up in update package list
-				if m.confirmScrollOffset > 0 {
-					m.confirmScrollOffset--
-				}
-				return m, nil
-			}
 			// Up/k moves toward less relevant (higher index, visually up)
 			maxIndex := 0
-			if m.mode == modeInstall {
+			if m.mode == modeInstall || m.mode == modeUpdate {
 				maxIndex = len(m.filtered) - 1
 			} else if m.mode == modeUninstall {
 				maxIndex = len(m.filteredInstalled) - 1
@@ -3018,6 +2803,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				} else if m.mode == modeUninstall && len(m.filteredInstalled) > 0 {
 					m.loadingInfo = true
 					m.pendingInfoPackage = m.filteredInstalled[m.selectedIndex].Name
+					return m, debouncePackageInfo(m.pendingInfoPackage)
+				} else if m.mode == modeUpdate && len(m.filtered) > 0 {
+					m.loadingInfo = true
+					m.pendingInfoPackage = m.filtered[m.selectedIndex].Name
 					return m, debouncePackageInfo(m.pendingInfoPackage)
 				}
 			}
@@ -3081,9 +2870,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.statusMessage = "Confirm removal"
 				}
 			} else if m.mode == modeUpdate && len(m.pendingUpdates) > 0 {
-				// Execute update directly from main update page
-				m.statusMessage = "Running system update..."
-				return m, executeUpdateInTerminal()
+				m.showConfirmation = true
+				m.confirmType = confirmUpdate
+				m.confirmScrollOffset = 0
+				
+				// Re-populate the confirmation list with all pending updates
+				var packageNames []string
+				for _, pkg := range m.pendingUpdates {
+					packageNames = append(packageNames, pkg.Name)
+				}
+				m.confirmPackages = packageNames
+				m.statusMessage = fmt.Sprintf("Confirm update for %d packages", len(m.pendingUpdates))
 			}
 
 		case "tab":
@@ -3643,8 +3440,6 @@ func (m model) View() string {
 		modeText = "UNINSTALL"
 	case modeUpdate:
 		modeText = "UPDATE"
-	case modeUpdateSelect:
-		modeText = "SELECT UPDATES"
 	}
 
 	header := titleStyle.Render(" GAUR - " + modeText + " ")
@@ -3801,13 +3596,13 @@ func (m model) View() string {
 		} else {
 			infoContent = "System is up to date. Press [u] to check again."
 		}
-	} else if m.mode == modeUpdateSelect {
+	} else if m.mode == modeUpdate {
 		if m.loadingInfo {
 			infoContent = fmt.Sprintf("Loading details for %s...", m.infoForPackage)
 		} else if m.packageInfo != "" {
 			infoContent = m.packageInfo
 		} else {
-			infoContent = "Select a package to see details"
+			infoContent = "Select an update to see details"
 		}
 	} else if m.loadingInfo {
 		infoContent = fmt.Sprintf("Loading details for %s...", m.infoForPackage)
@@ -3846,13 +3641,13 @@ func (m model) View() string {
 		pkgList = m.filtered
 	} else if m.mode == modeUninstall {
 		pkgList = m.filteredInstalled
-	} else if m.mode == modeUpdateSelect {
+	} else if m.mode == modeUpdate {
 		pkgList = m.filtered
 	}
 
 	if m.loading {
 		results.WriteString("  Loading...")
-	} else if m.mode == modeUpdate {
+	} else if m.mode == modeUpdate && len(pkgList) == 0 && !m.loading {
 		results.WriteString("  " + m.statusMessage)
 	} else if len(pkgList) == 0 {
 		results.WriteString("  No packages to display")
@@ -3873,7 +3668,7 @@ func (m model) View() string {
 			matchIndicesMap = m.matchIndices
 		} else if m.mode == modeUninstall {
 			matchIndicesMap = m.installedMatchIndices
-		} else if m.mode == modeUpdateSelect {
+		} else if m.mode == modeUpdate {
 			matchIndicesMap = m.matchIndices
 		}
 
@@ -3948,20 +3743,8 @@ func (m model) View() string {
 
 	// Input field
 	inputLine := ""
-	if m.mode == modeInstall || m.mode == modeUninstall || m.mode == modeUpdateSelect {
+	if m.mode == modeInstall || m.mode == modeUninstall || m.mode == modeUpdate {
 		inputLine = m.textInput.View()
-	} else if m.mode == modeUpdate {
-		if m.loading {
-			inputLine = statusStyle.Render("Checking for updates...")
-		} else if len(m.pendingUpdates) > 0 {
-			keyStyle := lipgloss.NewStyle().Foreground(activeColor).Bold(true)
-			inputLine = fmt.Sprintf("%s update all  %s select  %s refresh",
-				keyStyle.Render("[y]"),
-				keyStyle.Render("[s]"),
-				keyStyle.Render("[u]"))
-		} else {
-			inputLine = statusStyle.Render(m.statusMessage)
-		}
 	} else {
 		inputLine = statusStyle.Render(m.statusMessage)
 	}
@@ -4326,12 +4109,20 @@ func (m model) renderConfirmationDialog(contentWidth, contentHeight int, activeC
 				content.WriteString(fmt.Sprintf("The following %s updates are available:\n\n",
 					countStyle.Render(fmt.Sprintf("%d", len(packages)))))
 			}
-		} else {
-			if len(packages) == 1 {
-				content.WriteString(fmt.Sprintf("The following package will be %sd:\n\n", actionDesc))
+			if actionDesc == "update" {
+				if len(packages) == 1 {
+					content.WriteString("The following update is available:\n\n")
+				} else {
+					content.WriteString(fmt.Sprintf("The following %s updates are available:\n\n",
+						countStyle.Render(fmt.Sprintf("%d", len(packages)))))
+				}
 			} else {
-				content.WriteString(fmt.Sprintf("The following %s packages will be %sd:\n\n",
-					countStyle.Render(fmt.Sprintf("%d", len(packages))), actionDesc))
+				if len(packages) == 1 {
+					content.WriteString(fmt.Sprintf("The following package will be %sd:\n\n", actionDesc))
+				} else {
+					content.WriteString(fmt.Sprintf("The following %s packages will be %sd:\n\n",
+						countStyle.Render(fmt.Sprintf("%d", len(packages))), actionDesc))
+				}
 			}
 		}
 		// Package list with scrolling
@@ -4470,17 +4261,9 @@ func (m model) renderConfirmationDialog(contentWidth, contentHeight int, activeC
 	// Prompt - build as single line to prevent wrapping issues
 	content.WriteString("\n\n")
 	var promptLine string
-	if m.confirmType == confirmUpdate {
-		promptLine = fmt.Sprintf("Proceed? %ses  %so  %s%s",
-			keyStyle.Render("[y]"),
-			keyStyle.Render("[n]"),
-			keyStyle.Render("[s]"),
-			"elect")
-	} else {
-		promptLine = fmt.Sprintf("Proceed? %ses  %so",
-			keyStyle.Render("[y]"),
-			keyStyle.Render("[n]"))
-	}
+	promptLine = fmt.Sprintf("Proceed? %ses  %so",
+		keyStyle.Render("[y]"),
+		keyStyle.Render("[n]"))
 	content.WriteString(promptStyle.Render(promptLine))
 
 	// Render dialog box
