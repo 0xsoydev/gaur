@@ -3704,9 +3704,9 @@ func (m model) View() string {
 
 			// Package count
 			if len(packages) == 1 {
-				content.WriteString("The following package will be updated:\n\n")
+				content.WriteString("The following update is available:\n\n")
 			} else {
-				content.WriteString(fmt.Sprintf("The following %s packages will be updated:\n\n",
+				content.WriteString(fmt.Sprintf("The following %s updates are available:\n\n",
 					countStyle.Render(fmt.Sprintf("%d", len(packages)))))
 			}
 

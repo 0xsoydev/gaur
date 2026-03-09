@@ -966,8 +966,8 @@ func TestUpdateViewShowsPackageList(t *testing.T) {
 	if !strings.Contains(view, "5") {
 		t.Error("View should show package count '5'")
 	}
-	if !strings.Contains(view, "packages will be updated") {
-		t.Error("View should show 'packages will be updated'")
+	if !strings.Contains(view, "updates are available") {
+		t.Error("View should show 'updates are available'")
 	}
 
 	// Should show package names
