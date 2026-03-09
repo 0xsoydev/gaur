@@ -2942,12 +2942,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case "/":
-			if (m.mode == modeInstall || m.mode == modeUninstall) && !m.textInput.Focused() {
+			if (m.mode == modeInstall || m.mode == modeUninstall || m.mode == modeUpdate) && !m.textInput.Focused() {
 				m.textInput.Focus()
 				if m.mode == modeInstall && len(m.repoPackages) > 0 && m.textInput.Value() == "" {
 					m.statusMessage = fmt.Sprintf("Type at least %d chars or use prefix (c: e: m: a:) to filter (%d repo packages)", minSearchQueryLen, len(m.repoPackages))
 				} else if m.mode == modeUninstall && len(m.installed) > 0 && m.textInput.Value() == "" {
 					m.statusMessage = fmt.Sprintf("Filter: t: total  e: explicit  f: foreign  o: orphan (%d installed)", len(m.installed))
+				} else if m.mode == modeUpdate && len(m.updatableAll) > 0 && m.textInput.Value() == "" {
+					m.statusMessage = fmt.Sprintf("Type to search among %d updates", len(m.updatableAll))
 				}
 			}
 		}
@@ -3517,137 +3519,6 @@ func (m model) View() string {
 	infoHeight := contentHeight / 2
 	infoContent := ""
 	if m.mode == modeUpdate {
-		if m.updateOutput != "" {
-			infoContent = m.updateOutput
-		} else if m.loading {
-			infoContent = "Checking for updates..."
-		} else if len(m.pendingUpdates) > 0 {
-			// Render scrollable package list in top pane
-			packages := m.pendingUpdates
-			maxVisible := infoHeight - 4
-			if maxVisible < 1 {
-				maxVisible = 1
-			}
-
-			startIdx := m.confirmScrollOffset
-			endIdx := startIdx + maxVisible
-			if endIdx > len(packages) {
-				endIdx = len(packages)
-			}
-
-			pkgNameStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("39"))
-			pkgVersionStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
-			sourceStyleFn := func(source string) lipgloss.Style {
-				if color, ok := sourceColors[source]; ok {
-					return lipgloss.NewStyle().Foreground(color)
-				}
-				return lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
-			}
-			countStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Bold(true)
-			scrollHintStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
-
-			var content strings.Builder
-
-			// Package count
-			if len(packages) == 1 {
-				content.WriteString("The following update is available:\n\n")
-			} else {
-				content.WriteString(fmt.Sprintf("The following %s updates are available:\n\n",
-					countStyle.Render(fmt.Sprintf("%d", len(packages)))))
-			}
-
-			showScrollbar := len(packages) > maxVisible
-
-			type listEntry struct {
-				text  string
-				isPkg bool
-			}
-			var entries []listEntry
-
-			if showScrollbar {
-				topHint := ""
-				if startIdx > 0 {
-					topHint = fmt.Sprintf("  ↑ %d more above", startIdx)
-				}
-				entries = append(entries, listEntry{text: topHint})
-
-				for i := startIdx; i < endIdx; i++ {
-					pkg := packages[i]
-					line := fmt.Sprintf("  • %s %s %s",
-						sourceStyleFn(pkg.Source).Render(fmt.Sprintf("[%s]", pkg.Source)),
-						pkgNameStyle.Render(pkg.Name),
-						pkgVersionStyle.Render(pkg.Version))
-					entries = append(entries, listEntry{text: line, isPkg: true})
-				}
-
-				bottomHint := ""
-				remaining := len(packages) - endIdx
-				if remaining > 0 {
-					bottomHint = fmt.Sprintf("  ↓ %d more below", remaining)
-				}
-				entries = append(entries, listEntry{text: bottomHint})
-			} else {
-				for i := 0; i < len(packages); i++ {
-					pkg := packages[i]
-					line := fmt.Sprintf("  • %s %s %s",
-						sourceStyleFn(pkg.Source).Render(fmt.Sprintf("[%s]", pkg.Source)),
-						pkgNameStyle.Render(pkg.Name),
-						pkgVersionStyle.Render(pkg.Version))
-					entries = append(entries, listEntry{text: line, isPkg: true})
-				}
-			}
-
-			// Scrollbar metrics
-			visibleCount := endIdx - startIdx
-			var thumbSize, thumbTop int
-			trackHeight := maxVisible
-			if showScrollbar && len(packages) > maxVisible {
-				thumbSize = (visibleCount * trackHeight) / len(packages)
-				if thumbSize < 1 {
-					thumbSize = 1
-				}
-				if thumbSize > trackHeight {
-					thumbSize = trackHeight
-				}
-				if len(packages) > maxVisible {
-					thumbTop = 1 + startIdx*(trackHeight-thumbSize)/(len(packages)-maxVisible)
-				}
-			}
-
-			scrollbarTrackStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("236"))
-			scrollbarThumbStyle := lipgloss.NewStyle().Foreground(activeColor).Bold(true)
-
-			entryWidth := contentWidth - 6
-			for i, entry := range entries {
-				var sbChar string
-				if showScrollbar {
-					if entry.isPkg {
-						if i >= thumbTop && i < thumbTop+thumbSize {
-							sbChar = scrollbarThumbStyle.Render("█")
-						} else {
-							sbChar = scrollbarTrackStyle.Render("│")
-						}
-					} else {
-						sbChar = " "
-					}
-				}
-				line := lipgloss.NewStyle().Width(entryWidth).Render(entry.text)
-				if sbChar != "" {
-					line = line + sbChar
-				}
-				content.WriteString(line + "\n")
-			}
-
-			if showScrollbar {
-				hint := scrollHintStyle.Render("  Use [↑/↓] or [j/k] to scroll")
-				content.WriteString("\n" + hint)
-			}
-
-			infoContent = content.String()
-		} else {
-			infoContent = "System is up to date. Press [u] to check again."
-		}
-	} else if m.mode == modeUpdate {
 		if m.loadingInfo {
 			infoContent = fmt.Sprintf("Loading details for %s...", m.infoForPackage)
 		} else if m.packageInfo != "" {
