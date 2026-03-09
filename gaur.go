@@ -2590,6 +2590,34 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						cmds = append(cmds, getPackageInfo(m.filteredInstalled[m.selectedIndex]))
 					}
 				}
+			} else if m.mode == modeUpdate {
+				query := m.textInput.Value()
+				if len(m.updatableAll) > 0 {
+					if query == "" {
+						m.filtered = m.updatableAll
+						m.matchIndices = nil
+						m.statusMessage = fmt.Sprintf("%d updates available", len(m.updatableAll))
+					} else {
+						// Apply fuzzy filtering
+						m.filtered = fuzzyFilter(m.updatableAll, query)
+						m.matchIndices = computeAllMatchIndices(m.filtered, query)
+						m.statusMessage = fmt.Sprintf("Showing %d of %d updates", len(m.filtered), len(m.updatableAll))
+					}
+					
+					if m.selectedIndex >= len(m.filtered) {
+						m.selectedIndex = 0
+					}
+					// Load info for the newly selected item after filtering
+					if len(m.filtered) > 0 && m.filtered[m.selectedIndex].Name != m.infoForPackage {
+						m.loadingInfo = true
+						m.infoForPackage = m.filtered[m.selectedIndex].Name
+						cmds = append(cmds, getPackageInfo(m.filtered[m.selectedIndex]))
+					} else if len(m.filtered) == 0 {
+						// Clear info if no results
+						m.packageInfo = ""
+						m.infoForPackage = ""
+					}
+				}
 			}
 			return m, tea.Batch(cmds...)
 		}
@@ -3099,6 +3127,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						break
 					}
 				}
+			} else if m.mode == modeUpdate {
+				for i := range m.filtered {
+					if m.filtered[i].Name == msg.packageName {
+						pkg = &m.filtered[i]
+						break
+					}
+				}
 			}
 			if pkg != nil {
 				return m, getPackageInfo(*pkg)
@@ -3266,9 +3301,25 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Store all available updates and show on main update page
 			m.updatableAll = msg.packages
 			m.pendingUpdates = msg.packages // Initially all are pending
+			
+			// Initialize list view for modeUpdate
+			m.filtered = m.updatableAll
+			if m.textInput.Value() != "" {
+				m.matchIndices = computeAllMatchIndices(m.filtered, m.textInput.Value())
+			} else {
+				m.matchIndices = nil
+			}
+			m.selectedIndex = 0
 			m.confirmScrollOffset = 0
 			m.statusMessage = fmt.Sprintf("%d updates available", len(msg.packages))
 			m.updateOutput = ""
+			
+			// Auto-load info for first package
+			if len(m.filtered) > 0 {
+				m.loadingInfo = true
+				m.pendingInfoPackage = m.filtered[0].Name
+				return m, debouncePackageInfo(m.pendingInfoPackage)
+			}
 		}
 
 	case execCompleteMsg:
@@ -3633,6 +3684,9 @@ func (m model) View() string {
 	// Bottom half: Results + Input
 	bottomHeight := contentHeight - infoHeight - 1
 	resultsHeight := bottomHeight - 3
+	if resultsHeight < 1 {
+		resultsHeight = 1
+	}
 
 	// Build results list
 	var results strings.Builder
