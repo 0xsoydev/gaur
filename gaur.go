@@ -2182,26 +2182,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.confirmScrollOffset = 0
 				m.statusMessage = "Operation cancelled"
 				return m, nil
-			case "q":
-				// Quit from confirmation dialog
-				return m, tea.Quit
 			case "down", "j":
 				// Scroll down in package list
-				var maxVisible int
-				if m.confirmType == confirmUpdate {
-					// Compute visible count based on terminal height
-					contentHeight := m.height - 4
-					innerHeight := contentHeight - 2
-					if innerHeight < 5 {
-						innerHeight = 5
-					}
-					maxVisible = innerHeight - 8
-					if maxVisible < 1 {
-						maxVisible = 1
-					}
-				} else {
-					maxVisible = 10
-				}
+				maxVisible := 10
 				var total int
 				if m.confirmType == confirmUpdate {
 					total = len(m.pendingUpdates)
@@ -2781,53 +2764,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.infoForPackage = m.filteredInstalled[m.selectedIndex].Name
 						cmds = append(cmds, getPackageInfo(m.filteredInstalled[m.selectedIndex]))
 					}
-			} else if m.mode == modeUpdateSelect {
-				query := m.textInput.Value()
-				if query != m.lastQuery {
-					m.lastQuery = query
-					basePackages := m.updatableAll
-
-					if len(query) >= minSearchQueryLen {
-						// Fuzzy filter
-						filtered := fuzzyFilter(basePackages, query)
-						// Sort by source then name
-						sort.Slice(filtered, func(i, j int) bool {
-							if filtered[i].Source == filtered[j].Source {
-								return strings.ToLower(filtered[i].Name) < strings.ToLower(filtered[j].Name)
-							}
-							return filtered[i].Source < filtered[j].Source
-						})
-						m.filtered = filtered
-						m.matchIndices = computeAllMatchIndices(m.filtered, query)
-						m.selectedIndex = 0
-
-						// Load info for first result
-						if len(m.filtered) > 0 {
-							m.loadingInfo = true
-							m.infoForPackage = m.filtered[0].Name
-							cmds = append(cmds, getPackageInfo(m.filtered[0]))
-						}
-						m.statusMessage = fmt.Sprintf("Found %d packages", len(m.filtered))
-					} else {
-						// Show all updates (sorted)
-						allSorted := make([]Package, len(basePackages))
-						copy(allSorted, basePackages)
-						sort.Slice(allSorted, func(i, j int) bool {
-							if allSorted[i].Source == allSorted[j].Source {
-								return strings.ToLower(allSorted[i].Name) < strings.ToLower(allSorted[j].Name)
-							}
-							return allSorted[i].Source < allSorted[j].Source
-						})
-						m.filtered = allSorted
-						m.matchIndices = computeAllMatchIndices(m.filtered, query)
-						m.selectedIndex = 0
-						m.statusMessage = fmt.Sprintf("Type %d+ chars to search", minSearchQueryLen)
-						if len(m.filtered) > 0 {
-							m.loadingInfo = true
-							m.infoForPackage = m.filtered[0].Name
-							cmds = append(cmds, getPackageInfo(m.filtered[0]))
-						}
-					}
 				}
 			}
 			return m, tea.Batch(cmds...)
@@ -2991,13 +2927,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case "a":
-			// Select all updates and show confirmation
+			// Update all packages directly
 			if m.mode == modeUpdate && !m.loading && len(m.pendingUpdates) > 0 {
-				m.showConfirmation = true
-				m.confirmType = confirmUpdate
-				m.confirmScrollOffset = 0
-				m.statusMessage = fmt.Sprintf("Confirm update of %d packages", len(m.pendingUpdates))
-				return m, nil
+				m.statusMessage = "Running system update..."
+				return m, executeUpdateInTerminal()
+			}
+
+		case "y", "Y":
+			// Confirm update from main update page
+			if m.mode == modeUpdate && !m.loading && len(m.pendingUpdates) > 0 {
+				m.statusMessage = "Running system update..."
+				return m, executeUpdateInTerminal()
 			}
 
 		case "i":
@@ -3014,6 +2954,23 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case "down", "j":
+			if m.mode == modeUpdate && !m.loading && len(m.pendingUpdates) > 0 {
+				// Scroll down in update package list
+				contentHeight := m.height - 4
+				infoHeight := contentHeight / 2
+				maxVisible := infoHeight - 4
+				if maxVisible < 1 {
+					maxVisible = 1
+				}
+				maxScroll := len(m.pendingUpdates) - maxVisible
+				if maxScroll < 0 {
+					maxScroll = 0
+				}
+				if m.confirmScrollOffset < maxScroll {
+					m.confirmScrollOffset++
+				}
+				return m, nil
+			}
 			// Down/j moves toward more relevant (lower index, visually down)
 			if m.selectedIndex > 0 {
 				m.selectedIndex--
@@ -3029,6 +2986,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case "up", "k":
+			if m.mode == modeUpdate && !m.loading && len(m.pendingUpdates) > 0 {
+				// Scroll up in update package list
+				if m.confirmScrollOffset > 0 {
+					m.confirmScrollOffset--
+				}
+				return m, nil
+			}
 			// Up/k moves toward less relevant (higher index, visually up)
 			maxIndex := 0
 			if m.mode == modeInstall {
@@ -3108,11 +3072,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.statusMessage = "Confirm removal"
 				}
 			} else if m.mode == modeUpdate && len(m.pendingUpdates) > 0 {
-				// Show confirmation dialog for system update
-				m.showConfirmation = true
-				m.confirmType = confirmUpdate
-				m.confirmScrollOffset = 0
-				m.statusMessage = "Confirm system update"
+				// Execute update directly from main update page
+				m.statusMessage = "Running system update..."
+				return m, executeUpdateInTerminal()
 			}
 
 		case "tab":
@@ -3495,19 +3457,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.statusMessage = "System is up to date!"
 			m.updateOutput = "No updates available."
 		} else {
-			// Sort packages by source then name for consistent ordering
-			sort.Slice(msg.packages, func(i, j int) bool {
-				if msg.packages[i].Source == msg.packages[j].Source {
-					return strings.ToLower(msg.packages[i].Name) < strings.ToLower(msg.packages[j].Name)
-				}
-				return msg.packages[i].Source < msg.packages[j].Source
-			})
-			// Store all available updates
+			// Store all available updates and show on main update page
 			m.updatableAll = msg.packages
 			m.pendingUpdates = msg.packages // Initially all are pending
-			// Show full-screen confirmation directly
-			m.showConfirmation = true
-			m.confirmType = confirmUpdate
 			m.confirmScrollOffset = 0
 			m.statusMessage = fmt.Sprintf("%d updates available", len(msg.packages))
 			m.updateOutput = ""
@@ -3715,19 +3667,142 @@ func (m model) View() string {
 		} else if m.loading {
 			infoContent = "Checking for updates..."
 		} else if len(m.pendingUpdates) > 0 {
-			infoContent = fmt.Sprintf("%d update(s) available. Press [enter] to review and update.", len(m.pendingUpdates))
+			// Render scrollable package list in top pane
+			packages := m.pendingUpdates
+			maxVisible := infoHeight - 4
+			if maxVisible < 1 {
+				maxVisible = 1
+			}
+
+			startIdx := m.confirmScrollOffset
+			endIdx := startIdx + maxVisible
+			if endIdx > len(packages) {
+				endIdx = len(packages)
+			}
+
+			pkgNameStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("39"))
+			pkgVersionStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
+			sourceStyleFn := func(source string) lipgloss.Style {
+				if color, ok := sourceColors[source]; ok {
+					return lipgloss.NewStyle().Foreground(color)
+				}
+				return lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
+			}
+			countStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Bold(true)
+			scrollHintStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
+
+			var content strings.Builder
+
+			// Package count
+			if len(packages) == 1 {
+				content.WriteString("The following package will be updated:\n\n")
+			} else {
+				content.WriteString(fmt.Sprintf("The following %s packages will be updated:\n\n",
+					countStyle.Render(fmt.Sprintf("%d", len(packages)))))
+			}
+
+			showScrollbar := len(packages) > maxVisible
+
+			type listEntry struct {
+				text  string
+				isPkg bool
+			}
+			var entries []listEntry
+
+			if showScrollbar {
+				topHint := ""
+				if startIdx > 0 {
+					topHint = fmt.Sprintf("  ↑ %d more above", startIdx)
+				}
+				entries = append(entries, listEntry{text: topHint})
+
+				for i := startIdx; i < endIdx; i++ {
+					pkg := packages[i]
+					line := fmt.Sprintf("  • %s %s %s",
+						sourceStyleFn(pkg.Source).Render(fmt.Sprintf("[%s]", pkg.Source)),
+						pkgNameStyle.Render(pkg.Name),
+						pkgVersionStyle.Render(pkg.Version))
+					entries = append(entries, listEntry{text: line, isPkg: true})
+				}
+
+				bottomHint := ""
+				remaining := len(packages) - endIdx
+				if remaining > 0 {
+					bottomHint = fmt.Sprintf("  ↓ %d more below", remaining)
+				}
+				entries = append(entries, listEntry{text: bottomHint})
+			} else {
+				for i := 0; i < len(packages); i++ {
+					pkg := packages[i]
+					line := fmt.Sprintf("  • %s %s %s",
+						sourceStyleFn(pkg.Source).Render(fmt.Sprintf("[%s]", pkg.Source)),
+						pkgNameStyle.Render(pkg.Name),
+						pkgVersionStyle.Render(pkg.Version))
+					entries = append(entries, listEntry{text: line, isPkg: true})
+				}
+			}
+
+			// Scrollbar metrics
+			visibleCount := endIdx - startIdx
+			var thumbSize, thumbTop int
+			trackHeight := maxVisible
+			if showScrollbar && len(packages) > maxVisible {
+				thumbSize = (visibleCount * trackHeight) / len(packages)
+				if thumbSize < 1 {
+					thumbSize = 1
+				}
+				if thumbSize > trackHeight {
+					thumbSize = trackHeight
+				}
+				if len(packages) > maxVisible {
+					thumbTop = 1 + startIdx*(trackHeight-thumbSize)/(len(packages)-maxVisible)
+				}
+			}
+
+			scrollbarTrackStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("236"))
+			scrollbarThumbStyle := lipgloss.NewStyle().Foreground(activeColor).Bold(true)
+
+			entryWidth := contentWidth - 6
+			for i, entry := range entries {
+				var sbChar string
+				if showScrollbar {
+					if entry.isPkg {
+						if i >= thumbTop && i < thumbTop+thumbSize {
+							sbChar = scrollbarThumbStyle.Render("█")
+						} else {
+							sbChar = scrollbarTrackStyle.Render("│")
+						}
+					} else {
+						sbChar = " "
+					}
+				}
+				line := lipgloss.NewStyle().Width(entryWidth).Render(entry.text)
+				if sbChar != "" {
+					line = line + sbChar
+				}
+				content.WriteString(line + "\n")
+			}
+
+			if showScrollbar {
+				hint := scrollHintStyle.Render("  Use [↑/↓] or [j/k] to scroll")
+				content.WriteString("\n" + hint)
+			}
+
+			infoContent = content.String()
 		} else {
 			infoContent = "System is up to date. Press [u] to check again."
 		}
 	} else if m.mode == modeUpdateSelect {
 		if m.loading {
 			infoContent = "Loading updates..."
-		} else if m.loadingInfo {
-			infoContent = fmt.Sprintf("Loading details for %s...", m.infoForPackage)
-		} else if m.packageInfo != "" {
-			infoContent = m.packageInfo
 		} else {
-			infoContent = "Select a package to see details"
+			total := len(m.updatableAll)
+			marked := len(m.markedPackages)
+			if marked > 0 {
+				infoContent = fmt.Sprintf("%d total, %d marked for update", total, marked)
+			} else {
+				infoContent = fmt.Sprintf("%d total packages available to update", total)
+			}
 		}
 	} else if m.loadingInfo {
 		infoContent = fmt.Sprintf("Loading details for %s...", m.infoForPackage)
@@ -3868,10 +3943,22 @@ func (m model) View() string {
 
 	// Input field
 	inputLine := ""
-	if m.mode == modeInstall || m.mode == modeUninstall {
+	if m.mode == modeInstall || m.mode == modeUninstall || m.mode == modeUpdateSelect {
 		inputLine = m.textInput.View()
+	} else if m.mode == modeUpdate {
+		if m.loading {
+			inputLine = statusStyle.Render("Checking for updates...")
+		} else if len(m.pendingUpdates) > 0 {
+			keyStyle := lipgloss.NewStyle().Foreground(activeColor).Bold(true)
+			inputLine = fmt.Sprintf("%s update all  %s select  %s refresh",
+				keyStyle.Render("[y]"),
+				keyStyle.Render("[s]"),
+				keyStyle.Render("[u]"))
+		} else {
+			inputLine = statusStyle.Render(m.statusMessage)
+		}
 	} else {
-		inputLine = statusStyle.Render("System update in progress...")
+		inputLine = statusStyle.Render(m.statusMessage)
 	}
 
 	// Status line
@@ -4115,10 +4202,6 @@ func truncateWithAnsi(s string, maxWidth int) string {
 
 // renderConfirmationDialog renders a centered confirmation dialog for install/uninstall/update
 func (m model) renderConfirmationDialog(contentWidth, contentHeight int, activeColor lipgloss.Color) string {
-	// For system update confirmation, render full-screen instead of centered modal
-	if m.confirmType == confirmUpdate {
-		return m.renderUpdateFullScreen(contentWidth, contentHeight, activeColor)
-	}
 
 	// Dialog dimensions (for other confirmation types)
 	dialogWidth := contentWidth - 20
@@ -4820,182 +4903,7 @@ func (m model) renderDashboard(helpText string, contentWidth, contentHeight int)
 	return lipgloss.JoinVertical(lipgloss.Left, dashPanel, footerLine)
 }
 
-// renderUpdateFullScreen renders the system update confirmation as a full-screen panel.
-func (m model) renderUpdateFullScreen(contentWidth, contentHeight int, activeColor lipgloss.Color) string {
-	// Compute inner dimensions
-	innerWidth := contentWidth - 2
-	innerHeight := contentHeight - 2
-	if innerWidth < 10 {
-		innerWidth = 10
-	}
-	if innerHeight < 5 {
-		innerHeight = 5
-	}
 
-	// Compute visible package count based on available height
-	maxVisible := innerHeight - 8
-	if maxVisible < 1 {
-		maxVisible = 1
-	}
-
-	// Package list
-	packages := m.pendingUpdates
-	startIdx := m.confirmScrollOffset
-	endIdx := startIdx + maxVisible
-	if endIdx > len(packages) {
-		endIdx = len(packages)
-	}
-	visibleCount := endIdx - startIdx
-
-	// Styles
-	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(activeColor).MarginBottom(1)
-	pkgNameStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("39"))
-	pkgVersionStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
-	sourceStyle := func(source string) lipgloss.Style {
-		if color, ok := sourceColors[source]; ok {
-			return lipgloss.NewStyle().Foreground(color)
-		}
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
-	}
-	countStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Bold(true)
-	keyStyle := lipgloss.NewStyle().Foreground(activeColor).Bold(true)
-	scrollHintStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
-
-	var content strings.Builder
-
-	// Title
-	content.WriteString(titleStyle.Render("  Confirm System Update"))
-	content.WriteString("\n\n")
-
-	// Package count
-	if len(packages) == 1 {
-		content.WriteString("The following package will be updated:\n\n")
-	} else {
-		content.WriteString(fmt.Sprintf("The following %s packages will be updated:\n\n",
-			countStyle.Render(fmt.Sprintf("%d", len(packages)))))
-	}
-
-	// Build entries
-	type listEntry struct {
-		text  string
-		isPkg bool
-	}
-	var entries []listEntry
-
-	showScrollbar := len(packages) > maxVisible
-
-	if showScrollbar {
-		// Top hint
-		topHint := ""
-		if startIdx > 0 {
-			topHint = fmt.Sprintf("  ↑ %d more above", startIdx)
-		}
-		entries = append(entries, listEntry{text: topHint})
-
-		// Package lines in forward order
-		for i := startIdx; i < endIdx; i++ {
-			pkg := packages[i]
-			line := fmt.Sprintf("  • %s %s %s",
-				sourceStyle(pkg.Source).Render(fmt.Sprintf("[%s]", pkg.Source)),
-				pkgNameStyle.Render(pkg.Name),
-				pkgVersionStyle.Render(pkg.Version))
-			entries = append(entries, listEntry{text: line, isPkg: true})
-		}
-
-		// Bottom hint
-		bottomHint := ""
-		remaining := len(packages) - endIdx
-		if remaining > 0 {
-			bottomHint = fmt.Sprintf("  ↓ %d more below", remaining)
-		}
-		entries = append(entries, listEntry{text: bottomHint})
-	} else {
-		// Non-scrollable: list all in normal order
-		for i := 0; i < len(packages); i++ {
-			pkg := packages[i]
-			line := fmt.Sprintf("  • %s %s %s",
-				sourceStyle(pkg.Source).Render(fmt.Sprintf("[%s]", pkg.Source)),
-				pkgNameStyle.Render(pkg.Name),
-				pkgVersionStyle.Render(pkg.Version))
-			entries = append(entries, listEntry{text: line, isPkg: true})
-		}
-	}
-
-	// Scrollbar metrics
-	var thumbSize, thumbTop int
-	trackHeight := maxVisible
-	if showScrollbar && len(packages) > maxVisible {
-		thumbSize = (visibleCount * trackHeight) / len(packages)
-		if thumbSize < 1 {
-			thumbSize = 1
-		}
-		if thumbSize > trackHeight {
-			thumbSize = trackHeight
-		}
-		if len(packages) > maxVisible {
-			thumbTop = 1 + startIdx*(trackHeight-thumbSize)/(len(packages)-maxVisible)
-		}
-	}
-
-	// Scrollbar styles
-	scrollbarTrackStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("236"))
-	scrollbarThumbStyle := lipgloss.NewStyle().Foreground(activeColor).Bold(true)
-
-	// Render entries
-	for i, entry := range entries {
-		// Content width inside the padded inner box
-		entryWidth := innerWidth - 2
-		var sbChar string
-		if showScrollbar {
-			entryWidth -= 1
-			if entry.isPkg {
-				if i >= thumbTop && i < thumbTop+thumbSize {
-					sbChar = scrollbarThumbStyle.Render("█")
-				} else {
-					sbChar = scrollbarTrackStyle.Render("│")
-				}
-			} else {
-				sbChar = " "
-			}
-		}
-		line := lipgloss.NewStyle().Width(entryWidth).Render(entry.text)
-		if sbChar != "" {
-			line = line + sbChar
-		}
-		content.WriteString(line + "\n")
-	}
-
-	// Scroll hint
-	if showScrollbar {
-		content.WriteString("\n")
-		hint := scrollHintStyle.Render("  Use [↑/↓] or [j/k] to scroll")
-		if lipgloss.Width(hint) > innerWidth-2 {
-			hint = lipgloss.NewStyle().Width(innerWidth - 2).Render(hint)
-		}
-		content.WriteString(hint)
-	}
-
-	// Prompt
-	content.WriteString("\n\n")
-	prompt := fmt.Sprintf("Proceed? %ses  %so  %s%s",
-		keyStyle.Render("[y]"),
-		keyStyle.Render("[n]"),
-		keyStyle.Render("[s]"),
-		"elect")
-	content.WriteString(prompt)
-
-	// Wrap with padding and border
-	innerBox := lipgloss.NewStyle().
-		Width(innerWidth).
-		Height(innerHeight).
-		Padding(0, 1).
-		Render(content.String())
-	dialog := baseBorderStyle.BorderForeground(activeColor).
-		Width(contentWidth).
-		Height(contentHeight).
-		Render(innerBox)
-	return dialog
-}
 
 func main() {
 	// Check dependencies first
