@@ -56,13 +56,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, executeRemoveOrphansInTerminal(orphans)
 				}
 			case "s":
-
-				return m, nil
-				m.showConfirmation = false
-				m.confirmPackages = nil
-				m.pendingUpdates = nil
-				m.confirmScrollOffset = 0
-				m.statusMessage = "Operation cancelled"
 				return m, nil
 			case "down", "j":
 
@@ -638,14 +631,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.markedPackages = make(map[string]bool)
 				}
 
-				m.loading = true
-				m.statusMessage = "Checking for updates..."
+				m.loading = false
+				m.statusMessage = "Syncing package databases..."
 				m.updateOutput = ""
 				m.pendingUpdates = nil
 				m.updatableAll = nil
 				m.filtered = nil
 				m.matchIndices = nil
-				return m, checkUpdates()
+				return m, syncRepositoriesInTerminal()
 			}
 
 		case "s":
@@ -901,6 +894,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		}
+
+	case syncRepositoriesMsg:
+		if msg.err != nil {
+			m.showErrorOverlay = true
+			m.errorTitle = "Sync Failed"
+			m.errorMessage = "Failed to synchronize package databases"
+			m.errorDetails = msg.err.Error()
+			m.loading = false
+			return m, nil
+		}
+
+		// Synchronization succeeded, now we can safely check for updates in the background
+		m.loading = true
+		m.statusMessage = "Checking for updates..."
+		return m, checkUpdates()
 
 	case aurSearchMsg:
 		m.searchingAUR = false

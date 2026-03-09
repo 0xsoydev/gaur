@@ -132,3 +132,11 @@ func executeRemoveOrphansInTerminal(orphans []string) tea.Cmd {
 		return execCompleteMsg{operation: confirmRemoveOrphans, packages: validNames, err: err}
 	})
 }
+
+// syncRepositoriesInTerminal runs paru -Sy interactively to sync databases
+func syncRepositoriesInTerminal() tea.Cmd {
+	c := exec.Command("paru", "-Sy")
+	return tea.ExecProcess(c, func(err error) tea.Msg {
+		return syncRepositoriesMsg{err: err}
+	})
+}

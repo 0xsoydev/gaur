@@ -140,3 +140,7 @@ type removeOrphansMsg struct {
 	output string
 	err    error
 }
+
+type syncRepositoriesMsg struct {
+	err error
+}
