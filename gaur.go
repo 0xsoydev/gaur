@@ -4319,13 +4319,21 @@ func (m model) renderConfirmationDialog(contentWidth, contentHeight int, activeC
 		}
 	} else {
 		// Package count
-		if len(packages) == 1 {
-			content.WriteString(fmt.Sprintf("The following package will be %sd:\n\n", actionDesc))
+		if m.confirmType == confirmUpdate {
+			if len(packages) == 1 {
+				content.WriteString("The following update is available:\n\n")
+			} else {
+				content.WriteString(fmt.Sprintf("The following %s updates are available:\n\n",
+					countStyle.Render(fmt.Sprintf("%d", len(packages)))))
+			}
 		} else {
-			content.WriteString(fmt.Sprintf("The following %s packages will be %sd:\n\n",
-				countStyle.Render(fmt.Sprintf("%d", len(packages))), actionDesc))
+			if len(packages) == 1 {
+				content.WriteString(fmt.Sprintf("The following package will be %sd:\n\n", actionDesc))
+			} else {
+				content.WriteString(fmt.Sprintf("The following %s packages will be %sd:\n\n",
+					countStyle.Render(fmt.Sprintf("%d", len(packages))), actionDesc))
+			}
 		}
-
 		// Package list with scrolling
 		maxVisible := 10
 		startIdx := m.confirmScrollOffset
