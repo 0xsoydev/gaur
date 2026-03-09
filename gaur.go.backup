@@ -23,7 +23,7 @@ const (
 	modeInstall viewMode = iota
 	modeInstalled
 	modeUninstall
-	modeUpdate // Viewing available updates
+	modeUpdate
 )
 
 // Confirmation operation types
@@ -704,6 +704,8 @@ type removeOrphansMsg struct {
 	err    error
 }
 
+type refreshDashboardMsg struct{}
+
 // Model
 type model struct {
 	textInput             textinput.Model
@@ -734,6 +736,7 @@ type model struct {
 	lastAURQuery          string // Last query sent to AUR search
 	searchingAUR          bool   // Whether AUR search is in progress
 	dashboard             DashboardData
+	dashboardSelected     int // Selected item in dashboard (0=foreign, 1=cache, 2=orphans)
 	// Confirmation dialog state
 	showConfirmation    bool
 	confirmType         confirmationType
@@ -741,8 +744,6 @@ type model struct {
 	pendingUpdates      []Package // Updates available (for update confirmation)
 	confirmScrollOffset int       // Scroll offset for confirmation package list
 	lastCompletedOp     string    // Description of last completed operation
-	// Update selection state
-	updatableAll []Package // All packages available for update (before selection)
 	// Error overlay state
 	showErrorOverlay bool
 	errorTitle       string
@@ -831,26 +832,11 @@ var (
 				Foreground(currentTheme.DashboardDesc)
 )
 
-func initialModel(initialMode viewMode) model {
+func initialModel() model {
 	ti := textinput.New()
+	ti.Placeholder = "Search packages..."
 	ti.CharLimit = textInputCharLimit
 	ti.Width = textInputDefaultWidth
-
-	// Set placeholder and status based on mode
-	statusMsg := "Loading package database..."
-	placeholder := "Search packages..."
-	switch initialMode {
-	case modeUninstall:
-		placeholder = "Filter installed packages..."
-		statusMsg = "Loading installed packages..."
-	case modeUpdate:
-		placeholder = "Checking for updates..."
-		statusMsg = "Checking for updates..."
-	case modeInstalled:
-		placeholder = "View installed packages"
-		statusMsg = "Loading installed packages..."
-	}
-	ti.Placeholder = placeholder
 
 	return model{
 		textInput:      ti,
@@ -861,32 +847,14 @@ func initialModel(initialMode viewMode) model {
 		installed:      []Package{},
 		markedPackages: make(map[string]bool),
 		selectedIndex:  0,
-		mode:           initialMode,
+		mode:           modeInstall,
 		loading:        true,
-		statusMessage:  statusMsg,
+		statusMessage:  "Loading package database...",
 	}
 }
 
 func (m model) Init() tea.Cmd {
-	cmds := []tea.Cmd{textinput.Blink, loadRepoPackages()}
-
-	// Load mode-specific initial data
-	switch m.mode {
-	case modeInstalled:
-		// Dashboard mode - load dashboard statistics
-		cmds = append(cmds, getDashboardData())
-	case modeUninstall:
-		// Remove mode - load installed packages list
-		cmds = append(cmds, getInstalledPackages())
-	case modeUpdate:
-		// Update mode - check for available updates
-		cmds = append(cmds, checkUpdates())
-	case modeInstall:
-		// Install mode (default) - repo packages already loaded
-		// Optionally could trigger AUR search for empty query, but not needed
-	}
-
-	return tea.Batch(cmds...)
+	return tea.Batch(textinput.Blink, loadRepoPackages())
 }
 
 // currentPackageList returns the appropriate package list based on current mode.
@@ -1007,9 +975,7 @@ func loadRepoPackages() tea.Cmd {
 		installedCmd := exec.Command("pacman", "-Qq")
 		var installedOut bytes.Buffer
 		installedCmd.Stdout = &installedOut
-		if err := installedCmd.Run(); err != nil {
-			return repoPackagesMsg{err: fmt.Errorf("failed to get installed packages list: %w", err)}
-		}
+		_ = installedCmd.Run()
 
 		installedSet := make(map[string]bool)
 		for _, name := range strings.Split(installedOut.String(), "\n") {
@@ -1232,9 +1198,7 @@ func searchAUR(query string) tea.Cmd {
 		cmd := exec.Command("paru", "-Ss", "-a", searchQuery)
 		var stdout bytes.Buffer
 		cmd.Stdout = &stdout
-		if err := cmd.Run(); err != nil {
-			return aurSearchMsg{packages: nil, query: query, err: fmt.Errorf("AUR search command failed: %w", err)}
-		}
+		_ = cmd.Run()
 
 		if stdout.Len() == 0 {
 			return aurSearchMsg{packages: []Package{}, query: query}
@@ -1398,15 +1362,12 @@ func getInstalledPackages() tea.Cmd {
 			return installedPackagesMsg{err: err}
 		}
 
-		packages, err := parseInstalledPackages(out.String())
-		if err != nil {
-			return installedPackagesMsg{err: fmt.Errorf("failed to parse installed packages: %w", err)}
-		}
+		packages := parseInstalledPackages(out.String())
 		return installedPackagesMsg{packages: packages}
 	}
 }
 
-func parseInstalledPackages(output string) ([]Package, error) {
+func parseInstalledPackages(output string) []Package {
 	var packages []Package
 	blocks := strings.Split(output, "\n\n")
 
@@ -1450,14 +1411,13 @@ func parseInstalledPackages(output string) ([]Package, error) {
 	cmd := exec.Command("pacman", "-Sl")
 	var repoOut bytes.Buffer
 	cmd.Stdout = &repoOut
-	if err := cmd.Run(); err != nil {
-		return nil, fmt.Errorf("failed to query package repositories: %w", err)
-	}
-	for _, line := range strings.Split(repoOut.String(), "\n") {
-		parts := strings.Fields(line)
-		if len(parts) >= 2 {
-			// Format: "repo name version [installed]"
-			repoMap[parts[1]] = parts[0]
+	if cmd.Run() == nil {
+		for _, line := range strings.Split(repoOut.String(), "\n") {
+			parts := strings.Fields(line)
+			if len(parts) >= 2 {
+				// Format: "repo name version [installed]"
+				repoMap[parts[1]] = parts[0]
+			}
 		}
 	}
 
@@ -1472,7 +1432,7 @@ func parseInstalledPackages(output string) ([]Package, error) {
 	cmd = exec.Command("pacman", "-Qm")
 	var foreignOut bytes.Buffer
 	cmd.Stdout = &foreignOut
-	if err := cmd.Run(); err == nil {
+	if cmd.Run() == nil {
 		foreignPkgs := make(map[string]bool)
 		for _, line := range strings.Split(foreignOut.String(), "\n") {
 			parts := strings.Fields(line)
@@ -1485,13 +1445,13 @@ func parseInstalledPackages(output string) ([]Package, error) {
 				packages[i].Source = "aur"
 			}
 		}
-	} // If command fails, we skip foreign marking - packages will keep their repo/local source
+	}
 
 	// Get explicitly installed packages
 	cmd = exec.Command("pacman", "-Qe")
 	var explicitOut bytes.Buffer
 	cmd.Stdout = &explicitOut
-	if err := cmd.Run(); err == nil {
+	if cmd.Run() == nil {
 		explicitPkgs := make(map[string]bool)
 		for _, line := range strings.Split(explicitOut.String(), "\n") {
 			parts := strings.Fields(line)
@@ -1502,13 +1462,13 @@ func parseInstalledPackages(output string) ([]Package, error) {
 		for i := range packages {
 			packages[i].Explicit = explicitPkgs[packages[i].Name]
 		}
-	} // If command fails, explicit flags remain false
+	}
 
 	// Get orphan packages
 	cmd = exec.Command("pacman", "-Qdt")
 	var orphanOut bytes.Buffer
 	cmd.Stdout = &orphanOut
-	if err := cmd.Run(); err == nil {
+	if cmd.Run() == nil {
 		orphanPkgs := make(map[string]bool)
 		for _, line := range strings.Split(orphanOut.String(), "\n") {
 			parts := strings.Fields(line)
@@ -1519,15 +1479,14 @@ func parseInstalledPackages(output string) ([]Package, error) {
 		for i := range packages {
 			packages[i].Orphan = orphanPkgs[packages[i].Name]
 		}
-	} // If command fails, orphan flags remain false
+	}
 
-	return packages, nil
+	return packages
 }
 
 func getDashboardData() tea.Cmd {
 	return func() tea.Msg {
 		var data DashboardData
-		var errs []error
 
 		// Total Packages: paru -Q
 		cmd := exec.Command("paru", "-Q")
@@ -1535,8 +1494,6 @@ func getDashboardData() tea.Cmd {
 		cmd.Stdout = &out
 		if err := cmd.Run(); err == nil {
 			data.TotalPackages = countLines(out.String())
-		} else {
-			errs = append(errs, fmt.Errorf("total packages: %w", err))
 		}
 
 		// Explicitly Installed: paru -Qe
@@ -1545,8 +1502,6 @@ func getDashboardData() tea.Cmd {
 		cmd.Stdout = &out
 		if err := cmd.Run(); err == nil {
 			data.ExplicitlyInstalled = countLines(out.String())
-		} else {
-			errs = append(errs, fmt.Errorf("explicitly installed: %w", err))
 		}
 
 		// Foreign Packages: paru -Qm
@@ -1555,8 +1510,6 @@ func getDashboardData() tea.Cmd {
 		cmd.Stdout = &out
 		if err := cmd.Run(); err == nil {
 			data.ForeignPackages = countLines(out.String())
-		} else {
-			errs = append(errs, fmt.Errorf("foreign packages: %w", err))
 		}
 
 		// Orphans: paru -Qdt
@@ -1565,8 +1518,6 @@ func getDashboardData() tea.Cmd {
 		cmd.Stdout = &out
 		if err := cmd.Run(); err == nil {
 			data.Orphans = countLines(out.String())
-		} else {
-			errs = append(errs, fmt.Errorf("orphans: %w", err))
 		}
 
 		// Stats from paru -Ps (Total Size, Missing from AUR, Top 10 packages)
@@ -1575,8 +1526,6 @@ func getDashboardData() tea.Cmd {
 		cmd.Stdout = &out
 		if err := cmd.Run(); err == nil {
 			data.TotalSize, data.TotalSizeBytes, data.MissingFromAUR, data.TopPackages = parseParuStats(out.String())
-		} else {
-			errs = append(errs, fmt.Errorf("package statistics: %w", err))
 		}
 
 		// Calculate Pacman Cache (System)
@@ -1602,10 +1551,6 @@ func getDashboardData() tea.Cmd {
 		data.CleanerSizeBytes = totalCacheBytes
 		data.CleanerSize = formatBytes(totalCacheBytes)
 
-		// If any errors occurred, return them
-		if len(errs) > 0 {
-			return dashboardMsg{data: data, err: fmt.Errorf("errors loading dashboard: %v", errs)}
-		}
 		return dashboardMsg{data: data}
 	}
 }
@@ -1729,31 +1674,171 @@ func formatBytes(bytes int64) string {
 	return fmt.Sprintf("%.1f %ciB", float64(bytes)/float64(div), "KMGTPE"[exp])
 }
 
-// checkDependencies verifies that all required external commands are available
-func checkDependencies() error {
-	requiredCommands := []struct {
-		name     string
-		desc     string
-		required bool
-	}{
-		{"pacman", "system package manager", true},
-		{"paru", "AUR helper", true},
-		{"fzf", "fuzzy finder", true},
+// renderPieChart creates an ASCII pie chart for visualizing proportions
+// sectors: map of label to percentage (0.0-1.0)
+// width: desired width of chart
+// height: desired height of chart
+func renderPieChart(sectors map[string]float64, width, height int) string {
+	if width < 10 || height < 5 {
+		return "[Chart too small]"
 	}
 
-	var missing []string
-	for _, cmd := range requiredCommands {
-		if _, err := exec.LookPath(cmd.name); err != nil {
-			if cmd.required {
-				missing = append(missing, fmt.Sprintf("%s (%s)", cmd.name, cmd.desc))
+	colors := []lipgloss.Color{
+		lipgloss.Color("#FF6B6B"), // red
+		lipgloss.Color("#4ECDC4"), // teal
+		lipgloss.Color("#FFD166"), // yellow
+		lipgloss.Color("#06D6A0"), // green
+		lipgloss.Color("#118AB2"), // blue
+		lipgloss.Color("#9D4EDD"), // purple
+	}
+	colorIdx := 0
+
+	var result strings.Builder
+
+	// Build legend first (simpler approach for now)
+	result.WriteString("Package Distribution:\n")
+	for label, percentage := range sectors {
+		if percentage > 0 {
+			color := colors[colorIdx%len(colors)]
+			block := lipgloss.NewStyle().Foreground(color).Render("█")
+			result.WriteString(fmt.Sprintf("  %s %s: %.1f%%\n", block, label, percentage*100))
+			colorIdx++
+		}
+	}
+
+	// Simple bar representation instead of complex pie
+	result.WriteString("\n")
+	barWidth := width - 4
+	for label, percentage := range sectors {
+		if percentage > 0 {
+			filled := int(percentage * float64(barWidth))
+			if filled < 1 && percentage > 0 {
+				filled = 1
+			}
+			bar := strings.Repeat("█", filled) + strings.Repeat("░", barWidth-filled)
+			result.WriteString(fmt.Sprintf("  %-10s %s\n", label+":", bar))
+		}
+	}
+
+	return result.String()
+}
+
+// renderProgressBar creates a colored progress bar
+func renderProgressBar(percent float64, width int, filledColor, emptyColor lipgloss.Color) string {
+	if width < 5 {
+		return ""
+	}
+
+	filled := int(percent * float64(width))
+	if filled > width {
+		filled = width
+	}
+	if filled < 0 {
+		filled = 0
+	}
+
+	filledStr := lipgloss.NewStyle().Background(filledColor).Render(strings.Repeat(" ", filled))
+	emptyStr := lipgloss.NewStyle().Background(emptyColor).Render(strings.Repeat(" ", width-filled))
+
+	return filledStr + emptyStr
+}
+
+// renderSparkline creates a simple sparkline from data points
+func renderSparkline(data []int64, width, height int) string {
+	if len(data) == 0 || width < 5 || height < 3 {
+		return ""
+	}
+
+	// Find min and max for scaling
+	var min, max int64
+	if len(data) > 0 {
+		min, max = data[0], data[0]
+		for _, v := range data {
+			if v < min {
+				min = v
+			}
+			if v > max {
+				max = v
 			}
 		}
 	}
 
-	if len(missing) > 0 {
-		return fmt.Errorf("missing required dependencies:\n  %s", strings.Join(missing, "\n  "))
+	if max == min {
+		max = min + 1 // Avoid division by zero
 	}
-	return nil
+
+	// Create sparkline using Unicode characters
+	sparks := []string{"▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"}
+
+	var result strings.Builder
+	points := len(data)
+	if points > width {
+		// Sample data to fit width
+		step := points / width
+		if step < 1 {
+			step = 1
+		}
+		sampled := make([]int64, 0, width)
+		for i := 0; i < points; i += step {
+			if len(sampled) >= width {
+				break
+			}
+			sampled = append(sampled, data[i])
+		}
+		data = sampled
+		points = len(data)
+	}
+
+	for i := 0; i < height; i++ {
+		for j := 0; j < points; j++ {
+			// Normalize value to 0-7 for spark index
+			normalized := float64(data[j]-min) / float64(max-min)
+			sparkIdx := int(normalized * float64(len(sparks)-1))
+			if sparkIdx < 0 {
+				sparkIdx = 0
+			}
+			if sparkIdx >= len(sparks) {
+				sparkIdx = len(sparks) - 1
+			}
+
+			// Only show points at this height level
+			heightLevel := height - i - 1
+			levelNormalized := float64(heightLevel) / float64(height)
+
+			if normalized >= levelNormalized-0.1 && normalized <= levelNormalized+0.1 {
+				result.WriteString(sparks[sparkIdx])
+			} else {
+				result.WriteString(" ")
+			}
+		}
+		if i < height-1 {
+			result.WriteString("\n")
+		}
+	}
+
+	return result.String()
+}
+
+// getPackageRepoDistribution returns distribution of packages by repository
+func getPackageRepoDistribution(repoPackages []Package) map[string]int {
+	distribution := make(map[string]int)
+	for _, pkg := range repoPackages {
+		distribution[pkg.Source]++
+	}
+	return distribution
+}
+
+// getDashboardSectionHint returns a hint message for the selected dashboard section
+func getDashboardSectionHint(selected int) string {
+	hints := []string{
+		"Foreign packages section - Press [f] to view, [enter] to select",
+		"Cache section - Press [c] to clean, [enter] to select",
+		"Orphans section - Press [o] to view, [R] to remove, [enter] to select",
+	}
+	if selected >= 0 && selected < len(hints) {
+		return hints[selected]
+	}
+	return "Dashboard navigation - Use ↑↓ to navigate, [enter] to select"
 }
 
 // cleanCache runs paru -Sc to clean package cache
@@ -1957,60 +2042,11 @@ func updateSystem() tea.Cmd {
 // checkUpdates fetches available updates using paru -Qu
 func checkUpdates() tea.Cmd {
 	return func() tea.Msg {
-		// Step 1: Build foreign (AUR) packages map via pacman -Qm
-		cmd := exec.Command("pacman", "-Qm")
-		var foreignOut bytes.Buffer
-		cmd.Stdout = &foreignOut
-		foreignPkgs := make(map[string]bool)
-		if err := cmd.Run(); err == nil {
-			for _, line := range strings.Split(foreignOut.String(), "\n") {
-				line = strings.TrimSpace(line)
-				if line != "" {
-					// pacman -Qm output: "package-name version"
-					parts := strings.Fields(line)
-					if len(parts) >= 1 {
-						foreignPkgs[parts[0]] = true
-					}
-				}
-			}
-		}
-		// If this fails, we'll continue without foreign detection
-
-		// Step 2: Build repo map via pacman -Sl (maps package name -> repository)
-		cmd = exec.Command("pacman", "-Sl")
-		var repoOut bytes.Buffer
-		cmd.Stdout = &repoOut
-		repoMap := make(map[string]string)
-		if err := cmd.Run(); err == nil {
-			for _, line := range strings.Split(repoOut.String(), "\n") {
-				parts := strings.Fields(line)
-				if len(parts) >= 2 {
-					// Format: "repo name version [installed]"
-					repoName := parts[0]
-					pkgName := parts[1]
-					repoMap[pkgName] = repoName
-				}
-			}
-		}
-		// If this fails, we'll still try to provide updates with "unknown" source where needed
-
-		// Step 3: Get the updates list from paru
-		cmd = exec.Command("paru", "-Qu")
+		cmd := exec.Command("paru", "-Qu")
 		var stdout bytes.Buffer
-		var stderr bytes.Buffer
 		cmd.Stdout = &stdout
-		cmd.Stderr = &stderr
-		if err := cmd.Run(); err != nil {
-			// paru -Qu returns exit code 1 when there are no updates - that's expected
-			if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
-				// No updates available - return empty list without error
-				return updateCheckMsg{packages: []Package{}}
-			}
-			// Any other error is a real failure
-			return updateCheckMsg{packages: nil, err: fmt.Errorf("failed to check for updates: %w", err)}
-		}
+		_ = cmd.Run() // Returns error if no updates, that's ok
 
-		// Step 4: Parse updates and assign accurate source
 		var packages []Package
 		for _, line := range strings.Split(strings.TrimSpace(stdout.String()), "\n") {
 			if line == "" {
@@ -2024,17 +2060,19 @@ func checkUpdates() tea.Cmd {
 					continue
 				}
 				pkg := Package{
-					Name:      pkgName,
-					Version:   strings.Join(parts[1:], " "), // "oldver -> newver" format
-					Installed: true,                         // updates imply installed
+					Name:    pkgName,
+					Version: strings.Join(parts[1:], " "), // "oldver -> newver" format
 				}
-				// Determine source using both maps (AUR takes precedence)
-				if foreignPkgs[pkgName] {
-					pkg.Source = "aur"
-				} else if repoName, ok := repoMap[pkgName]; ok {
-					pkg.Source = repoName
-				} else {
-					pkg.Source = "unknown" // fallback if not found in either map
+				// Determine source (foreign = aur)
+				checkCmd := exec.Command("pacman", "-Qq", pkgName)
+				if checkCmd.Run() == nil {
+					// Check if foreign
+					foreignCmd := exec.Command("pacman", "-Qm", pkgName)
+					if foreignCmd.Run() == nil {
+						pkg.Source = "aur"
+					} else {
+						pkg.Source = "repo"
+					}
 				}
 				packages = append(packages, pkg)
 			}
@@ -2157,9 +2195,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.confirmPackages = nil
 					return m, executeRemoveOrphansInTerminal(orphans)
 				}
-			case "s":
-				// Used to transition to modeUpdateSelect, removed as part of update flow rework
-				return m, nil
+			case "n", "N", "esc":
 				m.showConfirmation = false
 				m.confirmPackages = nil
 				m.pendingUpdates = nil
@@ -2168,14 +2204,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			case "down", "j":
 				// Scroll down in package list
-				maxVisible := 10
-				var total int
+				maxScroll := len(m.confirmPackages) - 10
 				if m.confirmType == confirmUpdate {
-					total = len(m.pendingUpdates)
-				} else {
-					total = len(m.confirmPackages)
+					maxScroll = len(m.pendingUpdates) - 10
 				}
-				maxScroll := total - maxVisible
 				if maxScroll < 0 {
 					maxScroll = 0
 				}
@@ -2299,11 +2331,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.textInput.Focused() {
 			switch msg.String() {
 			case "esc":
-				if m.mode == modeUpdate {
-					m.textInput.Blur()
-				} else {
-					m.textInput.Blur()
-				}
+				m.textInput.Blur()
 				return m, nil
 			case "down":
 				// Down moves toward more relevant (lower index, visually down)
@@ -2313,602 +2341,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.loadingInfo = true
 						m.pendingInfoPackage = m.filtered[m.selectedIndex].Name
 						return m, debouncePackageInfo(m.pendingInfoPackage)
-					} else if m.mode == modeUninstall && len(m.filteredInstalled) > 0 {
-						m.loadingInfo = true
-						m.pendingInfoPackage = m.filteredInstalled[m.selectedIndex].Name
-						return m, debouncePackageInfo(m.pendingInfoPackage)
-					} else if m.mode == modeUpdate && len(m.filtered) > 0 {
-						m.loadingInfo = true
-						m.pendingInfoPackage = m.filtered[m.selectedIndex].Name
-						return m, debouncePackageInfo(m.pendingInfoPackage)
-					}
-				}
-				return m, nil
-			case "up":
-				// Up moves toward less relevant (higher index, visually up)
-				maxIndex := 0
-				if m.mode == modeInstall || m.mode == modeUpdate {
-					maxIndex = len(m.filtered) - 1
-				} else if m.mode == modeUninstall {
-					maxIndex = len(m.filteredInstalled) - 1
-				}
-				if m.selectedIndex < maxIndex {
-					m.selectedIndex++
-					if m.mode == modeInstall && len(m.filtered) > 0 {
-						m.loadingInfo = true
-						m.pendingInfoPackage = m.filtered[m.selectedIndex].Name
-						return m, debouncePackageInfo(m.pendingInfoPackage)
-					} else if m.mode == modeUninstall && len(m.filteredInstalled) > 0 {
-						m.loadingInfo = true
-						m.pendingInfoPackage = m.filteredInstalled[m.selectedIndex].Name
-						return m, debouncePackageInfo(m.pendingInfoPackage)
-					} else if m.mode == modeUpdate && len(m.filtered) > 0 {
-						m.loadingInfo = true
-						m.pendingInfoPackage = m.filtered[m.selectedIndex].Name
-						return m, debouncePackageInfo(m.pendingInfoPackage)
-					}
-				}
-				return m, nil
-			case "enter":
-				if m.mode == modeInstall && len(m.filtered) > 0 {
-					// If packages are marked, show confirmation for all marked packages
-					if len(m.markedPackages) > 0 {
-						var pkgsToInstall []string
-						for name := range m.markedPackages {
-							if !m.installedSet[name] {
-								pkgsToInstall = append(pkgsToInstall, name)
-							}
-						}
-						if len(pkgsToInstall) > 0 {
-							sort.Strings(pkgsToInstall)
-							m.showConfirmation = true
-							m.confirmType = confirmInstall
-							m.confirmPackages = pkgsToInstall
-							m.confirmScrollOffset = 0
-							m.markedPackages = make(map[string]bool)
-							m.statusMessage = "Confirm installation"
-						} else {
-							m.statusMessage = "All marked packages are already installed"
-						}
-					} else {
-						// Show confirmation dialog for single package
-						pkg := m.filtered[m.selectedIndex]
-						if !pkg.Installed {
-							m.showConfirmation = true
-							m.confirmType = confirmInstall
-							m.confirmPackages = []string{pkg.Name}
-							m.confirmScrollOffset = 0
-							m.statusMessage = "Confirm installation"
-						} else {
-							m.statusMessage = fmt.Sprintf("%s is already installed", pkg.Name)
-						}
-					}
-				} else if m.mode == modeUninstall && len(m.filteredInstalled) > 0 {
-					// If packages are marked, show confirmation for all marked packages
-					if len(m.markedPackages) > 0 {
-						var pkgsToUninstall []string
-						for name := range m.markedPackages {
-							pkgsToUninstall = append(pkgsToUninstall, name)
-						}
-						sort.Strings(pkgsToUninstall)
-						m.showConfirmation = true
-						m.confirmType = confirmUninstall
-						m.confirmPackages = pkgsToUninstall
-						m.confirmScrollOffset = 0
-						m.markedPackages = make(map[string]bool)
-						m.statusMessage = "Confirm removal"
-					} else {
-						// Show confirmation dialog for single package
-						pkg := m.filteredInstalled[m.selectedIndex]
-						m.showConfirmation = true
-						m.confirmType = confirmUninstall
-						m.confirmPackages = []string{pkg.Name}
-						m.confirmScrollOffset = 0
-						m.statusMessage = "Confirm removal"
-					}
-				} else if m.mode == modeUpdate && len(m.pendingUpdates) > 0 {
-					m.showConfirmation = true
-					m.confirmType = confirmUpdate
-					m.confirmScrollOffset = 0
-					
-					// Re-populate the confirmation list with all pending updates
-					var packageNames []string
-					for _, pkg := range m.pendingUpdates {
-						packageNames = append(packageNames, pkg.Name)
-					}
-					m.confirmPackages = packageNames
-					m.statusMessage = fmt.Sprintf("Confirm update for %d packages", len(m.pendingUpdates))
-				}
-				return m, nil
-			case "tab":
-				// Toggle mark on current package (works even while typing)
-				if m.mode == modeInstall && len(m.filtered) > 0 {
-					pkg := m.filtered[m.selectedIndex]
-					if m.markedPackages[pkg.Name] {
-						delete(m.markedPackages, pkg.Name)
-					} else {
-						m.markedPackages[pkg.Name] = true
-					}
-					markedCount := len(m.markedPackages)
-					if markedCount > 0 {
-						m.statusMessage = fmt.Sprintf("%d packages marked", markedCount)
-					} else {
-						m.statusMessage = fmt.Sprintf("Found %d packages", len(m.filtered))
-					}
-				} else if m.mode == modeUninstall && len(m.filteredInstalled) > 0 {
-					pkg := m.filteredInstalled[m.selectedIndex]
-					if m.markedPackages[pkg.Name] {
-						delete(m.markedPackages, pkg.Name)
-					} else {
-						m.markedPackages[pkg.Name] = true
-					}
-					markedCount := len(m.markedPackages)
-					if markedCount > 0 {
-						m.statusMessage = fmt.Sprintf("%d packages marked", markedCount)
-					} else {
-						m.statusMessage = fmt.Sprintf("%d installed packages", len(m.installed))
-					}
-				}
-				return m, nil
-			}
-			// All other keys go to text input
-			var cmd tea.Cmd
-			m.textInput, cmd = m.textInput.Update(msg)
-			cmds = append(cmds, cmd)
-			// Handle filtering logic
-			if m.mode == modeInstall {
-				query := m.textInput.Value()
-				if query != m.lastQuery {
-					m.lastQuery = query
-
-					// Parse repo filter to check query length correctly
-					repoFilters, searchQuery := parseRepoFilter(query)
-					effectiveQueryLen := len(searchQuery)
-
-					// Allow filtering with just repo prefix (e.g., "a:" shows all AUR)
-					hasRepoFilter := len(repoFilters) > 0
-
-					if effectiveQueryLen >= minSearchQueryLen || hasRepoFilter {
-						// Fuzzy filter combined repo + AUR packages (also computes match indices)
-						m.filterAllPackages(query)
-						m.selectedIndex = 0
-
-						// Trigger AUR search only if:
-						// 1. No repo filter OR filter includes AUR
-						// 2. Have a search query (not just "a:")
-						// 3. Haven't searched this query yet
-						includesAUR := len(repoFilters) == 0 || repoFilters["aur"]
-						shouldSearchAUR := includesAUR &&
-							effectiveQueryLen >= minSearchQueryLen &&
-							searchQuery != m.lastAURQuery
-
-						if shouldSearchAUR {
-							m.lastAURQuery = searchQuery
-							m.searchingAUR = true
-							cmds = append(cmds, searchAUR(searchQuery))
-						}
-
-						if len(m.filtered) > 0 {
-							status := fmt.Sprintf("Found %d packages", len(m.filtered))
-							if hasRepoFilter {
-								status = fmt.Sprintf("Found %d %s packages", len(m.filtered), formatRepoFilters(repoFilters))
-							}
-							if m.searchingAUR {
-								status += " (searching AUR...)"
-							}
-							m.statusMessage = status
-							m.loadingInfo = true
-							m.infoForPackage = m.filtered[0].Name
-							cmds = append(cmds, getPackageInfo(m.filtered[0]))
-						} else {
-							if m.searchingAUR {
-								m.statusMessage = "Searching AUR..."
-							} else if hasRepoFilter && searchQuery == "" {
-								m.statusMessage = fmt.Sprintf("No packages in %s", formatRepoFilters(repoFilters))
-							} else {
-								m.statusMessage = fmt.Sprintf("No matches for '%s'", query)
-							}
-							m.packageInfo = ""
-							m.infoForPackage = ""
-						}
-					} else {
-						m.filtered = []Package{}
-						m.aurPackages = []Package{}
-						m.lastAURQuery = ""
-						m.packageInfo = ""
-						m.infoForPackage = ""
-						m.matchIndices = nil
-						if len(m.repoPackages) > 0 {
-							m.statusMessage = fmt.Sprintf("Type at least %d chars or use  to filter (c: e: m: a:) (%d repo packages)", minSearchQueryLen, len(m.repoPackages))
-						} else {
-							m.statusMessage = "Loading package database..."
-						}
-					}
-				}
-			} else if m.mode == modeUninstall {
-				query := m.textInput.Value()
-				if len(m.installed) > 0 {
-					if query == "" {
-						m.filteredInstalled = m.installed
-						m.installedMatchIndices = nil
-						m.statusMessage = fmt.Sprintf("%d installed packages", len(m.installed))
-					} else {
-						// Parse source filter from query
-						sourceFilters, searchQuery := parseUninstallFilter(query)
-						hasSourceFilter := len(sourceFilters) > 0
-
-						// Start with all installed packages
-						basePackages := m.installed
-
-						// Apply source filters if specified
-						if hasSourceFilter {
-							var filtered []Package
-							for _, pkg := range basePackages {
-								// 't' (total) - all packages
-								if sourceFilters["total"] {
-									filtered = append(filtered, pkg)
-								} else {
-									// 'e' (explicit) - explicitly installed packages
-									if sourceFilters["explicit"] && pkg.Explicit {
-										filtered = append(filtered, pkg)
-									}
-									// 'f' (foreign) - foreign/AUR packages
-									if sourceFilters["foreign"] && pkg.Source == "aur" {
-										filtered = append(filtered, pkg)
-									}
-									// 'o' (orphan) - orphan packages
-									if sourceFilters["orphan"] && pkg.Orphan {
-										filtered = append(filtered, pkg)
-									}
-								}
-							}
-							basePackages = filtered
-						}
-
-						// Apply fuzzy filtering if there's a search query
-						if searchQuery != "" {
-							m.filteredInstalled = fuzzyFilter(basePackages, searchQuery)
-							m.installedMatchIndices = computeAllMatchIndices(m.filteredInstalled, searchQuery)
-						} else {
-							m.filteredInstalled = basePackages
-							m.installedMatchIndices = nil
-						}
-
-						// Update status message
-						if hasSourceFilter {
-							m.statusMessage = fmt.Sprintf("Found %d %s packages", len(m.filteredInstalled), formatUninstallFilters(sourceFilters))
-						} else {
-							m.statusMessage = fmt.Sprintf("Showing %d of %d packages", len(m.filteredInstalled), len(m.installed))
-						}
-					}
-					if m.selectedIndex >= len(m.filteredInstalled) {
-						m.selectedIndex = 0
-					}
-					if len(m.filteredInstalled) > 0 && m.filteredInstalled[m.selectedIndex].Name != m.infoForPackage {
-						m.loadingInfo = true
-						m.infoForPackage = m.filteredInstalled[m.selectedIndex].Name
-						cmds = append(cmds, getPackageInfo(m.filteredInstalled[m.selectedIndex]))
-					}
-				}
-			} else if m.mode == modeUpdate {
-				query := m.textInput.Value()
-				if len(m.updatableAll) > 0 {
-					if query == "" {
-						m.filtered = m.updatableAll
-						m.matchIndices = nil
-						m.statusMessage = fmt.Sprintf("%d updates available", len(m.updatableAll))
-					} else {
-						// Apply fuzzy filtering
-						m.filtered = fuzzyFilter(m.updatableAll, query)
-						m.matchIndices = computeAllMatchIndices(m.filtered, query)
-						m.statusMessage = fmt.Sprintf("Showing %d of %d updates", len(m.filtered), len(m.updatableAll))
-					}
-					
-					if m.selectedIndex >= len(m.filtered) {
-						m.selectedIndex = 0
-					}
-					// Load info for the newly selected item after filtering
-					if len(m.filtered) > 0 && m.filtered[m.selectedIndex].Name != m.infoForPackage {
-						m.loadingInfo = true
-						m.infoForPackage = m.filtered[m.selectedIndex].Name
-						cmds = append(cmds, getPackageInfo(m.filtered[m.selectedIndex]))
-					} else if len(m.filtered) == 0 {
-						// Clear info if no results
-						m.packageInfo = ""
-						m.infoForPackage = ""
-					}
-				}
-			}
-			return m, tea.Batch(cmds...)
-		}
-
-		// Input not focused - handle normal keybindings
-		switch msg.String() {
-		case "q":
-			return m, tea.Quit
-
-		case "esc":
-			if m.textInput.Focused() {
-				m.textInput.Blur()
-				return m, nil
-			}
-			// Clear selections and reset state but stay in current mode
-			if len(m.markedPackages) > 0 {
-				m.markedPackages = make(map[string]bool)
-				m.statusMessage = "Selections cleared"
-				return m, nil
-			}
-
-		case "c":
-			// Clean cache - only in dashboard mode
-			if m.mode == modeInstalled && !m.loading {
-				m.showConfirmation = true
-				m.confirmType = confirmCleanCache
-				m.confirmScrollOffset = 0
-				m.statusMessage = "Confirm cache cleaning"
-				return m, nil
-			}
-
-		case "R":
-			// Remove orphans - only in dashboard mode and when there are orphans
-			if m.mode == modeInstalled && !m.loading && m.dashboard.Orphans > 0 {
-				// Get orphan list for confirmation
-				cmd := exec.Command("paru", "-Qdtq")
-				var orphanList bytes.Buffer
-				cmd.Stdout = &orphanList
-				if err := cmd.Run(); err != nil {
-					m.statusMessage = fmt.Sprintf("Failed to get orphan list: %v", err)
-					return m, nil
-				}
-				if orphanList.Len() == 0 {
-					m.statusMessage = "No orphans to remove"
-					return m, nil
-				}
-				orphans := strings.Fields(orphanList.String())
-				m.confirmPackages = orphans
-				m.showConfirmation = true
-				m.confirmType = confirmRemoveOrphans
-				m.confirmScrollOffset = 0
-				m.statusMessage = "Confirm orphan removal"
-				return m, nil
-			}
-
-		case "t":
-			// Switch to remove mode with total filter - only from dashboard
-			if m.mode == modeInstalled && !m.loading {
-				m.mode = modeUninstall
-				m.loading = true
-				m.statusMessage = "Loading all packages..."
-				m.selectedIndex = 0
-				m.textInput.SetValue("t:")
-				m.textInput.Placeholder = "Filter (t: total  e: explicit  f: foreign  o: orphan)..."
-				m.markedPackages = make(map[string]bool)
-				return m, getInstalledPackages()
-			}
-
-		case "e":
-			// Switch to remove mode with explicit filter - only from dashboard
-			if m.mode == modeInstalled && !m.loading {
-				m.mode = modeUninstall
-				m.loading = true
-				m.statusMessage = "Loading explicit packages..."
-				m.selectedIndex = 0
-				m.textInput.SetValue("e:")
-				m.textInput.Placeholder = "Filter (t: total  e: explicit  f: foreign  o: orphan)..."
-				m.markedPackages = make(map[string]bool)
-				return m, getInstalledPackages()
-			}
-
-		case "f":
-			// Switch to remove mode with foreign filter - only from dashboard
-			if m.mode == modeInstalled && !m.loading {
-				m.mode = modeUninstall
-				m.loading = true
-				m.statusMessage = "Loading foreign packages..."
-				m.selectedIndex = 0
-				m.textInput.SetValue("f:")
-				m.textInput.Placeholder = "Filter (t: total  e: explicit  f: foreign  o: orphan)..."
-				m.markedPackages = make(map[string]bool)
-				return m, getInstalledPackages()
-			}
-
-		case "o":
-			// Switch to remove mode with orphan filter - only from dashboard
-			if m.mode == modeInstalled && !m.loading {
-				m.mode = modeUninstall
-				m.loading = true
-				m.statusMessage = "Loading orphan packages..."
-				m.selectedIndex = 0
-				m.textInput.SetValue("o:")
-				m.textInput.Placeholder = "Filter (t: total  e: explicit  f: foreign  o: orphan)..."
-				m.markedPackages = make(map[string]bool)
-				return m, getInstalledPackages()
-			}
-
-		case "n":
-			if m.mode != modeInstalled && !m.textInput.Focused() {
-				m.mode = modeInstalled
-				m.loading = true
-				m.statusMessage = "Loading system statistics..."
-				m.markedPackages = make(map[string]bool)
-				return m, getDashboardData()
-			}
-
-		case "r":
-			if m.mode != modeUninstall {
-				m.mode = modeUninstall
-				m.loading = true
-				m.statusMessage = "Loading installed packages..."
-				m.selectedIndex = 0
-				m.textInput.SetValue("")
-				m.textInput.Placeholder = "Filter (t: total  e: explicit  f: foreign  o: orphan)..."
-				m.markedPackages = make(map[string]bool)
-				return m, getInstalledPackages()
-			}
-
-		case "u":
-			if !m.textInput.Focused() {
-				if m.mode != modeUpdate {
-					// Switch to update mode
-					m.mode = modeUpdate
-					m.markedPackages = make(map[string]bool)
-				}
-				// Check for updates (works both when switching to update mode and when already in it)
-				m.loading = true
-				m.statusMessage = "Checking for updates..."
-				m.updateOutput = ""
-				m.pendingUpdates = nil
-				m.updatableAll = nil
-				m.filtered = nil
-				m.matchIndices = nil
-				return m, checkUpdates()
-			}
-
-		case "s":
-			// Removed selective update mode
-			return m, nil
-
-		case "a":
-			// Update all packages directly
-			if m.mode == modeUpdate && !m.loading && len(m.pendingUpdates) > 0 {
-				m.statusMessage = "Running system update..."
-				return m, executeUpdateInTerminal()
-			}
-
-		case "y", "Y":
-			// Confirm update from main update page
-			if m.mode == modeUpdate && !m.loading && len(m.pendingUpdates) > 0 {
-				m.statusMessage = "Running system update..."
-				return m, executeUpdateInTerminal()
-			}
-
-		case "i":
-			if m.mode != modeInstall {
-				m.mode = modeInstall
-				m.selectedIndex = 0
-				m.filtered = []Package{}
-				m.packageInfo = ""
-				m.statusMessage = "Press [/] to search packages"
-				m.textInput.SetValue("")
-				m.textInput.Placeholder = "Search packages..."
-				m.markedPackages = make(map[string]bool)
-				return m, nil
-			}
-
-		case "down", "j":
-			// Down/j moves toward more relevant (lower index, visually down)
-			if m.selectedIndex > 0 {
-				m.selectedIndex--
-				if m.mode == modeInstall && len(m.filtered) > 0 {
+} else if m.mode == modeUninstall && len(m.filteredInstalled) > 0 {
 					m.loadingInfo = true
-					m.pendingInfoPackage = m.filtered[m.selectedIndex].Name
-					return m, debouncePackageInfo(m.pendingInfoPackage)
-				} else if m.mode == modeUninstall && len(m.filteredInstalled) > 0 {
-					m.loadingInfo = true
-					m.pendingInfoPackage = m.filteredInstalled[m.selectedIndex].Name
-					return m, debouncePackageInfo(m.pendingInfoPackage)
-				} else if m.mode == modeUpdate && len(m.filtered) > 0 {
-					m.loadingInfo = true
-					m.pendingInfoPackage = m.filtered[m.selectedIndex].Name
+m.pendingInfoPackage = m.filteredInstalled[m.selectedIndex].Name
 					return m, debouncePackageInfo(m.pendingInfoPackage)
 				}
-			}
-
-		case "up", "k":
-			// Up/k moves toward less relevant (higher index, visually up)
-			maxIndex := 0
-			if m.mode == modeInstall || m.mode == modeUpdate {
-				maxIndex = len(m.filtered) - 1
-			} else if m.mode == modeUninstall {
-				maxIndex = len(m.filteredInstalled) - 1
-			}
-			if m.selectedIndex < maxIndex {
-				m.selectedIndex++
-				if m.mode == modeInstall && len(m.filtered) > 0 {
-					m.loadingInfo = true
-					m.pendingInfoPackage = m.filtered[m.selectedIndex].Name
-					return m, debouncePackageInfo(m.pendingInfoPackage)
-				} else if m.mode == modeUninstall && len(m.filteredInstalled) > 0 {
-					m.loadingInfo = true
-					m.pendingInfoPackage = m.filteredInstalled[m.selectedIndex].Name
-					return m, debouncePackageInfo(m.pendingInfoPackage)
-				} else if m.mode == modeUpdate && len(m.filtered) > 0 {
-					m.loadingInfo = true
-					m.pendingInfoPackage = m.filtered[m.selectedIndex].Name
-					return m, debouncePackageInfo(m.pendingInfoPackage)
-				}
-			}
-
-		case "enter":
-			if m.mode == modeInstall && len(m.filtered) > 0 {
-				// If packages are marked, show confirmation for all marked packages
-				if len(m.markedPackages) > 0 {
-					var pkgsToInstall []string
-					for name := range m.markedPackages {
-						// Check if not already installed
-						if !m.installedSet[name] {
-							pkgsToInstall = append(pkgsToInstall, name)
-						}
-					}
-					if len(pkgsToInstall) > 0 {
-						sort.Strings(pkgsToInstall)
-						m.showConfirmation = true
-						m.confirmType = confirmInstall
-						m.confirmPackages = pkgsToInstall
-						m.confirmScrollOffset = 0
-						m.markedPackages = make(map[string]bool) // Clear marks
-						m.statusMessage = "Confirm installation"
-					} else {
-						m.statusMessage = "All marked packages are already installed"
-					}
-				} else {
-					// Show confirmation for single selected package
-					pkg := m.filtered[m.selectedIndex]
-					if !pkg.Installed {
-						m.showConfirmation = true
-						m.confirmType = confirmInstall
-						m.confirmPackages = []string{pkg.Name}
-						m.confirmScrollOffset = 0
-						m.statusMessage = "Confirm installation"
-					} else {
-						m.statusMessage = fmt.Sprintf("%s is already installed", pkg.Name)
-					}
-				}
-			} else if m.mode == modeUninstall && len(m.filteredInstalled) > 0 {
-				// If packages are marked, show confirmation for all marked packages
-				if len(m.markedPackages) > 0 {
-					var pkgsToUninstall []string
-					for name := range m.markedPackages {
-						pkgsToUninstall = append(pkgsToUninstall, name)
-					}
-					sort.Strings(pkgsToUninstall)
-					m.showConfirmation = true
-					m.confirmType = confirmUninstall
-					m.confirmPackages = pkgsToUninstall
-					m.confirmScrollOffset = 0
-					m.markedPackages = make(map[string]bool) // Clear marks
-					m.statusMessage = "Confirm removal"
-				} else {
-					// Show confirmation for single selected package
-					pkg := m.filteredInstalled[m.selectedIndex]
-					m.showConfirmation = true
-					m.confirmType = confirmUninstall
-					m.confirmPackages = []string{pkg.Name}
-					m.confirmScrollOffset = 0
-					m.statusMessage = "Confirm removal"
-				}
-			} else if m.mode == modeUpdate && len(m.pendingUpdates) > 0 {
-				m.showConfirmation = true
-				m.confirmType = confirmUpdate
-				m.confirmScrollOffset = 0
-				
-				// Re-populate the confirmation list with all pending updates
-				var packageNames []string
-				for _, pkg := range m.pendingUpdates {
-					packageNames = append(packageNames, pkg.Name)
-				}
-				m.confirmPackages = packageNames
-				m.statusMessage = fmt.Sprintf("Confirm update for %d packages", len(m.pendingUpdates))
 			}
 
 		case "tab":
@@ -2942,14 +2379,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case "/":
-			if (m.mode == modeInstall || m.mode == modeUninstall || m.mode == modeUpdate) && !m.textInput.Focused() {
+			if (m.mode == modeInstall || m.mode == modeUninstall) && !m.textInput.Focused() {
 				m.textInput.Focus()
 				if m.mode == modeInstall && len(m.repoPackages) > 0 && m.textInput.Value() == "" {
 					m.statusMessage = fmt.Sprintf("Type at least %d chars or use prefix (c: e: m: a:) to filter (%d repo packages)", minSearchQueryLen, len(m.repoPackages))
 				} else if m.mode == modeUninstall && len(m.installed) > 0 && m.textInput.Value() == "" {
 					m.statusMessage = fmt.Sprintf("Filter: t: total  e: explicit  f: foreign  o: orphan (%d installed)", len(m.installed))
-				} else if m.mode == modeUpdate && len(m.updatableAll) > 0 && m.textInput.Value() == "" {
-					m.statusMessage = fmt.Sprintf("Type to search among %d updates", len(m.updatableAll))
 				}
 			}
 		}
@@ -3129,13 +2564,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						break
 					}
 				}
-			} else if m.mode == modeUpdate {
-				for i := range m.filtered {
-					if m.filtered[i].Name == msg.packageName {
-						pkg = &m.filtered[i]
-						break
-					}
-				}
 			}
 			if pkg != nil {
 				return m, getPackageInfo(*pkg)
@@ -3235,17 +2663,28 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case dashboardMsg:
 		m.loading = false
-		// Always set the data, even if there were errors (partial data is better than none)
-		m.dashboard = msg.data
 		if msg.err != nil {
-			m.statusMessage = fmt.Sprintf("Dashboard loaded with warnings: %v", msg.err)
+			m.statusMessage = fmt.Sprintf("Error loading dashboard: %v", msg.err)
 		} else {
+			m.dashboard = msg.data
 			// Preserve lastCompletedOp message if set, otherwise show default
 			if m.lastCompletedOp != "" {
 				m.statusMessage = m.lastCompletedOp
 			} else {
 				m.statusMessage = "Dashboard loaded"
 			}
+		}
+		// Start auto-refresh timer if in dashboard mode
+		if m.mode == modeInstalled {
+			cmds = append(cmds, tea.Tick(60*time.Second, func(t time.Time) tea.Msg {
+				return refreshDashboardMsg{}
+			}))
+		}
+
+	case refreshDashboardMsg:
+		if m.mode == modeInstalled && !m.loading {
+			m.statusMessage = "Refreshing dashboard..."
+			return m, getDashboardData()
 		}
 
 	case actionCompleteMsg:
@@ -3300,28 +2739,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.statusMessage = "System is up to date!"
 			m.updateOutput = "No updates available."
 		} else {
-			// Store all available updates and show on main update page
-			m.updatableAll = msg.packages
-			m.pendingUpdates = msg.packages // Initially all are pending
-			
-			// Initialize list view for modeUpdate
-			m.filtered = m.updatableAll
-			if m.textInput.Value() != "" {
-				m.matchIndices = computeAllMatchIndices(m.filtered, m.textInput.Value())
-			} else {
-				m.matchIndices = nil
-			}
-			m.selectedIndex = 0
+			// Show confirmation dialog with available updates
+			m.pendingUpdates = msg.packages
+			m.showConfirmation = true
+			m.confirmType = confirmUpdate
 			m.confirmScrollOffset = 0
-			m.statusMessage = fmt.Sprintf("%d updates available", len(msg.packages))
-			m.updateOutput = ""
-			
-			// Auto-load info for first package
-			if len(m.filtered) > 0 {
-				m.loadingInfo = true
-				m.pendingInfoPackage = m.filtered[0].Name
-				return m, debouncePackageInfo(m.pendingInfoPackage)
-			}
+			m.statusMessage = fmt.Sprintf("%d update(s) available", len(msg.packages))
 		}
 
 	case execCompleteMsg:
@@ -3519,12 +2942,14 @@ func (m model) View() string {
 	infoHeight := contentHeight / 2
 	infoContent := ""
 	if m.mode == modeUpdate {
-		if m.loadingInfo {
-			infoContent = fmt.Sprintf("Loading details for %s...", m.infoForPackage)
-		} else if m.packageInfo != "" {
-			infoContent = m.packageInfo
+		if m.updateOutput != "" {
+			infoContent = m.updateOutput
+		} else if m.loading {
+			infoContent = "Checking for updates..."
+		} else if len(m.pendingUpdates) > 0 {
+			infoContent = fmt.Sprintf("%d update(s) available. Press [enter] to review and update.", len(m.pendingUpdates))
 		} else {
-			infoContent = "Select an update to see details"
+			infoContent = "System is up to date. Press [u] to check again."
 		}
 	} else if m.loadingInfo {
 		infoContent = fmt.Sprintf("Loading details for %s...", m.infoForPackage)
@@ -3555,9 +2980,6 @@ func (m model) View() string {
 	// Bottom half: Results + Input
 	bottomHeight := contentHeight - infoHeight - 1
 	resultsHeight := bottomHeight - 3
-	if resultsHeight < 1 {
-		resultsHeight = 1
-	}
 
 	// Build results list
 	var results strings.Builder
@@ -3566,13 +2988,11 @@ func (m model) View() string {
 		pkgList = m.filtered
 	} else if m.mode == modeUninstall {
 		pkgList = m.filteredInstalled
-	} else if m.mode == modeUpdate {
-		pkgList = m.filtered
 	}
 
 	if m.loading {
 		results.WriteString("  Loading...")
-	} else if m.mode == modeUpdate && len(pkgList) == 0 && !m.loading {
+	} else if m.mode == modeUpdate {
 		results.WriteString("  " + m.statusMessage)
 	} else if len(pkgList) == 0 {
 		results.WriteString("  No packages to display")
@@ -3593,8 +3013,6 @@ func (m model) View() string {
 			matchIndicesMap = m.matchIndices
 		} else if m.mode == modeUninstall {
 			matchIndicesMap = m.installedMatchIndices
-		} else if m.mode == modeUpdate {
-			matchIndicesMap = m.matchIndices
 		}
 
 		// Build lines in reverse order (most relevant at bottom, near input field)
@@ -3668,10 +3086,10 @@ func (m model) View() string {
 
 	// Input field
 	inputLine := ""
-	if m.mode == modeInstall || m.mode == modeUninstall || m.mode == modeUpdate {
+	if m.mode == modeInstall || m.mode == modeUninstall {
 		inputLine = m.textInput.View()
 	} else {
-		inputLine = statusStyle.Render(m.statusMessage)
+		inputLine = statusStyle.Render("System update in progress...")
 	}
 
 	// Status line
@@ -3915,8 +3333,7 @@ func truncateWithAnsi(s string, maxWidth int) string {
 
 // renderConfirmationDialog renders a centered confirmation dialog for install/uninstall/update
 func (m model) renderConfirmationDialog(contentWidth, contentHeight int, activeColor lipgloss.Color) string {
-
-	// Dialog dimensions (for other confirmation types)
+	// Dialog dimensions
 	dialogWidth := contentWidth - 20
 	if dialogWidth < 50 {
 		dialogWidth = 50
@@ -4027,29 +3444,13 @@ func (m model) renderConfirmationDialog(contentWidth, contentHeight int, activeC
 		}
 	} else {
 		// Package count
-		if m.confirmType == confirmUpdate {
-			if len(packages) == 1 {
-				content.WriteString("The following update is available:\n\n")
-			} else {
-				content.WriteString(fmt.Sprintf("The following %s updates are available:\n\n",
-					countStyle.Render(fmt.Sprintf("%d", len(packages)))))
-			}
-			if actionDesc == "update" {
-				if len(packages) == 1 {
-					content.WriteString("The following update is available:\n\n")
-				} else {
-					content.WriteString(fmt.Sprintf("The following %s updates are available:\n\n",
-						countStyle.Render(fmt.Sprintf("%d", len(packages)))))
-				}
-			} else {
-				if len(packages) == 1 {
-					content.WriteString(fmt.Sprintf("The following package will be %sd:\n\n", actionDesc))
-				} else {
-					content.WriteString(fmt.Sprintf("The following %s packages will be %sd:\n\n",
-						countStyle.Render(fmt.Sprintf("%d", len(packages))), actionDesc))
-				}
-			}
+		if len(packages) == 1 {
+			content.WriteString(fmt.Sprintf("The following package will be %sd:\n\n", actionDesc))
+		} else {
+			content.WriteString(fmt.Sprintf("The following %s packages will be %sd:\n\n",
+				countStyle.Render(fmt.Sprintf("%d", len(packages))), actionDesc))
 		}
+
 		// Package list with scrolling
 		maxVisible := 10
 		startIdx := m.confirmScrollOffset
@@ -4057,136 +3458,44 @@ func (m model) renderConfirmationDialog(contentWidth, contentHeight int, activeC
 		if endIdx > len(packages) {
 			endIdx = len(packages)
 		}
-		visibleCount := endIdx - startIdx
 
-		// Compute inner width for content (dialog width minus borders and padding)
-		innerWidth := dialogWidth - 6
-		if innerWidth < 10 {
-			innerWidth = 10
+		// Show scroll indicator at top if needed
+		if startIdx > 0 {
+			content.WriteString(scrollHintStyle.Render(fmt.Sprintf("  ↑ %d more above\n", startIdx)))
 		}
 
-		showScrollbar := len(packages) > maxVisible
-
-		// Build list entries
-		type listEntry struct {
-			text  string
-			isPkg bool
-		}
-		var entries []listEntry
-
-		if showScrollbar {
-			// For scrollable lists, always include top and bottom hint placeholders
-			// to maintain constant height while scrolling
-			topHintText := ""
-			if startIdx > 0 {
-				topHintText = fmt.Sprintf("  ↑ %d more above", startIdx)
-			}
-			entries = append(entries, listEntry{text: topHintText})
-
-			// Package lines in forward order (scrolling down reveals more below)
-			for i := startIdx; i < endIdx; i++ {
-				pkg := packages[i]
-				var line string
-				if m.confirmType == confirmUpdate {
-					sourceBadge := sourceStyle(pkg.Source).Render(fmt.Sprintf("[%s]", pkg.Source))
-					line = fmt.Sprintf("  • %s %s %s",
-						sourceBadge,
-						packageNameStyle.Render(pkg.Name),
-						packageVersionStyle.Render(pkg.Version))
-				} else {
-					line = fmt.Sprintf("  • %s", packageNameStyle.Render(pkg.Name))
-				}
-				entries = append(entries, listEntry{text: line, isPkg: true})
-			}
-
-			bottomHintText := ""
-			remaining := len(packages) - endIdx
-			if remaining > 0 {
-				bottomHintText = fmt.Sprintf("  ↓ %d more below", remaining)
-			}
-			entries = append(entries, listEntry{text: bottomHintText})
-		} else {
-			// Non-scrollable lists: just package lines in normal order, no placeholders
-			for i := 0; i < len(packages); i++ {
-				pkg := packages[i]
-				var line string
-				if m.confirmType == confirmUpdate {
-					sourceBadge := sourceStyle(pkg.Source).Render(fmt.Sprintf("[%s]", pkg.Source))
-					line = fmt.Sprintf("  • %s %s %s",
-						sourceBadge,
-						packageNameStyle.Render(pkg.Name),
-						packageVersionStyle.Render(pkg.Version))
-				} else {
-					line = fmt.Sprintf("  • %s", packageNameStyle.Render(pkg.Name))
-				}
-				entries = append(entries, listEntry{text: line, isPkg: true})
+		// List packages
+		for i := startIdx; i < endIdx; i++ {
+			pkg := packages[i]
+			if m.confirmType == confirmUpdate {
+				// Show source and version info for updates
+				sourceBadge := sourceStyle(pkg.Source).Render(fmt.Sprintf("[%s]", pkg.Source))
+				content.WriteString(fmt.Sprintf("  • %s %s %s\n",
+					sourceBadge,
+					packageNameStyle.Render(pkg.Name),
+					packageVersionStyle.Render(pkg.Version)))
+			} else {
+				// Just show package name for install/uninstall
+				content.WriteString(fmt.Sprintf("  • %s\n", packageNameStyle.Render(pkg.Name)))
 			}
 		}
 
-		// Calculate scrollbar metrics if needed
-		var thumbSize, thumbTop int
-		// Track height is the number of package rows we scroll through (maxVisible)
-		// The top/bottom hints are placeholders and not part of the scroll track
-		trackHeight := maxVisible
-		if showScrollbar && len(packages) > maxVisible {
-			// Thumb size proportional to visible fraction
-			thumbSize = (visibleCount * trackHeight) / len(packages)
-			if thumbSize < 1 {
-				thumbSize = 1
-			}
-			if thumbSize > trackHeight {
-				thumbSize = trackHeight
-			}
-			// Thumb top based on scroll offset; offset by +1 to account for top hint row
-			if len(packages) > maxVisible {
-				thumbTop = 1 + startIdx*(trackHeight-thumbSize)/(len(packages)-maxVisible)
-			}
+		// Show scroll indicator at bottom if needed
+		remaining := len(packages) - endIdx
+		if remaining > 0 {
+			content.WriteString(scrollHintStyle.Render(fmt.Sprintf("  ↓ %d more below\n", remaining)))
 		}
 
-		// Scrollbar styles
-		scrollbarTrackStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("236"))
-		scrollbarThumbStyle := lipgloss.NewStyle().Foreground(activeColor).Bold(true)
-
-		// Render entries with fixed width and optional scrollbar
-		for i, entry := range entries {
-			contentWidth := innerWidth
-			var sbChar string
-			if showScrollbar {
-				contentWidth = innerWidth - 1 // reserve space for scrollbar
-				if entry.isPkg {
-					if i >= thumbTop && i < thumbTop+thumbSize {
-						sbChar = scrollbarThumbStyle.Render("█")
-					} else {
-						sbChar = scrollbarTrackStyle.Render("│")
-					}
-				} else {
-					sbChar = " " // placeholder to keep width alignment, no scrollbar
-				}
-			}
-			line := lipgloss.NewStyle().Width(contentWidth).Render(entry.text)
-			if sbChar != "" {
-				line = line + sbChar
-			}
-			content.WriteString(line + "\n")
-		}
-
-		// Scroll usage hint (separate, no scrollbar)
+		// Scroll hint if list is scrollable
 		if len(packages) > maxVisible {
-			// Add blank line before hint (as in original)
 			content.WriteString("\n")
-			hint := scrollHintStyle.Render("  Use [↑/↓] or [j/k] to scroll")
-			// Ensure it fits within innerWidth
-			if lipgloss.Width(hint) > innerWidth {
-				hint = lipgloss.NewStyle().Width(innerWidth).Render(hint)
-			}
-			content.WriteString(hint)
+			content.WriteString(scrollHintStyle.Render("  Use [↑/↓] or [j/k] to scroll"))
 		}
 	}
 
 	// Prompt - build as single line to prevent wrapping issues
 	content.WriteString("\n\n")
-	var promptLine string
-	promptLine = fmt.Sprintf("Proceed? %ses  %so",
+	promptLine := fmt.Sprintf("Proceed? %ses  %so",
 		keyStyle.Render("[y]"),
 		keyStyle.Render("[n]"))
 	content.WriteString(promptStyle.Render(promptLine))
@@ -4368,15 +3677,15 @@ func (m model) renderDashboard(helpText string, contentWidth, contentHeight int)
 	// GROUP 1: Package Counts (with shortcuts to filter in remove mode)
 	// ═══════════════════════════════════════════════════════
 
-	// Build package counts content as simple lines
+	// Build package counts content with shortcut hints
 	countsLines := []string{
-		fmt.Sprintf("  %s Total    │ %s",
+		fmt.Sprintf(" %s Total    │ %s",
 			shortcutStyle.Render("[t]"),
 			lipgloss.NewStyle().Bold(true).Foreground(cyanColor).Render(fmt.Sprintf("%d", m.dashboard.TotalPackages))),
-		fmt.Sprintf("  %s Explicit │ %s",
+		fmt.Sprintf(" %s Explicit │ %s",
 			shortcutStyle.Render("[e]"),
 			lipgloss.NewStyle().Bold(true).Foreground(greenColor).Render(fmt.Sprintf("%d", m.dashboard.ExplicitlyInstalled))),
-		fmt.Sprintf("  %s Foreign  │ %s",
+		fmt.Sprintf(" %s Foreign  │ %s",
 			shortcutStyle.Render("[f]"),
 			lipgloss.NewStyle().Bold(true).Foreground(yellowColor).Render(fmt.Sprintf("%d", m.dashboard.ForeignPackages))),
 	}
@@ -4386,13 +3695,47 @@ func (m model) renderDashboard(helpText string, contentWidth, contentHeight int)
 	if m.dashboard.Orphans > 0 {
 		orphanStyle = lipgloss.NewStyle().Bold(true).Foreground(redColor)
 	}
-	orphanLine := fmt.Sprintf("  %s Orphans  │ %s",
+	orphanLine := fmt.Sprintf(" %s Orphans  │ %s",
 		shortcutStyle.Render("[o]"),
 		orphanStyle.Render(fmt.Sprintf("%d", m.dashboard.Orphans)))
 	if m.dashboard.Orphans > 0 {
-		orphanLine += shortcutStyle.Render(" [R]remove")
+		orphanLine += shortcutStyle.Render(" [R]rm")
 	}
 	countsLines = append(countsLines, orphanLine)
+
+	// Package distribution pie chart
+	if len(m.repoPackages) > 0 {
+		distribution := getPackageRepoDistribution(m.repoPackages)
+		totalRepoPackages := 0
+		for _, count := range distribution {
+			totalRepoPackages += count
+		}
+
+		// Calculate percentages
+		percentages := make(map[string]float64)
+		for repo, count := range distribution {
+			percentages[repo] = float64(count) / float64(totalRepoPackages)
+		}
+
+		// Add pie chart to counts box
+		countsLines = append(countsLines, "")
+		countsLines = append(countsLines, "  Repository Distribution:")
+
+		// Show top 4 repositories
+		repos := []string{"core", "extra", "multilib", "aur"}
+		for _, repo := range repos {
+			if count, ok := distribution[repo]; ok && count > 0 {
+				percentage := float64(count) / float64(totalRepoPackages) * 100
+				repoColor := sourceColors[repo]
+				if repoColor == "" {
+					repoColor = lipgloss.Color("252")
+				}
+				repoStyle := lipgloss.NewStyle().Foreground(repoColor).Bold(true)
+				countsLines = append(countsLines, fmt.Sprintf("    %s: %d (%.1f%%)",
+					repoStyle.Render(repo), count, percentage))
+			}
+		}
+	}
 
 	// ═══════════════════════════════════════════════════════
 	// GROUP 2: Storage Info
@@ -4531,18 +3874,20 @@ func (m model) renderDashboard(helpText string, contentWidth, contentHeight int)
 		filledWidth = availableBarWidth
 	}
 
-	filledBar := lipgloss.NewStyle().Background(greenColor).Foreground(lipgloss.Color("0")).
-		Render(strings.Repeat(" ", filledWidth))
-	emptyBar := lipgloss.NewStyle().Background(lipgloss.Color("238")).
-		Render(strings.Repeat(" ", availableBarWidth-filledWidth))
+	// Use gradient colors for better visual
+	filledColor := lipgloss.Color("#4CAF50") // Green
+	emptyColor := lipgloss.Color("#555555")  // Dark gray
+
+	// Use Unicode block characters for smoother bar
+	bar := renderProgressBar(explicitRatio, availableBarWidth, filledColor, emptyColor)
 
 	ratioTitle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("229")).
 		Render("📊 Explicit vs Dependencies")
 	ratioSuffix := fmt.Sprintf("%d/%d (%.0f%% explicit)", m.dashboard.ExplicitlyInstalled, dependencies, explicitRatio*100)
-	ratioBar := renderBarLine("", filledBar+emptyBar, ratioSuffix)
+	ratioBar := renderBarLine("", bar, ratioSuffix)
 
 	dashboard.WriteString(ratioTitle + "\n")
-	dashboard.WriteString(ratioBar + "\n\n")
+	dashboard.WriteString(ratioBar + "\n")
 
 	// ═══════════════════════════════════════════════════════
 	// Bar Chart: System Size vs Cache Size
@@ -4559,17 +3904,11 @@ func (m model) renderDashboard(helpText string, contentWidth, contentHeight int)
 		maxSize = 1
 	}
 
-	systemBarWidth := int(float64(m.dashboard.TotalSizeBytes) / float64(maxSize) * float64(availableBarWidth))
-	cacheBarWidth := int(float64(m.dashboard.CleanerSizeBytes) / float64(maxSize) * float64(availableBarWidth))
-	if systemBarWidth < 1 {
-		systemBarWidth = 1
-	}
-	if cacheBarWidth < 1 && m.dashboard.CleanerSizeBytes > 0 {
-		cacheBarWidth = 1
-	}
+	systemPercent := float64(m.dashboard.TotalSizeBytes) / float64(maxSize)
+	cachePercent := float64(m.dashboard.CleanerSizeBytes) / float64(maxSize)
 
-	systemBar := lipgloss.NewStyle().Background(cyanColor).Render(strings.Repeat(" ", systemBarWidth))
-	cacheBar := lipgloss.NewStyle().Background(orangeColor).Render(strings.Repeat(" ", cacheBarWidth))
+	systemBar := renderProgressBar(systemPercent, availableBarWidth, lipgloss.Color("#2196F3"), lipgloss.Color("#555555"))
+	cacheBar := renderProgressBar(cachePercent, availableBarWidth, lipgloss.Color("#FF9800"), lipgloss.Color("#555555"))
 
 	dashboard.WriteString(renderBarLine("System", systemBar, m.dashboard.TotalSize) + "\n")
 	dashboard.WriteString(renderBarLine("Cache", cacheBar, m.dashboard.CleanerSize) + "\n\n")
@@ -4624,25 +3963,9 @@ func (m model) renderDashboard(helpText string, contentWidth, contentHeight int)
 	return lipgloss.JoinVertical(lipgloss.Left, dashPanel, footerLine)
 }
 
-
-
 func main() {
-	// Check dependencies first
-	if err := checkDependencies(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
-	}
-
 	themeFlag := flag.String("theme", "", "Color theme (use --list-themes to see options)")
 	listThemesFlag := flag.Bool("list-themes", false, "List available themes and exit")
-	installFlag := flag.Bool("install", false, "Start in install mode (search and install packages)")
-	installFlagShort := flag.Bool("i", false, "Short flag for install mode")
-	removeFlag := flag.Bool("remove", false, "Start in remove mode (uninstall packages)")
-	removeFlagShort := flag.Bool("r", false, "Short flag for remove mode")
-	updateFlag := flag.Bool("update", false, "Start in update mode (system updates)")
-	updateFlagShort := flag.Bool("u", false, "Short flag for update mode")
-	infoFlag := flag.Bool("info", false, "Start in info mode (view installed packages)")
-	infoFlagShort := flag.Bool("I", false, "Short flag for info mode (dashboard)")
 	flag.Parse()
 
 	// Handle --list-themes
@@ -4652,20 +3975,6 @@ func main() {
 			fmt.Printf("  - %s\n", name)
 		}
 		return
-	}
-
-	// Determine initial mode from flags
-	// Priority order: install > remove > update > info (first match wins)
-	initialMode := modeInstall // default
-	switch {
-	case *installFlag || *installFlagShort:
-		initialMode = modeInstall
-	case *removeFlag || *removeFlagShort:
-		initialMode = modeUninstall
-	case *updateFlag || *updateFlagShort:
-		initialMode = modeUpdate
-	case *infoFlag || *infoFlagShort:
-		initialMode = modeInstalled
 	}
 
 	// Apply theme if specified
@@ -4681,7 +3990,7 @@ func main() {
 		}
 	}
 
-	p := tea.NewProgram(initialModel(initialMode), tea.WithAltScreen())
+	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Error running program: %v\n", err)
 		os.Exit(1)
