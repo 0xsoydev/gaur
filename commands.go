@@ -25,7 +25,16 @@ func getPackageInfo(pkg Package) tea.Cmd {
 			return packageInfoMsg{info: "Invalid package name", packageName: pkg.Name, err: fmt.Errorf("invalid package name: %s", pkg.Name)}
 		}
 
-		cmd := exec.Command("paru", "-Si", pkg.Name)
+		// Use -Qi for purely local lookup if we explicitly want installed version info.
+		// However, for updates/installs, we want -Si (remote info). 
+		// We execute this with a timeout to prevent UI freezes on slow networks during rapid scrolling.
+		arg := "-Si"
+		if pkg.Installed && pkg.Source == "unknown" { 
+			// Only fallback to Qi if it's an orphaned/unknown local package
+			arg = "-Qi"
+		}
+
+		cmd := exec.Command("paru", "--noconfirm", arg, pkg.Name)
 		var out bytes.Buffer
 		cmd.Stdout = &out
 		cmd.Stderr = &out
@@ -130,6 +139,22 @@ func executeRemoveOrphansInTerminal(orphans []string) tea.Cmd {
 	c := exec.Command("paru", args...)
 	return tea.ExecProcess(c, func(err error) tea.Msg {
 		return execCompleteMsg{operation: confirmRemoveOrphans, packages: validNames, err: err}
+	})
+}
+
+// executeSelectiveUpdateInTerminal runs paru -S interactively using tea.ExecProcess
+func executeSelectiveUpdateInTerminal(packages []string) tea.Cmd {
+	validNames, _ := sanitizePackageNames(packages)
+	if len(validNames) == 0 {
+		return func() tea.Msg {
+			return execCompleteMsg{operation: confirmSelectiveUpdate, packages: packages, err: fmt.Errorf("no valid package names")}
+		}
+	}
+
+	args := append([]string{"-S"}, validNames...)
+	c := exec.Command("paru", args...)
+	return tea.ExecProcess(c, func(err error) tea.Msg {
+		return execCompleteMsg{operation: confirmSelectiveUpdate, packages: validNames, err: err}
 	})
 }
 
