@@ -12,7 +12,8 @@ const (
 	modeInstall viewMode = iota
 	modeInstalled
 	modeUninstall
-	modeUpdate // Viewing available updates
+	modeUpdate          // Viewing available updates
+	modeUpdateSelective // Selecting specific updates
 )
 
 // Confirmation operation types
@@ -22,6 +23,7 @@ const (
 	confirmInstall confirmationType = iota
 	confirmUninstall
 	confirmUpdate
+	confirmSelectiveUpdate
 	confirmCleanCache
 	confirmRemoveOrphans
 )

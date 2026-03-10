@@ -21,9 +21,12 @@ type model struct {
 	markedPackages        map[string]bool // Packages marked for batch operation
 	selectionPanelFocused bool            // Whether selection panel is focused
 	selectionPanelIndex   int             // Selected index within selection panel
+	selectionScrollOffset int             // Scroll offset for the selection panel
 	packageInfo           string
+	infoCache             map[string]string // Cache for fetched package info
 	infoForPackage        string
 	pendingInfoPackage    string // Package waiting for debounce to complete
+	infoScrollOffset      int    // Scroll offset for the info/details pane
 	loadingInfo           bool
 	mode                  viewMode
 	width                 int
@@ -44,6 +47,7 @@ type model struct {
 	lastCompletedOp     string    // Description of last completed operation
 	// Update selection state
 	updatableAll []Package // All packages available for update (before selection)
+	updateScrollOffset int   // Scroll offset for the simple update view
 	// Error overlay state
 	showErrorOverlay bool
 	errorTitle       string
@@ -79,6 +83,7 @@ func initialModel(initialMode viewMode) model {
 		filtered:       []Package{},
 		installed:      []Package{},
 		markedPackages: make(map[string]bool),
+		infoCache:      make(map[string]string),
 		selectedIndex:  0,
 		mode:           initialMode,
 		loading:        true,
