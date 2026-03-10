@@ -40,7 +40,7 @@ func (m model) renderHelpText(activeColor lipgloss.Color) string {
 	}
 	parts = append(parts, dimStyle.Render("  "))
 
-	if m.mode == modeUpdate {
+	if m.mode == modeUpdate || m.mode == modeUpdateSelective {
 		parts = append(parts, activeStyle.Render("[u]pdate"))
 	} else {
 		parts = append(parts, dimStyle.Render("[u]pdate"))
@@ -66,7 +66,6 @@ func (m model) View() string {
 	}
 
 	titleStyle := baseTitleStyle.Background(activeColor)
-	borderStyle := baseBorderStyle.BorderForeground(activeColor)
 
 	modeText := ""
 	switch m.mode {
@@ -76,7 +75,7 @@ func (m model) View() string {
 		modeText = "INFO"
 	case modeUninstall:
 		modeText = "UNINSTALL"
-	case modeUpdate:
+	case modeUpdate, modeUpdateSelective:
 		modeText = "UPDATE"
 	}
 
@@ -96,9 +95,131 @@ func (m model) View() string {
 		return m.renderDashboard(helpText, contentWidth, contentHeight)
 	}
 
-	infoHeight := contentHeight / 2
-	infoContent := ""
 	if m.mode == modeUpdate {
+		return m.renderSimpleUpdateView(helpText, contentWidth, contentHeight, activeColor)
+	}
+
+	if m.mode == modeUpdateSelective {
+		overlayWidth := int(float64(m.width) * 0.65)
+		overlayHeight := int(float64(m.height) * 0.65)
+		
+		if overlayWidth < 60 { overlayWidth = 60 }
+		if overlayHeight < 20 { overlayHeight = 20 }
+		if overlayWidth > m.width { overlayWidth = m.width }
+		if overlayHeight > m.height { overlayHeight = m.height }
+
+		paddingX := (contentWidth - overlayWidth) / 2
+		paddingY := (contentHeight - overlayHeight) / 2
+
+		warningSymbol := lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Render("⚠")
+		warningText := lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Render(" Selective updates can break system dependencies")
+		warningBox := lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("196")).
+			Padding(0, 1).
+			Render(warningSymbol + warningText)
+
+		warningOverlay := lipgloss.PlaceHorizontal(overlayWidth, lipgloss.Center, warningBox)
+
+		innerHeight := overlayHeight - 3
+		if innerHeight < 10 {
+			innerHeight = 10
+		}
+
+		paneContent := m.renderPackageListLayout(overlayWidth, innerHeight, activeColor, "", "")
+		
+		paneContent = lipgloss.JoinVertical(lipgloss.Left, paneContent, warningOverlay)
+
+		// Enforce strict rectangle bounds
+		paneContent = lipgloss.Place(overlayWidth, overlayHeight, lipgloss.Left, lipgloss.Top, paneContent)
+
+		bg := m.renderSimpleUpdateView(helpText, contentWidth, contentHeight, activeColor)
+		bgLines := strings.Split(bg, "\n")
+		paneLines := strings.Split(paneContent, "\n")
+		
+		var output strings.Builder
+		for i, bgLine := range bgLines {
+			if i >= paddingY && i < paddingY+overlayHeight {
+				paneLineIdx := i - paddingY
+				if paneLineIdx < len(paneLines) {
+					paneLine := paneLines[paneLineIdx]
+					
+					// Draw background left
+					leftStr := ""
+					if paddingX > 0 {
+						leftStr = truncateWithAnsi(bgLine, paddingX)
+					}
+					
+					rightStr := ""
+					rightStart := paddingX + overlayWidth
+					if rightStart < lipgloss.Width(bgLine) {
+						rightStr = substringAnsi(bgLine, rightStart)
+					}
+
+					output.WriteString(leftStr)
+					output.WriteString(paneLine)
+					output.WriteString(rightStr)
+					output.WriteString("\n")
+					continue
+				}
+			}
+			output.WriteString(bgLine)
+			if i < len(bgLines)-1 {
+				output.WriteString("\n")
+			}
+		}
+
+		return output.String()
+	}
+
+	helpWidth := lipgloss.Width(helpText)
+	padding := contentWidth - helpWidth
+	if padding < 0 {
+		padding = 0
+	}
+	footer := strings.Repeat(" ", padding) + helpText
+
+	return m.renderPackageListLayout(contentWidth, contentHeight, activeColor, header, footer)
+}
+
+// renderPackageListLayout renders the standard split-pane list view for install, uninstall, and selective update
+func (m model) renderPackageListLayout(contentWidth, contentHeight int, activeColor lipgloss.Color, header, footer string) string {
+	borderStyle := baseBorderStyle.BorderForeground(activeColor)
+
+	headerHeight := 0
+	if header != "" {
+		headerHeight = 1
+	}
+	footerHeight := 0
+	if footer != "" {
+		footerHeight = 1
+	}
+
+	availableHeight := contentHeight - headerHeight - footerHeight
+	if availableHeight < 6 {
+		availableHeight = 6
+	}
+
+	targetInfoPanelHeight := availableHeight / 2
+	targetBottomPanelHeight := availableHeight - targetInfoPanelHeight
+
+	infoInnerHeight := targetInfoPanelHeight - 2
+	bottomInnerHeight := targetBottomPanelHeight - 2
+
+	resultsHeight := bottomInnerHeight - 3
+	if resultsHeight < 1 {
+		resultsHeight = 1
+		bottomInnerHeight = 4
+		targetBottomPanelHeight = 6
+		targetInfoPanelHeight = availableHeight - targetBottomPanelHeight
+		infoInnerHeight = targetInfoPanelHeight - 2
+		if infoInnerHeight < 1 {
+			infoInnerHeight = 1
+		}
+	}
+
+	infoContent := ""
+	if m.mode == modeUpdateSelective {
 		if m.loadingInfo {
 			infoContent = fmt.Sprintf("Loading details for %s...", m.infoForPackage)
 		} else if m.packageInfo != "" {
@@ -114,28 +235,42 @@ func (m model) View() string {
 		infoContent = "Select a package to see details"
 	}
 
-	infoLines := strings.Split(infoContent, "\n")
-	if len(infoLines) > infoHeight-2 {
-		infoLines = infoLines[:infoHeight-2]
+	panelInnerWidth := contentWidth - 2
+	if panelInnerWidth < 10 {
+		panelInnerWidth = 10
+	}
+
+	// Render the text *with* a width limit first so Lipgloss wraps it
+	wrappedText := lipgloss.NewStyle().Width(panelInnerWidth - 2).Render(infoContent)
+	infoLines := strings.Split(wrappedText, "\n")
+	
+	totalLines := len(infoLines)
+	if totalLines > infoInnerHeight {
+		maxScroll := totalLines - infoInnerHeight
+		
+		// Clamp offset
+		if m.infoScrollOffset > maxScroll {
+			m.infoScrollOffset = maxScroll
+		} else if m.infoScrollOffset < 0 {
+			m.infoScrollOffset = 0
+		}
+		
+		infoLines = infoLines[m.infoScrollOffset : m.infoScrollOffset+infoInnerHeight]
+	} else {
+		m.infoScrollOffset = 0
 	}
 	infoContent = strings.Join(infoLines, "\n")
 
 	infoBox := lipgloss.NewStyle().
-		Width(contentWidth-2).
-		Height(infoHeight-2).
+		Width(panelInnerWidth - 2).
+		Height(infoInnerHeight).
 		Padding(0, 1).
 		Render(infoContent)
 
 	infoPanel := borderStyle.
-		Width(contentWidth).
-		Height(infoHeight).
+		Width(panelInnerWidth).
+		Height(infoInnerHeight).
 		Render(infoBox)
-
-	bottomHeight := contentHeight - infoHeight - 1
-	resultsHeight := bottomHeight - 3
-	if resultsHeight < 1 {
-		resultsHeight = 1
-	}
 
 	// Build results list
 	var results strings.Builder
@@ -144,13 +279,13 @@ func (m model) View() string {
 		pkgList = m.filtered
 	} else if m.mode == modeUninstall {
 		pkgList = m.filteredInstalled
-	} else if m.mode == modeUpdate {
+	} else if m.mode == modeUpdateSelective {
 		pkgList = m.filtered
 	}
 
 	if m.loading {
 		results.WriteString("  Loading...")
-	} else if m.mode == modeUpdate && len(pkgList) == 0 && !m.loading {
+	} else if m.mode == modeUpdateSelective && len(pkgList) == 0 && !m.loading {
 		results.WriteString("  " + m.statusMessage)
 	} else if len(pkgList) == 0 {
 		results.WriteString("  No packages to display")
@@ -171,7 +306,7 @@ func (m model) View() string {
 			matchIndicesMap = m.matchIndices
 		} else if m.mode == modeUninstall {
 			matchIndicesMap = m.installedMatchIndices
-		} else if m.mode == modeUpdate {
+		} else if m.mode == modeUpdateSelective {
 			matchIndicesMap = m.matchIndices
 		}
 
@@ -237,12 +372,12 @@ func (m model) View() string {
 	}
 
 	resultsBox := lipgloss.NewStyle().
-		Width(contentWidth - 2).
+		Width(panelInnerWidth).
 		Height(resultsHeight).
 		Render(results.String())
 
 	inputLine := ""
-	if m.mode == modeInstall || m.mode == modeUninstall || m.mode == modeUpdate {
+	if m.mode == modeInstall || m.mode == modeUninstall || m.mode == modeUpdateSelective {
 		inputLine = m.textInput.View()
 	} else {
 		inputLine = statusStyle.Render(m.statusMessage)
@@ -259,34 +394,30 @@ func (m model) View() string {
 	)
 
 	bottomPanel := borderStyle.
-		Width(contentWidth).
-		Height(bottomHeight).
+		Width(panelInnerWidth).
+		Height(bottomInnerHeight).
 		Render(bottomContent)
 
-	helpWidth := lipgloss.Width(helpText)
-	padding := contentWidth - helpWidth
-	if padding < 0 {
-		padding = 0
+	var layoutSections []string
+	if header != "" {
+		layoutSections = append(layoutSections, header)
 	}
-	footer := strings.Repeat(" ", padding) + helpText
+	layoutSections = append(layoutSections, infoPanel, bottomPanel)
+	if footer != "" {
+		layoutSections = append(layoutSections, footer)
+	}
 
-	content := lipgloss.JoinVertical(
-		lipgloss.Left,
-		header,
-		infoPanel,
-		bottomPanel,
-		footer,
-	)
+	content := lipgloss.JoinVertical(lipgloss.Left, layoutSections...)
 
 	if len(m.markedPackages) > 0 {
-		content = m.overlaySelectionsPanel(content, contentWidth)
+		content = m.overlaySelectionsPanel(content, contentWidth, headerHeight)
 	}
 
 	return content
 }
 
 // overlaySelectionsPanel renders a selection panel on the bottom right of the screen
-func (m model) overlaySelectionsPanel(content string, contentWidth int) string {
+func (m model) overlaySelectionsPanel(content string, contentWidth int, headerHeight int) string {
 
 	borderColor := lipgloss.Color("205")
 	if m.selectionPanelFocused {
@@ -329,21 +460,31 @@ func (m model) overlaySelectionsPanel(content string, contentWidth int) string {
 	minPanelWidth := 12
 	maxPanelWidth := 32
 
-	maxContentWidth := lipgloss.Width(titleText)
-	visibleCount := maxDisplay
-	if len(pkgNames) < visibleCount {
-		visibleCount = len(pkgNames)
+	startIdx := m.selectionScrollOffset
+	endIdx := startIdx + maxDisplay
+	if endIdx > len(pkgNames) {
+		endIdx = len(pkgNames)
 	}
-	for i := 0; i < visibleCount; i++ {
 
-		nameWidth := lipgloss.Width(pkgNames[i]) + 2
+	visibleNames := pkgNames[startIdx:endIdx]
+
+	maxContentWidth := lipgloss.Width(titleText)
+	for _, name := range visibleNames {
+		nameWidth := lipgloss.Width(name) + 2
 		if nameWidth > maxContentWidth {
 			maxContentWidth = nameWidth
 		}
 	}
-	if len(pkgNames) > maxDisplay {
-		moreStr := itemStyle.Render(fmt.Sprintf("... +%d more", len(pkgNames)-maxDisplay))
-		if w := lipgloss.Width(moreStr); w > maxContentWidth {
+
+	if startIdx > 0 {
+		moreTop := itemStyle.Render(fmt.Sprintf("... %d above", startIdx))
+		if w := lipgloss.Width(moreTop); w > maxContentWidth {
+			maxContentWidth = w
+		}
+	}
+	if endIdx < len(pkgNames) {
+		moreBottom := itemStyle.Render(fmt.Sprintf("... %d more below", len(pkgNames)-endIdx))
+		if w := lipgloss.Width(moreBottom); w > maxContentWidth {
 			maxContentWidth = w
 		}
 	}
@@ -357,13 +498,13 @@ func (m model) overlaySelectionsPanel(content string, contentWidth int) string {
 	}
 	panelWidth := desiredPanelWidth
 
-	for i, name := range pkgNames {
-		if i >= maxDisplay {
-			selectionsList.WriteString("\n")
-			selectionsList.WriteString(itemStyle.Render(fmt.Sprintf("... +%d more", len(pkgNames)-maxDisplay)))
-			break
-		}
+	if startIdx > 0 {
+		selectionsList.WriteString("\n")
+		selectionsList.WriteString(itemStyle.Render(fmt.Sprintf("... %d above", startIdx)))
+	}
 
+	for i := startIdx; i < endIdx; i++ {
+		name := pkgNames[i]
 		innerWidth := panelWidth - 4
 		nameMaxWidth := innerWidth - 2
 		if nameMaxWidth < 1 {
@@ -401,15 +542,18 @@ func (m model) overlaySelectionsPanel(content string, contentWidth int) string {
 		}
 	}
 
+	if endIdx < len(pkgNames) {
+		selectionsList.WriteString("\n")
+		selectionsList.WriteString(itemStyle.Render(fmt.Sprintf("... %d more below", len(pkgNames)-endIdx)))
+	}
+
 	panel := panelStyle.Width(panelWidth).Render(selectionsList.String())
 	panelHeight := strings.Count(panel, "\n") + 1
 
 	lines := strings.Split(content, "\n")
 
-	panelActualWidth := lipgloss.Width(panel)
-
-	startRow := 1
-	startCol := contentWidth - panelActualWidth + 2
+	startRow := headerHeight // Anchor exactly on the top border
+	startCol := contentWidth - lipgloss.Width(panel)
 	if startCol < 0 {
 		startCol = 0
 	}
@@ -424,14 +568,22 @@ func (m model) overlaySelectionsPanel(content string, contentWidth int) string {
 			if panelLineIdx < len(panelLines) {
 
 				lineWidth := lipgloss.Width(line)
-				if lineWidth < startCol {
-
-					line = line + strings.Repeat(" ", startCol-lineWidth)
-				} else if lineWidth > startCol {
-
-					line = truncateWithAnsi(line, startCol)
+				leftStr := ""
+				if startCol > 0 {
+					if lineWidth < startCol {
+						leftStr = line + strings.Repeat(" ", startCol-lineWidth)
+					} else {
+						leftStr = truncateWithAnsi(line, startCol)
+					}
 				}
-				line = line + panelLines[panelLineIdx]
+
+				rightStr := ""
+				rightStart := startCol + lipgloss.Width(panelLines[panelLineIdx])
+				if rightStart < lineWidth {
+					rightStr = substringAnsi(line, rightStart)
+				}
+
+				line = leftStr + panelLines[panelLineIdx] + rightStr
 			}
 		}
 		result.WriteString(line)
@@ -819,4 +971,141 @@ func (m model) renderErrorOverlay(contentWidth, contentHeight int) string {
 	}
 
 	return output.String()
+}
+
+// renderSimpleUpdateView renders the simple overview page for pending updates
+func (m model) renderSimpleUpdateView(helpText string, contentWidth, contentHeight int, activeColor lipgloss.Color) string {
+	borderStyle := baseBorderStyle.BorderForeground(activeColor)
+
+	helpWidth := lipgloss.Width(helpText)
+	padding := contentWidth - helpWidth
+	if padding < 0 {
+		padding = 0
+	}
+	footerLine := strings.Repeat(" ", padding) + helpText
+
+	footerHeight := 1
+	panelHeight := contentHeight - footerHeight - 2 // -2 for borders
+	if panelHeight < 1 {
+		panelHeight = 1
+	}
+
+	var content strings.Builder
+	innerContentHeight := 0
+
+	if m.loading {
+		content.WriteString("\n  Checking for updates...")
+		innerContentHeight = 2
+	} else if len(m.pendingUpdates) == 0 {
+		content.WriteString("\n  System is up to date!")
+		innerContentHeight = 2
+	} else {
+		countStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Bold(true)
+		content.WriteString(fmt.Sprintf("  The following %s system updates are available:\n\n", countStyle.Render(fmt.Sprintf("%d", len(m.pendingUpdates)))))
+		innerContentHeight += 2
+		
+		innerFooterHeight := 1 
+		availableLinesForList := panelHeight - innerContentHeight - innerFooterHeight
+		if availableLinesForList < 1 {
+			availableLinesForList = 1
+		}
+
+		displayCount := availableLinesForList
+		
+		if m.updateScrollOffset > 0 {
+			displayCount -= 2
+		}
+		if m.updateScrollOffset+displayCount < len(m.pendingUpdates) {
+			displayCount -= 2
+		}
+		if displayCount < 1 {
+			displayCount = 1
+		}
+		
+		if displayCount > len(m.pendingUpdates)-m.updateScrollOffset {
+			displayCount = len(m.pendingUpdates)-m.updateScrollOffset
+		}
+
+		if m.updateScrollOffset > 0 {
+			content.WriteString(fmt.Sprintf("    ... and %d more above.\n\n", m.updateScrollOffset))
+			innerContentHeight += 2
+		}
+
+		for i := 0; i < displayCount; i++ {
+			pkgIndex := i + m.updateScrollOffset
+			if pkgIndex >= len(m.pendingUpdates) {
+				break
+			}
+			pkg := m.pendingUpdates[pkgIndex]
+			sourceBadge := ""
+			if color, ok := sourceColors[pkg.Source]; ok {
+				sourceBadge = lipgloss.NewStyle().Foreground(color).Render(fmt.Sprintf("[%s]", pkg.Source))
+			} else {
+				sourceBadge = fmt.Sprintf("[%s]", pkg.Source)
+			}
+			content.WriteString(fmt.Sprintf("    • %s %s %s\n", sourceBadge, lipgloss.NewStyle().Foreground(lipgloss.Color("39")).Render(pkg.Name), lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render(pkg.Version)))
+			innerContentHeight++
+		}
+
+		if m.updateScrollOffset+displayCount < len(m.pendingUpdates) {
+			content.WriteString(fmt.Sprintf("\n    ... and %d more below.", len(m.pendingUpdates)-(m.updateScrollOffset+displayCount)))
+			innerContentHeight += 2
+		}
+	}
+
+	// Fill remaining space
+	fillerLines := panelHeight - innerContentHeight - 1
+	if fillerLines < 0 {
+		fillerLines = 0
+	}
+
+	if !strings.HasSuffix(content.String(), "\n") {
+		content.WriteString("\n")
+	}
+
+	for i := 0; i < fillerLines; i++ {
+		content.WriteString("\n")
+	}
+
+	// Add the inner highlighted menu at the bottom right
+	if !m.loading && len(m.pendingUpdates) > 0 {
+		buttonStyle := lipgloss.NewStyle().
+			Background(lipgloss.Color("238")).
+			Foreground(lipgloss.Color("255")).
+			Padding(0, 1).
+			Bold(true)
+			
+		buttonStyleRed := lipgloss.NewStyle().
+			Background(lipgloss.Color("196")). // Bright Red
+			Foreground(lipgloss.Color("255")).
+			Padding(0, 1).
+			Bold(true)
+			
+		btnUpdate := buttonStyle.Render("[enter] update all")
+		btnSelective := buttonStyleRed.Render("[s]elective")
+		
+		buttons := btnUpdate + "   " + btnSelective
+		buttonsWidth := lipgloss.Width(buttons)
+		padding := contentWidth - 4 - buttonsWidth
+		if padding < 0 {
+			padding = 0
+		}
+		
+		content.WriteString(strings.Repeat(" ", padding) + buttons)
+	} else {
+		content.WriteString("\n")
+	}
+
+	panelContent := lipgloss.NewStyle().
+		Width(contentWidth - 2).
+		Height(panelHeight).
+		Padding(0, 1). // Minimal top/left padding inside panel
+		Render(content.String())
+
+	mainPanel := borderStyle.
+		Width(contentWidth).
+		Height(panelHeight + 2).
+		Render(panelContent)
+
+	return lipgloss.JoinVertical(lipgloss.Left, mainPanel, footerLine)
 }
