@@ -14,6 +14,29 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
+	case tea.MouseMsg:
+		if m.packageInfo != "" {
+			switch msg.Type {
+			case tea.MouseWheelUp:
+				if m.infoScrollOffset > 0 {
+					m.infoScrollOffset--
+				}
+			case tea.MouseWheelDown:
+				m.infoScrollOffset++
+			}
+		} else if m.mode == modeUpdate {
+			switch msg.Type {
+			case tea.MouseWheelUp:
+				if m.updateScrollOffset > 0 {
+					m.updateScrollOffset--
+				}
+			case tea.MouseWheelDown:
+				if m.updateScrollOffset < len(m.pendingUpdates)-1 {
+					m.updateScrollOffset++
+				}
+			}
+		}
+		return m, nil
 	case tea.KeyMsg:
 
 		if msg.String() == "ctrl+c" {
