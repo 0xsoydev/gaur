@@ -525,3 +525,31 @@ func truncateWithAnsi(s string, maxWidth int) string {
 	result.WriteString("\x1b[0m")
 	return result.String()
 }
+
+// substringAnsi skips the first skipWidth visual characters, preserving ANSI codes
+func substringAnsi(s string, skipWidth int) string {
+	var result strings.Builder
+	width := 0
+	inEscape := false
+
+	for _, r := range s {
+		if r == '\x1b' {
+			inEscape = true
+			result.WriteRune(r)
+			continue
+		}
+		if inEscape {
+			result.WriteRune(r)
+			if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') {
+				inEscape = false
+			}
+			continue
+		}
+		if width >= skipWidth {
+			result.WriteRune(r)
+		}
+		width++
+	}
+
+	return result.String()
+}
