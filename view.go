@@ -86,11 +86,19 @@ func (m model) View() string {
 	if m.mode == modeUpdateSelective {
 		overlayWidth := int(float64(m.width) * 0.65)
 		overlayHeight := int(float64(m.height) * 0.65)
-		
-		if overlayWidth < 60 { overlayWidth = 60 }
-		if overlayHeight < 20 { overlayHeight = 20 }
-		if overlayWidth > m.width { overlayWidth = m.width }
-		if overlayHeight > m.height { overlayHeight = m.height }
+
+		if overlayWidth < 60 {
+			overlayWidth = 60
+		}
+		if overlayHeight < 20 {
+			overlayHeight = 20
+		}
+		if overlayWidth > m.width {
+			overlayWidth = m.width
+		}
+		if overlayHeight > m.height {
+			overlayHeight = m.height
+		}
 
 		paddingX := (contentWidth - overlayWidth) / 2
 		paddingY := (contentHeight - overlayHeight) / 2
@@ -111,7 +119,7 @@ func (m model) View() string {
 		}
 
 		paneContent := m.renderPackageListLayout(overlayWidth, innerHeight, activeColor, "", "")
-		
+
 		paneContent = lipgloss.JoinVertical(lipgloss.Left, paneContent, warningOverlay)
 
 		// Enforce strict rectangle bounds
@@ -120,20 +128,20 @@ func (m model) View() string {
 		bg := m.renderSimpleUpdateView(helpText, contentWidth, contentHeight, activeColor)
 		bgLines := strings.Split(bg, "\n")
 		paneLines := strings.Split(paneContent, "\n")
-		
+
 		var output strings.Builder
 		for i, bgLine := range bgLines {
 			if i >= paddingY && i < paddingY+overlayHeight {
 				paneLineIdx := i - paddingY
 				if paneLineIdx < len(paneLines) {
 					paneLine := paneLines[paneLineIdx]
-					
+
 					// Draw background left
 					leftStr := ""
 					if paddingX > 0 {
 						leftStr = truncateWithAnsi(bgLine, paddingX)
 					}
-					
+
 					rightStr := ""
 					rightStart := paddingX + overlayWidth
 					if rightStart < lipgloss.Width(bgLine) {
@@ -227,18 +235,18 @@ func (m model) renderPackageListLayout(contentWidth, contentHeight int, activeCo
 	// Render the text *with* a width limit first so Lipgloss wraps it
 	wrappedText := lipgloss.NewStyle().Width(panelInnerWidth - 2).Render(infoContent)
 	infoLines := strings.Split(wrappedText, "\n")
-	
+
 	totalLines := len(infoLines)
 	if totalLines > infoInnerHeight {
 		maxScroll := totalLines - infoInnerHeight
-		
+
 		// Clamp offset
 		if m.infoScrollOffset > maxScroll {
 			m.infoScrollOffset = maxScroll
 		} else if m.infoScrollOffset < 0 {
 			m.infoScrollOffset = 0
 		}
-		
+
 		infoLines = infoLines[m.infoScrollOffset : m.infoScrollOffset+infoInnerHeight]
 	} else {
 		m.infoScrollOffset = 0
@@ -246,7 +254,7 @@ func (m model) renderPackageListLayout(contentWidth, contentHeight int, activeCo
 	infoContent = strings.Join(infoLines, "\n")
 
 	infoBox := lipgloss.NewStyle().
-		Width(panelInnerWidth - 2).
+		Width(panelInnerWidth-2).
 		Height(infoInnerHeight).
 		Padding(0, 1).
 		Render(infoContent)
@@ -987,15 +995,15 @@ func (m model) renderSimpleUpdateView(helpText string, contentWidth, contentHeig
 		countStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Bold(true)
 		content.WriteString(fmt.Sprintf("  The following %s system updates are available:\n\n", countStyle.Render(fmt.Sprintf("%d", len(m.pendingUpdates)))))
 		innerContentHeight += 2
-		
-		innerFooterHeight := 1 
+
+		innerFooterHeight := 1
 		availableLinesForList := panelHeight - innerContentHeight - innerFooterHeight
 		if availableLinesForList < 1 {
 			availableLinesForList = 1
 		}
 
 		displayCount := availableLinesForList
-		
+
 		if m.updateScrollOffset > 0 {
 			displayCount -= 2
 		}
@@ -1005,9 +1013,9 @@ func (m model) renderSimpleUpdateView(helpText string, contentWidth, contentHeig
 		if displayCount < 1 {
 			displayCount = 1
 		}
-		
+
 		if displayCount > len(m.pendingUpdates)-m.updateScrollOffset {
-			displayCount = len(m.pendingUpdates)-m.updateScrollOffset
+			displayCount = len(m.pendingUpdates) - m.updateScrollOffset
 		}
 
 		if m.updateScrollOffset > 0 {
@@ -1058,30 +1066,30 @@ func (m model) renderSimpleUpdateView(helpText string, contentWidth, contentHeig
 			Foreground(lipgloss.Color("255")).
 			Padding(0, 1).
 			Bold(true)
-			
+
 		buttonStyleRed := lipgloss.NewStyle().
 			Background(lipgloss.Color("196")). // Bright Red
 			Foreground(lipgloss.Color("255")).
 			Padding(0, 1).
 			Bold(true)
-			
+
 		btnUpdate := buttonStyle.Render("[enter] update all")
 		btnSelective := buttonStyleRed.Render("[s]elective")
-		
+
 		buttons := btnUpdate + "   " + btnSelective
 		buttonsWidth := lipgloss.Width(buttons)
 		padding := contentWidth - 4 - buttonsWidth
 		if padding < 0 {
 			padding = 0
 		}
-		
+
 		content.WriteString(strings.Repeat(" ", padding) + buttons)
 	} else {
 		content.WriteString("\n")
 	}
 
 	panelContent := lipgloss.NewStyle().
-		Width(contentWidth - 2).
+		Width(contentWidth-2).
 		Height(panelHeight).
 		Padding(0, 1). // Minimal top/left padding inside panel
 		Render(content.String())
