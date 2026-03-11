@@ -65,22 +65,6 @@ func (m model) View() string {
 		activeColor = defaultBorderColor
 	}
 
-	titleStyle := baseTitleStyle.Background(activeColor)
-
-	modeText := ""
-	switch m.mode {
-	case modeInstall:
-		modeText = "INSTALL"
-	case modeInstalled:
-		modeText = "INFO"
-	case modeUninstall:
-		modeText = "UNINSTALL"
-	case modeUpdate, modeUpdateSelective:
-		modeText = "UPDATE"
-	}
-
-	header := titleStyle.Render(" GAUR - " + modeText + " ")
-
 	helpText := m.renderHelpText(activeColor)
 
 	if m.showConfirmation {
@@ -179,7 +163,7 @@ func (m model) View() string {
 	}
 	footer := strings.Repeat(" ", padding) + helpText
 
-	return m.renderPackageListLayout(contentWidth, contentHeight, activeColor, header, footer)
+	return m.renderPackageListLayout(contentWidth, contentHeight, activeColor, "", footer)
 }
 
 // renderPackageListLayout renders the standard split-pane list view for install, uninstall, and selective update
