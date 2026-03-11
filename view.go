@@ -621,6 +621,12 @@ func (m model) renderConfirmationDialog(contentWidth, contentHeight int, activeC
 		title = "🔄 Confirm System Update"
 		actionDesc = "update"
 		packages = m.pendingUpdates
+	case confirmSelectiveUpdate:
+		title = "🔄 Confirm Selective Update"
+		actionDesc = "update"
+		for _, name := range m.confirmPackages {
+			packages = append(packages, Package{Name: name})
+		}
 	case confirmCleanCache:
 		title = "🧹 Confirm Cache Cleaning"
 		actionDesc = "clean"

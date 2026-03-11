@@ -69,6 +69,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				case confirmUpdate:
 					m.statusMessage = "Running system update..."
 					return m, executeUpdateInTerminal()
+				case confirmSelectiveUpdate:
+					m.statusMessage = fmt.Sprintf("Updating %d package(s)...", len(m.confirmPackages))
+					return m, executeSelectiveUpdateInTerminal(m.confirmPackages)
 				case confirmCleanCache:
 					m.statusMessage = "Cleaning package cache..."
 					return m, executeCleanCacheInTerminal()
@@ -1402,6 +1405,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				opName = "Removal"
 			case confirmUpdate:
 				opName = "System Update"
+			case confirmSelectiveUpdate:
+				opName = "Selective Update"
 			case confirmCleanCache:
 				opName = "Cache Cleaning"
 			case confirmRemoveOrphans:
@@ -1428,6 +1433,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, getInstalledPackages()
 			case confirmUpdate:
 				return m, loadRepoPackages()
+			case confirmSelectiveUpdate:
+				return m, loadRepoPackages()
 			case confirmCleanCache, confirmRemoveOrphans:
 				return m, getDashboardData()
 			}
@@ -1453,6 +1460,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, getInstalledPackages()
 		case confirmUpdate:
 			m.lastCompletedOp = "System update completed"
+			m.statusMessage = m.lastCompletedOp
+			return m, loadRepoPackages()
+		case confirmSelectiveUpdate:
+			if len(msg.packages) == 1 {
+				m.lastCompletedOp = fmt.Sprintf("Updated: %s", msg.packages[0])
+			} else {
+				m.lastCompletedOp = fmt.Sprintf("Updated %d packages", len(msg.packages))
+			}
 			m.statusMessage = m.lastCompletedOp
 			return m, loadRepoPackages()
 		case confirmCleanCache:
