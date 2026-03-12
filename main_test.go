@@ -592,7 +592,7 @@ func keyMsg(key string) tea.KeyMsg {
 }
 
 // newTestModelUpdate creates a model in modeUpdate state with the given packages loaded
-func newTestModelUpdate(packages []Package) model {
+func newTestModelUpdate(packages []Package) *model {
 	m := initialModel(modeUpdate)
 	m.loading = false
 	m.width = 120
@@ -601,7 +601,7 @@ func newTestModelUpdate(packages []Package) model {
 	m.updatableAll = packages
 	m.confirmScrollOffset = 0
 	m.statusMessage = fmt.Sprintf("%d updates available", len(packages))
-	return m
+	return &m
 }
 
 // testPackages returns a set of test packages for use in tests
@@ -625,7 +625,7 @@ func TestUpdateModeYKeyExecutesUpdate(t *testing.T) {
 	m := newTestModelUpdate(testPackages())
 
 	result, cmd := m.Update(keyMsg("y"))
-	resultModel := result.(model)
+	resultModel := result.(*model)
 
 	if resultModel.statusMessage != "Running system update..." {
 		t.Errorf("Expected status 'Running system update...', got %q", resultModel.statusMessage)
@@ -641,7 +641,7 @@ func TestUpdateModeUpperYKeyExecutesUpdate(t *testing.T) {
 	m := newTestModelUpdate(testPackages())
 
 	result, cmd := m.Update(keyMsg("Y"))
-	resultModel := result.(model)
+	resultModel := result.(*model)
 
 	if resultModel.statusMessage != "Running system update..." {
 		t.Errorf("Expected status 'Running system update...', got %q", resultModel.statusMessage)
@@ -657,7 +657,7 @@ func TestUpdateModeEnterKeyShowsConfirmation(t *testing.T) {
 	m := newTestModelUpdate(testPackages())
 
 	result, cmd := m.Update(keyMsg("enter"))
-	resultModel := result.(model)
+	resultModel := result.(*model)
 
 	if !strings.HasPrefix(resultModel.statusMessage, "Confirm update for") {
 		t.Errorf("Expected status to start with 'Confirm update for', got %q", resultModel.statusMessage)
@@ -683,7 +683,7 @@ func TestUpdateModeAKeyExecutesUpdate(t *testing.T) {
 	m := newTestModelUpdate(testPackages())
 
 	result, cmd := m.Update(keyMsg("a"))
-	resultModel := result.(model)
+	resultModel := result.(*model)
 
 	if resultModel.statusMessage != "Running system update..." {
 		t.Errorf("Expected status 'Running system update...', got %q", resultModel.statusMessage)
