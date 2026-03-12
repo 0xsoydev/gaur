@@ -97,20 +97,20 @@ func TestSelectiveUpdateMouseScrollWithInfo(t *testing.T) {
 	mp.maxInfoScroll = 5
 	mp.infoScrollOffset = 0
 
-	// Scroll mouse wheel up - should NOT change selectedIndex
-	newModel, _ := mp.Update(tea.MouseMsg{Type: tea.MouseWheelUp})
+	// Scroll mouse wheel up - RIGHT SIDE (X=60) should scroll info
+	newModel, _ := mp.Update(tea.MouseMsg{Type: tea.MouseWheelUp, X: 60})
 	mp = newModel.(*model)
 	
 	if mp.selectedIndex != 0 {
-		t.Errorf("Expected selectedIndex 0, got %d (should NOT move list when info is present)", mp.selectedIndex)
+		t.Errorf("Expected selectedIndex 0, got %d (should NOT move list when scrolling on right side)", mp.selectedIndex)
 	}
 	
-	// Scroll mouse wheel down - should NOT change selectedIndex
-	newModel, _ = mp.Update(tea.MouseMsg{Type: tea.MouseWheelDown})
+	// Scroll mouse wheel down - RIGHT SIDE (X=60) should scroll info
+	newModel, _ = mp.Update(tea.MouseMsg{Type: tea.MouseWheelDown, X: 60})
 	mp = newModel.(*model)
 	
 	if mp.selectedIndex != 0 {
-		t.Errorf("Expected selectedIndex 0, got %d (should NOT move list when info is present)", mp.selectedIndex)
+		t.Errorf("Expected selectedIndex 0, got %d (should NOT move list when scrolling on right side)", mp.selectedIndex)
 	}
 	if mp.infoScrollOffset != 1 {
 		t.Errorf("Expected infoScrollOffset 1, got %d", mp.infoScrollOffset)
@@ -130,11 +130,11 @@ func TestSelectiveUpdateMouseScrollWithoutInfo(t *testing.T) {
 	// EMPTY package info
 	mp.packageInfo = ""
 
-	// Scroll mouse wheel up - this SHOULD move list cursor in current code
-	newModel, _ := mp.Update(tea.MouseMsg{Type: tea.MouseWheelUp})
+	// Scroll mouse wheel up - LEFT SIDE (X=10) should move list cursor
+	newModel, _ := mp.Update(tea.MouseMsg{Type: tea.MouseWheelUp, X: 10})
 	mp = newModel.(*model)
 	
 	if mp.selectedIndex != 1 {
-		t.Errorf("Expected selectedIndex 1, got %d (list SHOULD move when info is empty)", mp.selectedIndex)
+		t.Errorf("Expected selectedIndex 1, got %d (list SHOULD move when scrolling on left side)", mp.selectedIndex)
 	}
 }

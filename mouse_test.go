@@ -52,18 +52,18 @@ func TestMouseScrollSelectiveUpdateMode(t *testing.T) {
 	mp.maxInfoScroll = 10
 	mp.infoScrollOffset = 0
 
-	// 1. TOP HALF: scroll details
-	newModel, _ := mp.Update(tea.MouseMsg{Type: tea.MouseWheelDown, Y: 5})
+	// 1. RIGHT SIDE (X >= width/2): scroll details
+	newModel, _ := mp.Update(tea.MouseMsg{Type: tea.MouseWheelDown, X: 60, Y: 10})
 	mp = newModel.(*model)
 	if mp.infoScrollOffset != 1 {
-		t.Errorf("Top half: expected infoScrollOffset 1, got %d", mp.infoScrollOffset)
+		t.Errorf("Right side: expected infoScrollOffset 1, got %d", mp.infoScrollOffset)
 	}
 
-	// 2. BOTTOM HALF: navigate list
-	newModel, _ = mp.Update(tea.MouseMsg{Type: tea.MouseWheelUp, Y: 20})
+	// 2. LEFT SIDE (X < width/2): navigate list
+	newModel, _ = mp.Update(tea.MouseMsg{Type: tea.MouseWheelUp, X: 10, Y: 10})
 	mp = newModel.(*model)
 	if mp.selectedIndex != 1 {
-		t.Errorf("Bottom half: expected selectedIndex 1, got %d", mp.selectedIndex)
+		t.Errorf("Left side: expected selectedIndex 1, got %d", mp.selectedIndex)
 	}
 }
 
