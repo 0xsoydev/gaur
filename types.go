@@ -111,6 +111,7 @@ type DashboardData struct {
 	TotalPackages        int
 	ExplicitlyInstalled  int
 	ForeignPackages      int
+	RepoDistribution     map[string]int // core, extra, multilib, etc.
 	TotalSize            string
 	TotalSizeBytes       int64 // For comparison
 	CleanerSize          string
@@ -124,6 +125,11 @@ type DashboardData struct {
 	Orphans              int
 	MissingFromAUR       int
 	TopPackages          []PackageSize // Top 10 packages by size
+	// Disk usage info
+	DiskTotal      string
+	DiskUsed       string
+	DiskFree       string
+	DiskUsedPercent float64
 }
 
 // PackageSize holds package name and its installed size
