@@ -30,21 +30,21 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		if m.packageInfo != "" {
-			// Prioritize details pane scrolling if it has content
+			// Prioritize details pane scrolling if it has content.
+			// We consume these events entirely to prevent "leaking" scroll into list navigation.
 			switch msg.Type {
 			case tea.MouseWheelUp:
 				if m.infoScrollOffset > 0 {
 					m.infoScrollOffset--
-					return m, nil
 				}
+				return m, nil
 			case tea.MouseWheelDown:
 				if m.infoScrollOffset < m.maxInfoScroll {
 					m.infoScrollOffset++
-					return m, nil
 				}
+				return m, nil
 			}
 		}
-
 		// List scrolling/navigation
 		if m.mode == modeUpdate {
 			switch msg.Type {
