@@ -40,3 +40,26 @@ firefox: 250.0 MiB
 		t.Errorf("topPackages[0].Name = %q, want linux", topPackages[0].Name)
 	}
 }
+
+func TestParseParuStats_WithForeignMessage(t *testing.T) {
+	sampleOutput := `
+Total Installed Size : 15.4 GiB
+Missing AUR Packages : 2
+Top 10 biggest packages:
+========================
+linux: 450.0 MiB
+firefox: 250.0 MiB
+: packages not in the AUR: paru-debug
+`
+	_, _, _, topPackages := parseParuStats(sampleOutput)
+	
+	if len(topPackages) != 2 {
+		t.Errorf("len(topPackages) = %d, want 2 (should skip the foreign message line)", len(topPackages))
+	}
+	
+	for _, pkg := range topPackages {
+		if pkg.Name == "" {
+			t.Errorf("found package with empty name in topPackages: %+v", pkg)
+		}
+	}
+}

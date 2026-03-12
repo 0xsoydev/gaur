@@ -6,7 +6,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
+	"syscall"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -53,6 +55,23 @@ func getDashboardData() tea.Cmd {
 			errs = append(errs, fmt.Errorf("orphans: %w", err))
 		}
 
+		// Repository distribution
+		data.RepoDistribution = make(map[string]int)
+		out.Reset()
+		cmd = exec.Command("pacman", "-Sl")
+		cmd.Stdout = &out
+		if err := cmd.Run(); err == nil {
+			lines := strings.Split(strings.TrimSpace(out.String()), "\n")
+			for _, line := range lines {
+				if strings.Contains(line, "[installed]") {
+					parts := strings.Fields(line)
+					if len(parts) > 0 {
+						data.RepoDistribution[parts[0]]++
+					}
+				}
+			}
+		}
+
 		out.Reset()
 		cmd = exec.Command("paru", "-Ps")
 		cmd.Stdout = &out
@@ -80,6 +99,20 @@ func getDashboardData() tea.Cmd {
 
 		data.CleanerSizeBytes = totalCacheBytes
 		data.CleanerSize = formatBytes(totalCacheBytes)
+
+		// Disk usage info
+		var stat syscall.Statfs_t
+		if err := syscall.Statfs("/", &stat); err == nil {
+			total := stat.Blocks * uint64(stat.Bsize)
+			free := stat.Bfree * uint64(stat.Bsize)
+			used := total - free
+			data.DiskTotal = formatBytes(int64(total))
+			data.DiskFree = formatBytes(int64(free))
+			data.DiskUsed = formatBytes(int64(used))
+			if total > 0 {
+				data.DiskUsedPercent = float64(used) / float64(total)
+			}
+		}
 
 		if len(errs) > 0 {
 			return dashboardMsg{data: data, err: fmt.Errorf("errors loading dashboard: %v", errs)}
@@ -112,12 +145,20 @@ func parseParuStats(output string) (totalSize string, totalSizeBytes int64, miss
 		}
 
 		if inTopPackages {
+			if len(topPackages) >= 10 {
+				inTopPackages = false
+				continue
+			}
 			parts := strings.SplitN(line, ":", 2)
 			if len(parts) == 2 {
-				topPackages = append(topPackages, PackageSize{
-					Name: strings.TrimSpace(parts[0]),
-					Size: strings.TrimSpace(parts[1]),
-				})
+				name := strings.TrimSpace(parts[0])
+				size := strings.TrimSpace(parts[1])
+				if name != "" {
+					topPackages = append(topPackages, PackageSize{
+						Name: name,
+						Size: size,
+					})
+				}
 			}
 			continue
 		}
@@ -179,6 +220,36 @@ func removeOrphans() tea.Cmd {
 	}
 }
 
+// renderCenteredLabels returns a string with labels centered under segments of given widths
+func renderCenteredLabels(widths []int, labels []string, colors []lipgloss.Color) string {
+	var result strings.Builder
+	for i, w := range widths {
+		if i >= len(labels) {
+			break
+		}
+		label := labels[i]
+		if w <= 0 {
+			continue
+		}
+
+		style := lipgloss.NewStyle()
+		if i < len(colors) {
+			style = style.Foreground(colors[i])
+		}
+
+		if len(label) > w {
+			label = label[:w]
+		}
+
+		padding := (w - len(label)) / 2
+		extra := (w - len(label)) % 2
+		result.WriteString(strings.Repeat(" ", padding))
+		result.WriteString(style.Render(label))
+		result.WriteString(strings.Repeat(" ", padding+extra))
+	}
+	return result.String()
+}
+
 func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) string {
 
 	activeColor := modeColors[m.mode]
@@ -193,12 +264,15 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 		padding = 0
 	}
 	footerLine := strings.Repeat(" ", padding) + helpText
+	if lipgloss.Width(footerLine) > innerWidth {
+		footerLine = truncateWithAnsi(footerLine, innerWidth)
+	}
 
 	if m.loading {
 		loadingBox := borderStyle.
 			Width(innerWidth - 2).
-			Height(innerHeight - 2).
-			Render(lipgloss.Place(innerWidth-2, innerHeight-2, lipgloss.Center, lipgloss.Center, "Loading system statistics..."))
+			Height(innerHeight - 1 - 2). // innerContentHeight = totalHeight - footer - borders
+			Render(lipgloss.Place(innerWidth-2, innerHeight-1-2, lipgloss.Center, lipgloss.Center, "Loading system statistics..."))
 		return lipgloss.JoinVertical(lipgloss.Left, loadingBox, footerLine)
 	}
 
@@ -236,9 +310,6 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 	orphanLine := fmt.Sprintf("  %s Orphans  │ %s",
 		shortcutStyle.Render("[o]"),
 		orphanStyle.Render(fmt.Sprintf("%d", m.dashboard.Orphans)))
-	if m.dashboard.Orphans > 0 {
-		orphanLine += shortcutStyle.Render(" [R]remove")
-	}
 	countsLines = append(countsLines, orphanLine)
 
 	cacheStyle := lipgloss.NewStyle().Bold(true).Foreground(greenColor)
@@ -332,19 +403,16 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 	// ═══════════════════════════════════════════════════════
 	// Bar Layout Constants - ensures all bars align perfectly
 	// ═══════════════════════════════════════════════════════
-	const barLeftMargin = 2     // Spaces before label
-	const barLabelWidth = 8     // Fixed width for labels (e.g., "System", "Cache")
-	const barSeparator = "│"    // Separator between label and bar
-	const barSuffixReserve = 30 // Reserve space for suffix text (e.g., "1234/5678 (100% explicit)")
-	barStartCol := barLeftMargin + barLabelWidth + len(barSeparator)
+	const barLeftMargin = 2     // Spaces before bar
+	const barSuffixReserve = 55 // Increased to allow full names on the right
+	barStartCol := barLeftMargin
 	availableBarWidth := innerWidth - barStartCol - barSuffixReserve
 	if availableBarWidth < 20 {
 		availableBarWidth = 20
 	}
 
-	renderBarLine := func(label string, bar string, suffix string) string {
-		paddedLabel := fmt.Sprintf("%*s%-*s%s", barLeftMargin, "", barLabelWidth, label, barSeparator)
-		return paddedLabel + bar + " " + suffix
+	renderBarLine := func(bar string, suffix string) string {
+		return fmt.Sprintf("%*s%s %s", barLeftMargin, "", bar, suffix)
 	}
 
 	dependencies := m.dashboard.TotalPackages - m.dashboard.ExplicitlyInstalled
@@ -366,37 +434,159 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 	ratioTitle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("229")).
 		Render("📊 Explicit vs Dependencies")
 	ratioSuffix := fmt.Sprintf("%d/%d (%.0f%% explicit)", m.dashboard.ExplicitlyInstalled, dependencies, explicitRatio*100)
-	ratioBar := renderBarLine("", filledBar+emptyBar, ratioSuffix)
+	ratioBar := renderBarLine(filledBar+emptyBar, ratioSuffix)
 
 	dashboard.WriteString(ratioTitle + "\n")
-	dashboard.WriteString(ratioBar + "\n\n")
+	dashboard.WriteString(ratioBar + "\n")
 
-	chartTitle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("229")).
-		Render("📈 Size Comparison")
-	dashboard.WriteString(chartTitle + "\n")
+	// Centered Labels below bar
+	labels := []string{fmt.Sprintf("%d", m.dashboard.ExplicitlyInstalled), fmt.Sprintf("%d", dependencies)}
+	widths := []int{filledWidth, availableBarWidth - filledWidth}
+	labelColors := []lipgloss.Color{greenColor, dimColor}
+	dashboard.WriteString(fmt.Sprintf("%*s%s\n\n", barStartCol, "", renderCenteredLabels(widths, labels, labelColors)))
 
-	maxSize := m.dashboard.TotalSizeBytes
-	if m.dashboard.CleanerSizeBytes > maxSize {
-		maxSize = m.dashboard.CleanerSizeBytes
-	}
-	if maxSize == 0 {
-		maxSize = 1
-	}
+	// ═══════════════════════════════════════════════════════
+	// Disk Usage Analysis (Combined Stacked Bar)
+	// ═══════════════════════════════════════════════════════
+	diskTitle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("229")).
+		Render("💽 Disk Usage Analysis")
+	dashboard.WriteString(diskTitle + "\n")
 
-	systemBarWidth := int(float64(m.dashboard.TotalSizeBytes) / float64(maxSize) * float64(availableBarWidth))
-	cacheBarWidth := int(float64(m.dashboard.CleanerSizeBytes) / float64(maxSize) * float64(availableBarWidth))
-	if systemBarWidth < 1 {
-		systemBarWidth = 1
-	}
-	if cacheBarWidth < 1 && m.dashboard.CleanerSizeBytes > 0 {
-		cacheBarWidth = 1
+	// Calculate breakdown
+	totalDiskBytes := parseSizeToBytes(m.dashboard.DiskTotal)
+	if totalDiskBytes == 0 {
+		totalDiskBytes = 1
 	}
 
-	systemBar := lipgloss.NewStyle().Background(cyanColor).Render(strings.Repeat(" ", systemBarWidth))
-	cacheBar := lipgloss.NewStyle().Background(orangeColor).Render(strings.Repeat(" ", cacheBarWidth))
+	pkgWidth := int(float64(m.dashboard.TotalSizeBytes) / float64(totalDiskBytes) * float64(availableBarWidth))
+	cacheWidth := int(float64(m.dashboard.CleanerSizeBytes) / float64(totalDiskBytes) * float64(availableBarWidth))
 
-	dashboard.WriteString(renderBarLine("System", systemBar, m.dashboard.TotalSize) + "\n")
-	dashboard.WriteString(renderBarLine("Cache", cacheBar, m.dashboard.CleanerSize) + "\n\n")
+	usedDiskBytes := parseSizeToBytes(m.dashboard.DiskUsed)
+	otherUsedBytes := usedDiskBytes - m.dashboard.TotalSizeBytes - m.dashboard.CleanerSizeBytes
+	if otherUsedBytes < 0 {
+		otherUsedBytes = 0
+	}
+	otherWidth := int(float64(otherUsedBytes) / float64(totalDiskBytes) * float64(availableBarWidth))
+
+	// Ensure segments don't exceed total width
+	if pkgWidth+cacheWidth+otherWidth > availableBarWidth {
+		// Adjust proportional to avoid overflow
+		sum := pkgWidth + cacheWidth + otherWidth
+		pkgWidth = pkgWidth * availableBarWidth / sum
+		cacheWidth = cacheWidth * availableBarWidth / sum
+		otherWidth = otherWidth * availableBarWidth / sum
+	}
+
+	freeWidth := availableBarWidth - pkgWidth - cacheWidth - otherWidth
+	if freeWidth < 0 {
+		freeWidth = 0
+	}
+
+	pkgBar := lipgloss.NewStyle().Background(cyanColor).Render(strings.Repeat(" ", pkgWidth))
+	cacheBar := lipgloss.NewStyle().Background(orangeColor).Render(strings.Repeat(" ", cacheWidth))
+	otherBar := lipgloss.NewStyle().Background(lipgloss.Color("240")).Render(strings.Repeat(" ", otherWidth))
+	freeBar := lipgloss.NewStyle().Background(lipgloss.Color("236")).Render(strings.Repeat(" ", freeWidth))
+
+	diskSuffix := fmt.Sprintf("%s/%s (%.0f%% used)", m.dashboard.DiskUsed, m.dashboard.DiskTotal, m.dashboard.DiskUsedPercent*100)
+	dashboard.WriteString(renderBarLine(pkgBar+cacheBar+otherBar+freeBar, diskSuffix) + "\n")
+
+	// Legend for the disk bar (aligned with suffix)
+	pkgLegend := lipgloss.NewStyle().Foreground(cyanColor).Render("Packages ")
+	cacheLegend := lipgloss.NewStyle().Foreground(orangeColor).Render("Cache ")
+	otherLegend := lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render("Other ")
+	freeLegend := lipgloss.NewStyle().Foreground(lipgloss.Color("236")).Render("Free")
+	legendContent := pkgLegend + cacheLegend + otherLegend + freeLegend
+
+	// Centered sizes below bar
+	pkgSize := m.dashboard.TotalSize
+	cacheSize := m.dashboard.CleanerSize
+	otherSize := formatBytes(otherUsedBytes)
+	freeBytes := totalDiskBytes - usedDiskBytes
+	if freeBytes < 0 {
+		freeBytes = 0
+	}
+	freeSize := formatBytes(int64(freeBytes))
+
+	diskSizeLabels := []string{pkgSize, cacheSize, otherSize, freeSize}
+	diskWidths := []int{pkgWidth, cacheWidth, otherWidth, freeWidth}
+	diskColors := []lipgloss.Color{cyanColor, orangeColor, lipgloss.Color("240"), lipgloss.Color("236")}
+	
+	sizesLine := renderCenteredLabels(diskWidths, diskSizeLabels, diskColors)
+	
+	// Write the sizes line followed by the legend aligned with suffix
+	dashboard.WriteString(fmt.Sprintf("%*s%s %s\n\n", barStartCol, "", sizesLine, legendContent))
+
+	// Repo Distribution Bar
+	repoTitle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("229")).
+		Render("📦 Repository Distribution")
+	dashboard.WriteString(repoTitle + "\n")
+
+	if m.dashboard.TotalPackages > 0 {
+		type segment struct {
+			name  string
+			count int
+			width int
+			color lipgloss.Color
+		}
+		var segments []segment
+		totalWidthUsed := 0
+
+		// Handle standard and custom repos
+		for repo, count := range m.dashboard.RepoDistribution {
+			if count > 0 {
+				w := int(float64(count) / float64(m.dashboard.TotalPackages) * float64(availableBarWidth))
+				color, ok := sourceColors[repo]
+				if !ok {
+					color = lipgloss.Color("246") // Grey for unknown repos
+				}
+				segments = append(segments, segment{repo, count, w, color})
+				totalWidthUsed += w
+			}
+		}
+
+		// Handle Foreign (AUR)
+		if m.dashboard.ForeignPackages > 0 {
+			w := int(float64(m.dashboard.ForeignPackages) / float64(m.dashboard.TotalPackages) * float64(availableBarWidth))
+			segments = append(segments, segment{"aur", m.dashboard.ForeignPackages, w, sourceColors["aur"]})
+			totalWidthUsed += w
+		}
+
+		// Distribute remainder to the largest segment to fill 100%
+		remainder := availableBarWidth - totalWidthUsed
+		if remainder > 0 && len(segments) > 0 {
+			largestIdx := 0
+			for i := 1; i < len(segments); i++ {
+				if segments[i].count > segments[largestIdx].count {
+					largestIdx = i
+				}
+			}
+			segments[largestIdx].width += remainder
+		}
+
+		// Sort segments for consistent display (core, extra, multilib, then others)
+		sort.Slice(segments, func(i, j int) bool {
+			order := map[string]int{"core": 0, "extra": 1, "multilib": 2, "aur": 4}
+			oi, oki := order[segments[i].name]
+			oj, okj := order[segments[j].name]
+			if !oki { oi = 3 }
+			if !okj { oj = 3 }
+			return oi < oj
+		})
+
+		var repoBar strings.Builder
+		for _, seg := range segments {
+			if seg.width > 0 {
+				repoBar.WriteString(lipgloss.NewStyle().Background(seg.color).Render(strings.Repeat(" ", seg.width)))
+			}
+		}
+
+		repoSuffix := fmt.Sprintf("%s %s %s %s",
+			lipgloss.NewStyle().Foreground(sourceColors["core"]).Render(fmt.Sprintf("Core(%d)", m.dashboard.RepoDistribution["core"])),
+			lipgloss.NewStyle().Foreground(sourceColors["extra"]).Render(fmt.Sprintf("Extra(%d)", m.dashboard.RepoDistribution["extra"])),
+			lipgloss.NewStyle().Foreground(sourceColors["multilib"]).Render(fmt.Sprintf("Multilib(%d)", m.dashboard.RepoDistribution["multilib"])),
+			lipgloss.NewStyle().Foreground(sourceColors["aur"]).Render(fmt.Sprintf("AUR(%d)", m.dashboard.ForeignPackages)))
+		dashboard.WriteString(renderBarLine(repoBar.String(), repoSuffix) + "\n\n")
+	}
 
 	if len(m.dashboard.TopPackages) > 0 {
 		topTitle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("229")).
@@ -406,7 +596,16 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 		for i, pkg := range m.dashboard.TopPackages {
 			rankStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
 			nameStyle := lipgloss.NewStyle().Foreground(cyanColor)
-			sizeStyle := lipgloss.NewStyle().Foreground(yellowColor)
+
+			// Color-coded size
+			pkgSizeBytes := parseSizeToBytes(pkg.Size)
+			sizeColor := cyanColor
+			if pkgSizeBytes > 1024*1024*1024 { // > 1GiB
+				sizeColor = redColor
+			} else if pkgSizeBytes > 500*1024*1024 { // > 500MiB
+				sizeColor = orangeColor
+			}
+			sizeStyle := lipgloss.NewStyle().Foreground(sizeColor)
 
 			dashboard.WriteString(fmt.Sprintf("  %s %s %s\n",
 				rankStyle.Render(fmt.Sprintf("%2d.", i+1)),
@@ -418,13 +617,13 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 
 	dashContent := lipgloss.NewStyle().
 		Width(innerWidth - 2).
-		Height(innerHeight - 2).
+		Height(innerHeight - 1 - 2). // inner content height (subtract footer and borders)
 		Padding(0, 1).
 		Render(dashboard.String())
 
 	dashPanel := borderStyle.
 		Width(innerWidth - 2).
-		Height(innerHeight - 2).
+		Height(innerHeight - 1 - 2). // Total height of panel = (innerHeight-1-2) + 2 = innerHeight - 1
 		Render(dashContent)
 
 	return lipgloss.JoinVertical(lipgloss.Left, dashPanel, footerLine)
