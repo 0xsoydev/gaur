@@ -122,6 +122,15 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 
+		if msg.String() == "ctrl+r" {
+			if m.mode == modeInstalled {
+				m.loading = true
+				m.statusMessage = "Refreshing dashboard..."
+				return m, getDashboardData()
+			}
+			return m, nil
+		}
+
 		if m.showErrorOverlay {
 			if msg.String() == "esc" || msg.String() == "enter" || msg.String() == "q" {
 				m.showErrorOverlay = false
@@ -807,7 +816,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case "n":
-			if m.mode != modeInstalled && !m.textInput.Focused() {
+			if !m.textInput.Focused() {
 				m.mode = modeInstalled
 				m.loading = true
 				m.statusMessage = "Loading system statistics..."
