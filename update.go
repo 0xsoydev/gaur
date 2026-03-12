@@ -31,13 +31,22 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		if msg.Type == tea.MouseWheelUp || msg.Type == tea.MouseWheelDown {
 			// Determine if we should scroll the details pane or the list
-			// Threshold is the middle of the screen
-			isTopHalf := msg.Y < m.height/2
+			isSelectiveUpdate := m.mode == modeUpdateSelective
+			isOtherTwoPane := m.mode == modeInstall || m.mode == modeUninstall
 
-			// Modes with details pane at top and list at bottom
-			isTwoPaneMode := m.mode == modeInstall || m.mode == modeUninstall || m.mode == modeUpdateSelective
+			// Selective Update uses vertical split: Left side list, Right side details
+			// Other two-pane modes use horizontal split: Top side details, Bottom side list
+			
+			shouldScrollDetails := false
+			if isSelectiveUpdate {
+				// Vertical split threshold
+				shouldScrollDetails = msg.X >= m.width/2
+			} else if isOtherTwoPane {
+				// Horizontal split threshold
+				shouldScrollDetails = msg.Y < m.height/2
+			}
 
-			if isTwoPaneMode && isTopHalf {
+			if (isSelectiveUpdate || isOtherTwoPane) && shouldScrollDetails {
 				// Scroll Details Pane
 				if msg.Type == tea.MouseWheelUp {
 					if m.infoScrollOffset > 0 {
@@ -65,7 +74,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 
-			if isTwoPaneMode && !isTopHalf {
+			if (isSelectiveUpdate || isOtherTwoPane) && !shouldScrollDetails {
 				// List Navigation
 				maxIndex := 0
 				if m.mode == modeInstall || m.mode == modeUpdateSelective {
@@ -174,6 +183,15 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				if m.confirmScrollOffset > 0 {
 					m.confirmScrollOffset--
+				}
+				return m, nil
+			case "n", "esc":
+				m.showConfirmation = false
+				m.confirmScrollOffset = 0
+				if m.mode == modeUpdateSelective {
+					m.statusMessage = fmt.Sprintf("%d packages marked", len(m.markedPackages))
+				} else if m.mode == modeUpdate {
+					m.statusMessage = fmt.Sprintf("%d updates available", len(m.updatableAll))
 				}
 				return m, nil
 			}
@@ -686,6 +704,13 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc":
 			if m.textInput.Focused() {
 				m.textInput.Blur()
+				return m, nil
+			}
+
+			if m.mode == modeUpdateSelective {
+				m.mode = modeUpdate
+				m.markedPackages = make(map[string]bool)
+				m.statusMessage = fmt.Sprintf("%d updates available", len(m.updatableAll))
 				return m, nil
 			}
 
