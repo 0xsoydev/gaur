@@ -133,17 +133,20 @@ func (m *model) renderUpdateSelectiveView(helpText string, innerWidth, innerHeig
 		Render(warningSymbol + warningText)
 
 	warningOverlay := lipgloss.PlaceHorizontal(overlayWidth, lipgloss.Center, warningBox)
+	warningHeight := lipgloss.Height(warningOverlay)
 
-	// Subtract space for the warning overlay
-	overlayInnerHeight := overlayHeight - 3
-	if overlayInnerHeight < 10 {
-		overlayInnerHeight = 10
+	// Subtract space for the actual warning overlay height
+	overlayInnerHeight := overlayHeight - warningHeight
+	if overlayInnerHeight < 5 {
+		overlayInnerHeight = 5
 	}
 
 	paneContent := m.renderPackageListLayout(overlayWidth, overlayInnerHeight, activeColor, "", "")
+	
+	// Composite panels and warning
 	paneContent = lipgloss.JoinVertical(lipgloss.Left, paneContent, warningOverlay)
 
-	// Enforce strict rectangle bounds
+	// Enforce strict rectangle bounds - this ensures we exactly match overlayHeight
 	paneContent = lipgloss.Place(overlayWidth, overlayHeight, lipgloss.Left, lipgloss.Top, paneContent)
 
 	bg := m.renderSimpleUpdateView(helpText, innerWidth, innerHeight, activeColor)
@@ -172,7 +175,9 @@ func (m *model) renderUpdateSelectiveView(helpText string, innerWidth, innerHeig
 				output.WriteString(leftStr)
 				output.WriteString(paneLine)
 				output.WriteString(rightStr)
-				output.WriteString("\n")
+				if i < len(bgLines)-1 {
+					output.WriteString("\n")
+				}
 				continue
 			}
 		}
@@ -268,7 +273,7 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 	infoContent = strings.Join(infoLines, "\n")
 
 	infoBox := lipgloss.NewStyle().
-		Width(innerWidth-2).
+		Width(contentWidth).
 		Height(infoInnerHeight).
 		Padding(0, 1).
 		Render(infoContent)
