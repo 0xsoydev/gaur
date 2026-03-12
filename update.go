@@ -29,9 +29,24 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
-		// Mode-specific mouse wheel handling
+		if m.packageInfo != "" {
+			// Prioritize details pane scrolling if it has content.
+			// We consume these events entirely to prevent "leaking" scroll into list navigation.
+			switch msg.Type {
+			case tea.MouseWheelUp:
+				if m.infoScrollOffset > 0 {
+					m.infoScrollOffset--
+				}
+				return m, nil
+			case tea.MouseWheelDown:
+				if m.infoScrollOffset < m.maxInfoScroll {
+					m.infoScrollOffset++
+				}
+				return m, nil
+			}
+		}
+		// List scrolling/navigation
 		if m.mode == modeUpdate {
-			// Pure list view: scroll the list
 			switch msg.Type {
 			case tea.MouseWheelUp:
 				if m.updateScrollOffset > 0 {
@@ -43,18 +58,42 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		} else if m.mode == modeInstall || m.mode == modeUninstall || m.mode == modeUpdateSelective {
-			// Split-pane views: mouse wheel ONLY scrolls the details pane.
-			// List navigation is reserved for arrow keys to prevent accidental jumps.
-			if m.packageInfo != "" {
-				switch msg.Type {
-				case tea.MouseWheelUp:
-					if m.infoScrollOffset > 0 {
-						m.infoScrollOffset--
+			switch msg.Type {
+			case tea.MouseWheelUp:
+				// Navigation (Go to previous item)
+				maxIndex := 0
+				if m.mode == modeInstall || m.mode == modeUpdateSelective {
+					maxIndex = len(m.filtered) - 1
+				} else if m.mode == modeUninstall {
+					maxIndex = len(m.filteredInstalled) - 1
+				}
+				if m.selectedIndex < maxIndex {
+					m.infoScrollOffset = 0
+					m.selectedIndex++
+					name := ""
+					if m.mode == modeUninstall {
+						name = m.filteredInstalled[m.selectedIndex].Name
+					} else {
+						name = m.filtered[m.selectedIndex].Name
 					}
-				case tea.MouseWheelDown:
-					if m.infoScrollOffset < m.maxInfoScroll {
-						m.infoScrollOffset++
+					m.loadingInfo = true
+					m.pendingInfoPackage = name
+					return m, debouncePackageInfo(m.pendingInfoPackage)
+				}
+			case tea.MouseWheelDown:
+				// Navigation (Go to next item)
+				if m.selectedIndex > 0 {
+					m.infoScrollOffset = 0
+					m.selectedIndex--
+					name := ""
+					if m.mode == modeUninstall {
+						name = m.filteredInstalled[m.selectedIndex].Name
+					} else {
+						name = m.filtered[m.selectedIndex].Name
 					}
+					m.loadingInfo = true
+					m.pendingInfoPackage = name
+					return m, debouncePackageInfo(m.pendingInfoPackage)
 				}
 			}
 		}
