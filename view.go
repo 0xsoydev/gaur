@@ -105,8 +105,8 @@ func (m *model) View() string {
 
 // renderUpdateSelectiveView renders the selective update overlay on top of the simple update view
 func (m *model) renderUpdateSelectiveView(helpText string, innerWidth, innerHeight int, activeColor lipgloss.Color) string {
-	overlayWidth := int(float64(innerWidth) * 0.65)
-	overlayHeight := int(float64(innerHeight) * 0.65)
+	overlayWidth := int(float64(innerWidth) * 0.75)
+	overlayHeight := int(float64(innerHeight) * 0.75)
 
 	if overlayWidth < 60 {
 		overlayWidth = 60
@@ -141,7 +141,7 @@ func (m *model) renderUpdateSelectiveView(helpText string, innerWidth, innerHeig
 		overlayInnerHeight = 5
 	}
 
-	paneContent := m.renderPackageListLayout(overlayWidth, overlayInnerHeight, activeColor, "", "")
+	paneContent := m.renderVerticalSplitLayout(overlayWidth, overlayInnerHeight, activeColor)
 	
 	// Composite panels and warning
 	// Ensure warning overlay has a fixed height that we accounted for
@@ -193,6 +193,280 @@ func (m *model) renderUpdateSelectiveView(helpText string, innerWidth, innerHeig
 	}
 
 	return output.String()
+}
+
+// renderVerticalSplitLayout renders a side-by-side view (list on left, details on right)
+func (m *model) renderVerticalSplitLayout(innerWidth, innerHeight int, activeColor lipgloss.Color) string {
+	borderStyle := baseBorderStyle.BorderForeground(activeColor)
+
+	// Width distribution: 40% list, 60% details
+	listWidth := int(float64(innerWidth) * 0.4)
+	detailsWidth := innerWidth - listWidth
+
+	if listWidth < 25 {
+		listWidth = 25
+		detailsWidth = innerWidth - listWidth
+	}
+	if detailsWidth < 20 {
+		detailsWidth = 20
+		listWidth = innerWidth - detailsWidth
+	}
+
+	// 1. Render List Side (Left)
+	var results strings.Builder
+	pkgList := m.filtered
+
+	// Calculate results height for the list
+	// InnerHeight - 2 for borders - 3 for search input and labels
+	resultsHeight := innerHeight - 5 
+	if resultsHeight < 1 {
+		resultsHeight = 1
+	}
+
+	if m.loading {
+		results.WriteString("  Loading...")
+	} else if len(pkgList) == 0 {
+		results.WriteString("  No matches")
+	} else {
+		startIdx := 0
+		if m.selectedIndex >= resultsHeight {
+			startIdx = m.selectedIndex - resultsHeight + 1
+		}
+		endIdx := startIdx + resultsHeight
+		if endIdx > len(pkgList) {
+			endIdx = len(pkgList)
+		}
+
+		var lines []string
+		for i := startIdx; i < endIdx; i++ {
+			pkg := pkgList[i]
+			marker := " "
+			if m.markedPackages[pkg.Name] {
+				marker = "*"
+			}
+			prefix := " " + marker
+			if i == m.selectedIndex {
+				prefix = ">" + marker
+			}
+
+			sourceStyle := lipgloss.NewStyle()
+			if color, ok := sourceColors[pkg.Source]; ok {
+				sourceStyle = sourceStyle.Foreground(color)
+			}
+
+			var displayPkgStr string
+			if indices, ok := m.matchIndices[i]; ok {
+				displayPkgStr = highlightMatchesWithSourceColor(pkg, indices)
+			} else {
+				displayPkgStr = sourceStyle.Render(pkg.Source) + "/" + pkg.Name
+			}
+
+			line := fmt.Sprintf("%s%s", prefix, displayPkgStr)
+			
+			// Truncate to fit listWidth
+			if lipgloss.Width(line) > listWidth-2 {
+				line = truncateWithAnsi(line, listWidth-5) + "..."
+			}
+
+			if i == m.selectedIndex {
+				line = selectedStyle.Render(line)
+			}
+			lines = append(lines, line)
+		}
+		// List is rendered bottom-to-top near input field
+		for i := len(lines) - 1; i >= 0; i-- {
+			results.WriteString(lines[i])
+			if i > 0 {
+				results.WriteString("\n")
+			}
+		}
+	}
+
+	listPanel := borderStyle.
+		Width(listWidth - 2).
+		Height(innerHeight - 2).
+		Render(lipgloss.JoinVertical(lipgloss.Left,
+			results.String(),
+			lipgloss.NewStyle().Height(resultsHeight - lipgloss.Height(results.String())).Render(""), // filler
+			m.textInput.View(),
+		))
+
+	// 2. Render Details Side (Right)
+	infoContent := ""
+	if m.loadingInfo {
+		infoContent = fmt.Sprintf("Loading details for %s...", m.infoForPackage)
+	} else if m.packageInfo != "" {
+		infoContent = m.packageInfo
+	} else {
+		infoContent = "Select an update to see details"
+	}
+
+	infoInnerHeight := innerHeight - 2
+	infoInnerWidth := detailsWidth - 4 // padding
+
+	wrappedText := lipgloss.NewStyle().Width(infoInnerWidth).Render(infoContent)
+	infoLines := strings.Split(wrappedText, "\n")
+
+	totalLines := len(infoLines)
+	if totalLines > infoInnerHeight {
+		maxScroll := totalLines - infoInnerHeight
+		m.maxInfoScroll = maxScroll
+		if m.infoScrollOffset > maxScroll {
+			m.infoScrollOffset = maxScroll
+		}
+		infoLines = infoLines[m.infoScrollOffset : m.infoScrollOffset+infoInnerHeight]
+	} else {
+		m.maxInfoScroll = 0
+		m.infoScrollOffset = 0
+	}
+	infoContent = strings.Join(infoLines, "\n")
+
+	detailsBox := lipgloss.NewStyle().
+		Width(infoInnerWidth).
+		Height(infoInnerHeight).
+		Padding(0, 1).
+		Render(infoContent)
+
+	if len(m.markedPackages) > 0 {
+		selectionPanel := m.renderSelectionBox(detailsWidth - 6)
+		panelLines := strings.Split(selectionPanel, "\n")
+		panelHeight := len(panelLines)
+		panelWidth := lipgloss.Width(panelLines[0])
+
+		bgLines := strings.Split(detailsBox, "\n")
+		
+		// Overlay selectionPanel on bottom right of detailsBox
+		startRow := infoInnerHeight - panelHeight
+		startCol := infoInnerWidth + 2 - panelWidth
+		
+		if startRow < 0 { startRow = 0 }
+		if startCol < 0 { startCol = 0 }
+
+		var result strings.Builder
+		for i, line := range bgLines {
+			if i >= startRow && i < startRow+panelHeight {
+				panelLineIdx := i - startRow
+				lineWidth := lipgloss.Width(line)
+				
+				leftStr := ""
+				if startCol > 0 {
+					if lineWidth < startCol {
+						leftStr = line + strings.Repeat(" ", startCol-lineWidth)
+					} else {
+						leftStr = truncateWithAnsi(line, startCol)
+					}
+				}
+				
+				line = leftStr + panelLines[panelLineIdx]
+			}
+			result.WriteString(line)
+			if i < len(bgLines)-1 {
+				result.WriteString("\n")
+			}
+		}
+		detailsBox = result.String()
+	}
+
+	detailsPanel := borderStyle.
+		Width(detailsWidth - 2).
+		Height(innerHeight - 2).
+		Render(detailsBox)
+
+	return lipgloss.JoinHorizontal(lipgloss.Top, listPanel, detailsPanel)
+}
+
+// renderSelectionBox builds the selection panel string
+func (m *model) renderSelectionBox(maxWidth int) string {
+	borderColor := lipgloss.Color("205")
+	if m.selectionPanelFocused {
+		borderColor = lipgloss.Color("213")
+	}
+	panelStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(borderColor).
+		Padding(0, 1)
+
+	titleStyle := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("205"))
+
+	itemStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("252"))
+
+	selectedItemStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("213")).
+		Bold(true)
+
+	keyHintStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("205")).
+		Bold(true)
+
+	var selectionsList strings.Builder
+	titleText := titleStyle.Render(fmt.Sprintf("Selected (%d) ", len(m.markedPackages))) + keyHintStyle.Render("[*]")
+	selectionsList.WriteString(titleText)
+
+	var pkgNames []string
+	for name := range m.markedPackages {
+		pkgNames = append(pkgNames, name)
+	}
+	sort.Strings(pkgNames)
+
+	maxDisplay := 10 // Reduced for overlay
+	if m.selectionPanelFocused {
+		maxDisplay = 15
+	}
+	
+	startIdx := m.selectionScrollOffset
+	endIdx := startIdx + maxDisplay
+	if endIdx > len(pkgNames) {
+		endIdx = len(pkgNames)
+	}
+
+	visibleNames := pkgNames[startIdx:endIdx]
+	maxContentWidth := lipgloss.Width(titleText)
+	for _, name := range visibleNames {
+		nameWidth := lipgloss.Width(name) + 2
+		if nameWidth > maxContentWidth {
+			maxContentWidth = nameWidth
+		}
+	}
+
+	desiredPanelWidth := maxContentWidth + 4
+	if desiredPanelWidth > maxWidth {
+		desiredPanelWidth = maxWidth
+	}
+	panelWidth := desiredPanelWidth
+
+	if startIdx > 0 {
+		selectionsList.WriteString("\n")
+		selectionsList.WriteString(itemStyle.Render(fmt.Sprintf("... %d above", startIdx)))
+	}
+
+	for i := startIdx; i < endIdx; i++ {
+		name := pkgNames[i]
+		innerWidth := panelWidth - 4
+		nameMaxWidth := innerWidth - 2
+		if nameMaxWidth < 1 { nameMaxWidth = 1 }
+
+		displayName := name
+		if lipgloss.Width(displayName) > nameMaxWidth {
+			displayName = truncateWithAnsi(displayName, nameMaxWidth-3) + "..."
+		}
+
+		selectionsList.WriteString("\n")
+		if m.selectionPanelFocused && i == m.selectionPanelIndex {
+			selectionsList.WriteString(selectedItemStyle.Render("> " + displayName))
+		} else {
+			selectionsList.WriteString(itemStyle.Render("  " + displayName))
+		}
+	}
+
+	if endIdx < len(pkgNames) {
+		selectionsList.WriteString("\n")
+		selectionsList.WriteString(itemStyle.Render(fmt.Sprintf("... %d more below", len(pkgNames)-endIdx)))
+	}
+
+	return panelStyle.Width(panelWidth).Render(selectionsList.String())
 }
 
 // renderPackageListLayout renders the standard split-pane list view for install, uninstall, and selective update
@@ -438,173 +712,42 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 
 // overlaySelectionsPanel renders a selection panel on the bottom right of the screen
 func (m *model) overlaySelectionsPanel(content string, innerWidth int, headerHeight int) string {
-
-	borderColor := lipgloss.Color("205")
-	if m.selectionPanelFocused {
-		borderColor = lipgloss.Color("213")
-	}
-	panelStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(borderColor).
-		Padding(0, 1)
-
-	titleStyle := lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("205"))
-
-	itemStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("252"))
-
-	selectedItemStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("213")).
-		Bold(true)
-
-	keyHintStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("205")).
-		Bold(true)
-
-	// Build the selections list with * hint in title
-	var selectionsList strings.Builder
-
-	titleText := titleStyle.Render(fmt.Sprintf("Selected (%d) ", len(m.markedPackages))) + keyHintStyle.Render("[*]")
-	selectionsList.WriteString(titleText)
-
-	// Collect and sort package names for consistent display
-	var pkgNames []string
-	for name := range m.markedPackages {
-		pkgNames = append(pkgNames, name)
-	}
-	sort.Strings(pkgNames)
-
-	maxDisplay := 20
-	minPanelWidth := 12
-	maxPanelWidth := 32
-
-	startIdx := m.selectionScrollOffset
-	endIdx := startIdx + maxDisplay
-	if endIdx > len(pkgNames) {
-		endIdx = len(pkgNames)
-	}
-
-	visibleNames := pkgNames[startIdx:endIdx]
-
-	maxContentWidth := lipgloss.Width(titleText)
-	for _, name := range visibleNames {
-		nameWidth := lipgloss.Width(name) + 2
-		if nameWidth > maxContentWidth {
-			maxContentWidth = nameWidth
-		}
-	}
-
-	if startIdx > 0 {
-		moreTop := itemStyle.Render(fmt.Sprintf("... %d above", startIdx))
-		if w := lipgloss.Width(moreTop); w > maxContentWidth {
-			maxContentWidth = w
-		}
-	}
-	if endIdx < len(pkgNames) {
-		moreBottom := itemStyle.Render(fmt.Sprintf("... %d more below", len(pkgNames)-endIdx))
-		if w := lipgloss.Width(moreBottom); w > maxContentWidth {
-			maxContentWidth = w
-		}
-	}
-
-	desiredPanelWidth := maxContentWidth + 4
-	if desiredPanelWidth < minPanelWidth {
-		desiredPanelWidth = minPanelWidth
-	}
-	if desiredPanelWidth > maxPanelWidth {
-		desiredPanelWidth = maxPanelWidth
-	}
-	panelWidth := desiredPanelWidth
-
-	if startIdx > 0 {
-		selectionsList.WriteString("\n")
-		selectionsList.WriteString(itemStyle.Render(fmt.Sprintf("... %d above", startIdx)))
-	}
-
-	for i := startIdx; i < endIdx; i++ {
-		name := pkgNames[i]
-		innerWidth := panelWidth - 4
-		nameMaxWidth := innerWidth - 2
-		if nameMaxWidth < 1 {
-			nameMaxWidth = 1
-		}
-
-		displayName := name
-		if lipgloss.Width(displayName) > nameMaxWidth {
-
-			runes := []rune(displayName)
-			truncWidth := nameMaxWidth - 3
-			if truncWidth < 1 {
-				truncWidth = 1
-			}
-			var truncated string
-			for j := 1; j <= len(runes); j++ {
-				s := string(runes[:j])
-				if lipgloss.Width(s) > truncWidth {
-					truncated = string(runes[:j-1]) + "..."
-					break
-				}
-				if j == len(runes) {
-					truncated = s
-				}
-			}
-			displayName = truncated
-		}
-
-		selectionsList.WriteString("\n")
-
-		if m.selectionPanelFocused && i == m.selectionPanelIndex {
-			selectionsList.WriteString(selectedItemStyle.Render("> " + displayName))
-		} else {
-			selectionsList.WriteString(itemStyle.Render("  " + displayName))
-		}
-	}
-
-	if endIdx < len(pkgNames) {
-		selectionsList.WriteString("\n")
-		selectionsList.WriteString(itemStyle.Render(fmt.Sprintf("... %d more below", len(pkgNames)-endIdx)))
-	}
-
-	panel := panelStyle.Width(panelWidth).Render(selectionsList.String())
-	panelHeight := strings.Count(panel, "\n") + 1
+	panel := m.renderSelectionBox(32)
+	panelLines := strings.Split(panel, "\n")
+	panelHeight := len(panelLines)
+	panelWidth := lipgloss.Width(panelLines[0])
 
 	lines := strings.Split(content, "\n")
 
 	startRow := headerHeight // Anchor exactly on the top border
-	startCol := innerWidth - lipgloss.Width(panel)
+	startCol := innerWidth - panelWidth
 	if startCol < 0 {
 		startCol = 0
 	}
 
 	// Build new content with overlay
 	var result strings.Builder
-	panelLines := strings.Split(panel, "\n")
-
 	for i, line := range lines {
 		if i >= startRow && i < startRow+panelHeight {
 			panelLineIdx := i - startRow
-			if panelLineIdx < len(panelLines) {
-
-				lineWidth := lipgloss.Width(line)
-				leftStr := ""
-				if startCol > 0 {
-					if lineWidth < startCol {
-						leftStr = line + strings.Repeat(" ", startCol-lineWidth)
-					} else {
-						leftStr = truncateWithAnsi(line, startCol)
-					}
+			
+			lineWidth := lipgloss.Width(line)
+			leftStr := ""
+			if startCol > 0 {
+				if lineWidth < startCol {
+					leftStr = line + strings.Repeat(" ", startCol-lineWidth)
+				} else {
+					leftStr = truncateWithAnsi(line, startCol)
 				}
-
-				rightStr := ""
-				rightStart := startCol + lipgloss.Width(panelLines[panelLineIdx])
-				if rightStart < lineWidth {
-					rightStr = substringAnsi(line, rightStart)
-				}
-
-				line = leftStr + panelLines[panelLineIdx] + rightStr
 			}
+
+			rightStr := ""
+			rightStart := startCol + panelWidth
+			if rightStart < lineWidth {
+				rightStr = substringAnsi(line, rightStart)
+			}
+
+			line = leftStr + panelLines[panelLineIdx] + rightStr
 		}
 		result.WriteString(line)
 		if i < len(lines)-1 {
