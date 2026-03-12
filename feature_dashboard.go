@@ -175,7 +175,7 @@ func removeOrphans() tea.Cmd {
 	}
 }
 
-func (m model) renderDashboard(helpText string, contentWidth, contentHeight int) string {
+func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) string {
 
 	activeColor := modeColors[m.mode]
 	if activeColor == "" {
@@ -184,7 +184,7 @@ func (m model) renderDashboard(helpText string, contentWidth, contentHeight int)
 	borderStyle := baseBorderStyle.BorderForeground(activeColor)
 
 	helpWidth := lipgloss.Width(helpText)
-	padding := contentWidth - helpWidth
+	padding := innerWidth - helpWidth
 	if padding < 0 {
 		padding = 0
 	}
@@ -192,9 +192,9 @@ func (m model) renderDashboard(helpText string, contentWidth, contentHeight int)
 
 	if m.loading {
 		loadingBox := borderStyle.
-			Width(contentWidth).
-			Height(contentHeight - 1).
-			Render(lipgloss.Place(contentWidth-2, contentHeight-3, lipgloss.Center, lipgloss.Center, "Loading system statistics..."))
+			Width(innerWidth - 2).
+			Height(innerHeight - 2).
+			Render(lipgloss.Place(innerWidth-2, innerHeight-2, lipgloss.Center, lipgloss.Center, "Loading system statistics..."))
 		return lipgloss.JoinVertical(lipgloss.Left, loadingBox, footerLine)
 	}
 
@@ -298,7 +298,7 @@ func (m model) renderDashboard(helpText string, contentWidth, contentHeight int)
 		return b.String()
 	}
 
-	boxWidth := (contentWidth - 6) / 2
+	boxWidth := (innerWidth - 6) / 2
 	if boxWidth < 30 {
 		boxWidth = 30
 	}
@@ -333,7 +333,7 @@ func (m model) renderDashboard(helpText string, contentWidth, contentHeight int)
 	const barSeparator = "│"    // Separator between label and bar
 	const barSuffixReserve = 30 // Reserve space for suffix text (e.g., "1234/5678 (100% explicit)")
 	barStartCol := barLeftMargin + barLabelWidth + len(barSeparator)
-	availableBarWidth := contentWidth - barStartCol - barSuffixReserve
+	availableBarWidth := innerWidth - barStartCol - barSuffixReserve
 	if availableBarWidth < 20 {
 		availableBarWidth = 20
 	}
@@ -413,14 +413,14 @@ func (m model) renderDashboard(helpText string, contentWidth, contentHeight int)
 	}
 
 	dashContent := lipgloss.NewStyle().
-		Width(contentWidth-2).
-		Height(contentHeight-3).
+		Width(innerWidth - 2).
+		Height(innerHeight - 2).
 		Padding(0, 1).
 		Render(dashboard.String())
 
 	dashPanel := borderStyle.
-		Width(contentWidth).
-		Height(contentHeight - 1).
+		Width(innerWidth - 2).
+		Height(innerHeight - 2).
 		Render(dashContent)
 
 	return lipgloss.JoinVertical(lipgloss.Left, dashPanel, footerLine)

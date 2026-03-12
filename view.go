@@ -9,7 +9,7 @@ import (
 )
 
 // renderHelpText creates the help menu with the active mode highlighted
-func (m model) renderHelpText(activeColor lipgloss.Color) string {
+func (m *model) renderHelpText(activeColor lipgloss.Color) string {
 	dimStyle := helpStyle
 	activeStyle := lipgloss.NewStyle().
 		Foreground(activeColor).
@@ -52,13 +52,16 @@ func (m model) renderHelpText(activeColor lipgloss.Color) string {
 	return strings.Join(parts, "")
 }
 
-func (m model) View() string {
+func (m *model) View() string {
 	if m.width == 0 {
 		return "Loading..."
 	}
 
-	contentWidth := m.width - 4
-	contentHeight := m.height - 4
+	// Remove line and column padding entirely. Let the UI touch the terminal edges.
+	innerWidth := m.width
+	
+	// Since we need 1 row for the hint menu at the bottom, the border height gets the rest.
+	innerHeight := m.height - 1
 
 	activeColor := modeColors[m.mode]
 	if activeColor == "" {
@@ -67,115 +70,123 @@ func (m model) View() string {
 
 	helpText := m.renderHelpText(activeColor)
 
+	var content string
+
 	if m.showConfirmation {
-		return m.renderConfirmationDialog(contentWidth, contentHeight, activeColor)
+		content = m.renderConfirmationDialog(innerWidth, innerHeight, activeColor)
+	} else if m.showErrorOverlay {
+		content = m.renderErrorOverlay(innerWidth, innerHeight)
+	} else if m.mode == modeInstalled {
+		content = m.renderDashboard(helpText, innerWidth, innerHeight)
+	} else if m.mode == modeUpdate {
+		content = m.renderSimpleUpdateView(helpText, innerWidth, innerHeight, activeColor)
+	} else if m.mode == modeUpdateSelective {
+		content = m.renderUpdateSelectiveView(helpText, innerWidth, innerHeight, activeColor)
+	} else {
+		// Handle modeInstall and modeUninstall
+		helpWidth := lipgloss.Width(helpText)
+		padding := innerWidth - helpWidth
+		if padding < 0 {
+			padding = 0
+		}
+		footer := strings.Repeat(" ", padding) + helpText
+		content = m.renderPackageListLayout(innerWidth, innerHeight, activeColor, "", footer)
 	}
 
-	if m.showErrorOverlay {
-		return m.renderErrorOverlay(contentWidth, contentHeight)
+	// No artificial padding needed anymore.
+	return lipgloss.Place(
+		m.width,
+		m.height,
+		lipgloss.Center,
+		lipgloss.Top,
+		content,
+	)
+}
+
+// renderUpdateSelectiveView renders the selective update overlay on top of the simple update view
+func (m *model) renderUpdateSelectiveView(helpText string, innerWidth, innerHeight int, activeColor lipgloss.Color) string {
+	overlayWidth := int(float64(innerWidth) * 0.65)
+	overlayHeight := int(float64(innerHeight) * 0.65)
+
+	if overlayWidth < 60 {
+		overlayWidth = 60
+	}
+	if overlayHeight < 20 {
+		overlayHeight = 20
+	}
+	if overlayWidth > innerWidth {
+		overlayWidth = innerWidth
+	}
+	if overlayHeight > innerHeight {
+		overlayHeight = innerHeight
 	}
 
-	if m.mode == modeInstalled {
-		return m.renderDashboard(helpText, contentWidth, contentHeight)
+	paddingX := (innerWidth - overlayWidth) / 2
+	paddingY := (innerHeight - overlayHeight) / 2
+
+	warningSymbol := lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Render("⚠")
+	warningText := lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Render(" Selective updates can break system dependencies")
+	warningBox := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("196")).
+		Padding(0, 1).
+		Render(warningSymbol + warningText)
+
+	warningOverlay := lipgloss.PlaceHorizontal(overlayWidth, lipgloss.Center, warningBox)
+
+	// Subtract space for the warning overlay
+	overlayInnerHeight := overlayHeight - 3
+	if overlayInnerHeight < 10 {
+		overlayInnerHeight = 10
 	}
 
-	if m.mode == modeUpdate {
-		return m.renderSimpleUpdateView(helpText, contentWidth, contentHeight, activeColor)
-	}
+	paneContent := m.renderPackageListLayout(overlayWidth, overlayInnerHeight, activeColor, "", "")
+	paneContent = lipgloss.JoinVertical(lipgloss.Left, paneContent, warningOverlay)
 
-	if m.mode == modeUpdateSelective {
-		overlayWidth := int(float64(m.width) * 0.65)
-		overlayHeight := int(float64(m.height) * 0.65)
+	// Enforce strict rectangle bounds
+	paneContent = lipgloss.Place(overlayWidth, overlayHeight, lipgloss.Left, lipgloss.Top, paneContent)
 
-		if overlayWidth < 60 {
-			overlayWidth = 60
-		}
-		if overlayHeight < 20 {
-			overlayHeight = 20
-		}
-		if overlayWidth > m.width {
-			overlayWidth = m.width
-		}
-		if overlayHeight > m.height {
-			overlayHeight = m.height
-		}
+	bg := m.renderSimpleUpdateView(helpText, innerWidth, innerHeight, activeColor)
+	bgLines := strings.Split(bg, "\n")
+	paneLines := strings.Split(paneContent, "\n")
 
-		paddingX := (contentWidth - overlayWidth) / 2
-		paddingY := (contentHeight - overlayHeight) / 2
+	var output strings.Builder
+	for i, bgLine := range bgLines {
+		if i >= paddingY && i < paddingY+overlayHeight {
+			paneLineIdx := i - paddingY
+			if paneLineIdx < len(paneLines) {
+				paneLine := paneLines[paneLineIdx]
 
-		warningSymbol := lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Render("⚠")
-		warningText := lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Render(" Selective updates can break system dependencies")
-		warningBox := lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("196")).
-			Padding(0, 1).
-			Render(warningSymbol + warningText)
-
-		warningOverlay := lipgloss.PlaceHorizontal(overlayWidth, lipgloss.Center, warningBox)
-
-		innerHeight := overlayHeight - 3
-		if innerHeight < 10 {
-			innerHeight = 10
-		}
-
-		paneContent := m.renderPackageListLayout(overlayWidth, innerHeight, activeColor, "", "")
-
-		paneContent = lipgloss.JoinVertical(lipgloss.Left, paneContent, warningOverlay)
-
-		// Enforce strict rectangle bounds
-		paneContent = lipgloss.Place(overlayWidth, overlayHeight, lipgloss.Left, lipgloss.Top, paneContent)
-
-		bg := m.renderSimpleUpdateView(helpText, contentWidth, contentHeight, activeColor)
-		bgLines := strings.Split(bg, "\n")
-		paneLines := strings.Split(paneContent, "\n")
-
-		var output strings.Builder
-		for i, bgLine := range bgLines {
-			if i >= paddingY && i < paddingY+overlayHeight {
-				paneLineIdx := i - paddingY
-				if paneLineIdx < len(paneLines) {
-					paneLine := paneLines[paneLineIdx]
-
-					// Draw background left
-					leftStr := ""
-					if paddingX > 0 {
-						leftStr = truncateWithAnsi(bgLine, paddingX)
-					}
-
-					rightStr := ""
-					rightStart := paddingX + overlayWidth
-					if rightStart < lipgloss.Width(bgLine) {
-						rightStr = substringAnsi(bgLine, rightStart)
-					}
-
-					output.WriteString(leftStr)
-					output.WriteString(paneLine)
-					output.WriteString(rightStr)
-					output.WriteString("\n")
-					continue
+				// Draw background left
+				leftStr := ""
+				if paddingX > 0 {
+					leftStr = truncateWithAnsi(bgLine, paddingX)
 				}
-			}
-			output.WriteString(bgLine)
-			if i < len(bgLines)-1 {
+
+				rightStr := ""
+				rightStart := paddingX + overlayWidth
+				if rightStart < lipgloss.Width(bgLine) {
+					rightStr = substringAnsi(bgLine, rightStart)
+				}
+
+				output.WriteString(leftStr)
+				output.WriteString(paneLine)
+				output.WriteString(rightStr)
 				output.WriteString("\n")
+				continue
 			}
 		}
-
-		return output.String()
+		output.WriteString(bgLine)
+		if i < len(bgLines)-1 {
+			output.WriteString("\n")
+		}
 	}
 
-	helpWidth := lipgloss.Width(helpText)
-	padding := contentWidth - helpWidth
-	if padding < 0 {
-		padding = 0
-	}
-	footer := strings.Repeat(" ", padding) + helpText
-
-	return m.renderPackageListLayout(contentWidth, contentHeight, activeColor, "", footer)
+	return output.String()
 }
 
 // renderPackageListLayout renders the standard split-pane list view for install, uninstall, and selective update
-func (m model) renderPackageListLayout(contentWidth, contentHeight int, activeColor lipgloss.Color, header, footer string) string {
+func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor lipgloss.Color, header, footer string) string {
 	borderStyle := baseBorderStyle.BorderForeground(activeColor)
 
 	headerHeight := 0
@@ -187,7 +198,7 @@ func (m model) renderPackageListLayout(contentWidth, contentHeight int, activeCo
 		footerHeight = 1
 	}
 
-	availableHeight := contentHeight - headerHeight - footerHeight
+	availableHeight := innerHeight - headerHeight - footerHeight
 	if availableHeight < 6 {
 		availableHeight = 6
 	}
@@ -227,18 +238,20 @@ func (m model) renderPackageListLayout(contentWidth, contentHeight int, activeCo
 		infoContent = "Select a package to see details"
 	}
 
-	panelInnerWidth := contentWidth - 2
-	if panelInnerWidth < 10 {
-		panelInnerWidth = 10
+	// FIX: Use innerWidth - 2 for inner content width (accounts for panel borders)
+	contentWidth := innerWidth - 2
+	if contentWidth < 10 {
+		contentWidth = 10
 	}
 
-	// Render the text *with* a width limit first so Lipgloss wraps it
-	wrappedText := lipgloss.NewStyle().Width(panelInnerWidth - 2).Render(infoContent)
+	// Render the text with a width limit first so Lipgloss wraps it
+	wrappedText := lipgloss.NewStyle().Width(innerWidth - 2).Render(infoContent)
 	infoLines := strings.Split(wrappedText, "\n")
 
 	totalLines := len(infoLines)
 	if totalLines > infoInnerHeight {
 		maxScroll := totalLines - infoInnerHeight
+		m.maxInfoScroll = maxScroll
 
 		// Clamp offset
 		if m.infoScrollOffset > maxScroll {
@@ -249,19 +262,22 @@ func (m model) renderPackageListLayout(contentWidth, contentHeight int, activeCo
 
 		infoLines = infoLines[m.infoScrollOffset : m.infoScrollOffset+infoInnerHeight]
 	} else {
+		m.maxInfoScroll = 0
 		m.infoScrollOffset = 0
 	}
 	infoContent = strings.Join(infoLines, "\n")
 
 	infoBox := lipgloss.NewStyle().
-		Width(panelInnerWidth-2).
+		Width(innerWidth-2).
 		Height(infoInnerHeight).
 		Padding(0, 1).
 		Render(infoContent)
 
+	// FIX 1: Outer panel uses targetInfoPanelHeight - 2 to account for borders
+	// Lipgloss's .Height() combined with borders adds 2 to the total outer height
 	infoPanel := borderStyle.
-		Width(panelInnerWidth).
-		Height(infoInnerHeight).
+		Width(innerWidth - 2).
+		Height(targetInfoPanelHeight - 2).
 		Render(infoBox)
 
 	// Build results list
@@ -344,8 +360,8 @@ func (m model) renderPackageListLayout(contentWidth, contentHeight int, activeCo
 				line += " " + installedBadge.Render("[installed]")
 			}
 
-			if lipgloss.Width(line) > contentWidth-4 {
-				line = line[:contentWidth-7] + "..."
+			if lipgloss.Width(line) > innerWidth-4 {
+				line = line[:innerWidth-7] + "..."
 			}
 
 			if i == m.selectedIndex {
@@ -364,7 +380,7 @@ func (m model) renderPackageListLayout(contentWidth, contentHeight int, activeCo
 	}
 
 	resultsBox := lipgloss.NewStyle().
-		Width(panelInnerWidth).
+		Width(contentWidth).
 		Height(resultsHeight).
 		Render(results.String())
 
@@ -385,9 +401,11 @@ func (m model) renderPackageListLayout(contentWidth, contentHeight int, activeCo
 		inputLine,
 	)
 
+	// FIX 1: Outer panel uses targetBottomPanelHeight - 2 to account for borders
+	// Lipgloss's .Height() combined with borders adds 2 to the total outer height
 	bottomPanel := borderStyle.
-		Width(panelInnerWidth).
-		Height(bottomInnerHeight).
+		Width(innerWidth - 2).
+		Height(targetBottomPanelHeight - 2).
 		Render(bottomContent)
 
 	var layoutSections []string
@@ -402,14 +420,14 @@ func (m model) renderPackageListLayout(contentWidth, contentHeight int, activeCo
 	content := lipgloss.JoinVertical(lipgloss.Left, layoutSections...)
 
 	if len(m.markedPackages) > 0 {
-		content = m.overlaySelectionsPanel(content, contentWidth, headerHeight)
+		content = m.overlaySelectionsPanel(content, innerWidth, headerHeight)
 	}
 
 	return content
 }
 
 // overlaySelectionsPanel renders a selection panel on the bottom right of the screen
-func (m model) overlaySelectionsPanel(content string, contentWidth int, headerHeight int) string {
+func (m *model) overlaySelectionsPanel(content string, innerWidth int, headerHeight int) string {
 
 	borderColor := lipgloss.Color("205")
 	if m.selectionPanelFocused {
@@ -545,7 +563,7 @@ func (m model) overlaySelectionsPanel(content string, contentWidth int, headerHe
 	lines := strings.Split(content, "\n")
 
 	startRow := headerHeight // Anchor exactly on the top border
-	startCol := contentWidth - lipgloss.Width(panel)
+	startCol := innerWidth - lipgloss.Width(panel)
 	if startCol < 0 {
 		startCol = 0
 	}
@@ -588,9 +606,9 @@ func (m model) overlaySelectionsPanel(content string, contentWidth int, headerHe
 }
 
 // renderConfirmationDialog renders a centered confirmation dialog for install/uninstall/update
-func (m model) renderConfirmationDialog(contentWidth, contentHeight int, activeColor lipgloss.Color) string {
+func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColor lipgloss.Color) string {
 
-	dialogWidth := contentWidth - 20
+	dialogWidth := innerWidth - 20
 	if dialogWidth < 50 {
 		dialogWidth = 50
 	}
@@ -730,6 +748,12 @@ func (m model) renderConfirmationDialog(contentWidth, contentHeight int, activeC
 		if endIdx > len(packages) {
 			endIdx = len(packages)
 		}
+
+		maxScroll := len(packages) - maxVisible
+		if maxScroll < 0 {
+			maxScroll = 0
+		}
+		m.maxConfirmScroll = maxScroll
 		visibleCount := endIdx - startIdx
 
 		innerWidth := dialogWidth - 6
@@ -816,10 +840,10 @@ func (m model) renderConfirmationDialog(contentWidth, contentHeight int, activeC
 		scrollbarThumbStyle := lipgloss.NewStyle().Foreground(activeColor).Bold(true)
 
 		for i, entry := range entries {
-			contentWidth := innerWidth
+			innerWidth := innerWidth
 			var sbChar string
 			if showScrollbar {
-				contentWidth = innerWidth - 1
+				innerWidth = innerWidth - 1
 				if entry.isPkg {
 					if i >= thumbTop && i < thumbTop+thumbSize {
 						sbChar = scrollbarThumbStyle.Render("█")
@@ -830,7 +854,7 @@ func (m model) renderConfirmationDialog(contentWidth, contentHeight int, activeC
 					sbChar = " "
 				}
 			}
-			line := lipgloss.NewStyle().Width(contentWidth).Render(entry.text)
+			line := lipgloss.NewStyle().Width(innerWidth).Render(entry.text)
 			if sbChar != "" {
 				line = line + sbChar
 			}
@@ -861,11 +885,11 @@ func (m model) renderConfirmationDialog(contentWidth, contentHeight int, activeC
 
 	dialogHeight := strings.Count(dialog, "\n") + 1
 
-	vertPadding := (contentHeight - dialogHeight) / 2
+	vertPadding := (innerHeight - dialogHeight) / 2
 	if vertPadding < 0 {
 		vertPadding = 0
 	}
-	horizPadding := (contentWidth - lipgloss.Width(dialog)) / 2
+	horizPadding := (innerWidth - lipgloss.Width(dialog)) / 2
 	if horizPadding < 0 {
 		horizPadding = 0
 	}
@@ -887,11 +911,11 @@ func (m model) renderConfirmationDialog(contentWidth, contentHeight int, activeC
 }
 
 // renderErrorOverlay renders a centered error overlay dialog
-func (m model) renderErrorOverlay(contentWidth, contentHeight int) string {
+func (m *model) renderErrorOverlay(innerWidth, innerHeight int) string {
 
 	errorColor := lipgloss.Color("#FF5555")
 
-	dialogWidth := contentWidth - 20
+	dialogWidth := innerWidth - 20
 	if dialogWidth < 50 {
 		dialogWidth = 50
 	}
@@ -946,11 +970,11 @@ func (m model) renderErrorOverlay(contentWidth, contentHeight int) string {
 
 	dialogHeight := strings.Count(dialog, "\n") + 1
 
-	vertPadding := (contentHeight - dialogHeight) / 2
+	vertPadding := (innerHeight - dialogHeight) / 2
 	if vertPadding < 0 {
 		vertPadding = 0
 	}
-	horizPadding := (contentWidth - lipgloss.Width(dialog)) / 2
+	horizPadding := (innerWidth - lipgloss.Width(dialog)) / 2
 	if horizPadding < 0 {
 		horizPadding = 0
 	}
@@ -972,18 +996,18 @@ func (m model) renderErrorOverlay(contentWidth, contentHeight int) string {
 }
 
 // renderSimpleUpdateView renders the simple overview page for pending updates
-func (m model) renderSimpleUpdateView(helpText string, contentWidth, contentHeight int, activeColor lipgloss.Color) string {
+func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight int, activeColor lipgloss.Color) string {
 	borderStyle := baseBorderStyle.BorderForeground(activeColor)
 
 	helpWidth := lipgloss.Width(helpText)
-	padding := contentWidth - helpWidth
+	padding := innerWidth - helpWidth
 	if padding < 0 {
 		padding = 0
 	}
 	footerLine := strings.Repeat(" ", padding) + helpText
 
 	footerHeight := 1
-	panelHeight := contentHeight - footerHeight - 2 // -2 for borders
+	panelHeight := innerHeight - footerHeight - 2 // -2 for borders
 	if panelHeight < 1 {
 		panelHeight = 1
 	}
@@ -1022,6 +1046,11 @@ func (m model) renderSimpleUpdateView(helpText string, contentWidth, contentHeig
 
 		if displayCount > len(m.pendingUpdates)-m.updateScrollOffset {
 			displayCount = len(m.pendingUpdates) - m.updateScrollOffset
+		}
+
+		m.maxUpdateScroll = len(m.pendingUpdates) - 1
+		if m.maxUpdateScroll < 0 {
+			m.maxUpdateScroll = 0
 		}
 
 		if m.updateScrollOffset > 0 {
@@ -1084,7 +1113,7 @@ func (m model) renderSimpleUpdateView(helpText string, contentWidth, contentHeig
 
 		buttons := btnUpdate + "   " + btnSelective
 		buttonsWidth := lipgloss.Width(buttons)
-		padding := contentWidth - 4 - buttonsWidth
+		padding := innerWidth - 4 - buttonsWidth
 		if padding < 0 {
 			padding = 0
 		}
@@ -1095,14 +1124,14 @@ func (m model) renderSimpleUpdateView(helpText string, contentWidth, contentHeig
 	}
 
 	panelContent := lipgloss.NewStyle().
-		Width(contentWidth-2).
+		Width(innerWidth-2).
 		Height(panelHeight).
 		Padding(0, 1). // Minimal top/left padding inside panel
 		Render(content.String())
 
 	mainPanel := borderStyle.
-		Width(contentWidth).
-		Height(panelHeight + 2).
+		Width(innerWidth - 2).
+		Height(panelHeight).
 		Render(panelContent)
 
 	return lipgloss.JoinVertical(lipgloss.Left, mainPanel, footerLine)
