@@ -56,6 +56,8 @@ type model struct {
 	errorTitle       string
 	errorMessage     string
 	errorDetails     string
+	// Sync logic
+	checkAfterUpdate bool // Whether we should perform a sync+check if updates are zero
 }
 
 func initialModel(initialMode viewMode) model {

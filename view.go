@@ -144,10 +144,15 @@ func (m *model) renderUpdateSelectiveView(helpText string, innerWidth, innerHeig
 	paneContent := m.renderPackageListLayout(overlayWidth, overlayInnerHeight, activeColor, "", "")
 	
 	// Composite panels and warning
-	paneContent = lipgloss.JoinVertical(lipgloss.Left, paneContent, warningOverlay)
+	// Ensure warning overlay has a fixed height that we accounted for
+	warningBoxWrapped := lipgloss.NewStyle().
+		Height(warningHeight).
+		Render(warningOverlay)
+		
+	paneContent = lipgloss.JoinVertical(lipgloss.Left, paneContent, warningBoxWrapped)
 
 	// Enforce strict rectangle bounds - this ensures we exactly match overlayHeight
-	paneContent = lipgloss.Place(overlayWidth, overlayHeight, lipgloss.Left, lipgloss.Top, paneContent)
+	paneContent = lipgloss.Place(overlayWidth, overlayHeight, lipgloss.Center, lipgloss.Center, paneContent)
 
 	bg := m.renderSimpleUpdateView(helpText, innerWidth, innerHeight, activeColor)
 	bgLines := strings.Split(bg, "\n")
@@ -878,7 +883,7 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 		}
 	}
 
-	content.WriteString("\n\n")
+	content.WriteString("\n")
 	var promptLine string
 	promptLine = fmt.Sprintf("Proceed? %ses  %so",
 		keyStyle.Render("[y]"),
@@ -888,31 +893,14 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 	dialogContent := content.String()
 	dialog := dialogBorderStyle.Width(dialogWidth).Render(dialogContent)
 
-	dialogHeight := strings.Count(dialog, "\n") + 1
-
-	vertPadding := (innerHeight - dialogHeight) / 2
-	if vertPadding < 0 {
-		vertPadding = 0
-	}
-	horizPadding := (innerWidth - lipgloss.Width(dialog)) / 2
-	if horizPadding < 0 {
-		horizPadding = 0
-	}
-
-	// Build final output with centering
-	var output strings.Builder
-
-	for i := 0; i < vertPadding; i++ {
-		output.WriteString("\n")
-	}
-
-	for _, line := range strings.Split(dialog, "\n") {
-		output.WriteString(strings.Repeat(" ", horizPadding))
-		output.WriteString(line)
-		output.WriteString("\n")
-	}
-
-	return output.String()
+	// Use lipgloss.Place for reliable centering instead of manual string padding
+	return lipgloss.Place(
+		innerWidth,
+		innerHeight,
+		lipgloss.Center,
+		lipgloss.Center,
+		dialog,
+	)
 }
 
 // renderErrorOverlay renders a centered error overlay dialog

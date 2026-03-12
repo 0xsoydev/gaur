@@ -1426,11 +1426,21 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.loading = false
 		if msg.err != nil {
 			m.statusMessage = fmt.Sprintf("Error checking updates: %v", msg.err)
+			m.checkAfterUpdate = false
 		} else if len(msg.packages) == 0 {
+			if m.checkAfterUpdate {
+				m.checkAfterUpdate = false
+				m.loading = true
+				m.statusMessage = "Syncing repositories to double-check..."
+				return m, syncRepositoriesInTerminal()
+			}
 			m.statusMessage = "System is up to date!"
 			m.updateOutput = "No updates available."
+			m.pendingUpdates = nil
+			m.updatableAll = nil
+			m.filtered = nil
 		} else {
-
+			m.checkAfterUpdate = false
 			m.updatableAll = msg.packages
 			m.pendingUpdates = msg.packages
 
@@ -1455,7 +1465,13 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case execCompleteMsg:
 		m.loading = false
 		m.confirmPackages = nil
-		m.pendingUpdates = nil
+		
+		// If it was an update operation, don't clear pendingUpdates yet, 
+		// we'll wait for the checkUpdates() call to finish and update it.
+		// For other operations (install/uninstall), we clear it because we'll refresh the whole list.
+		if msg.operation != confirmUpdate && msg.operation != confirmSelectiveUpdate {
+			m.pendingUpdates = nil
+		}
 
 		if msg.err != nil {
 			opName := ""
@@ -1493,9 +1509,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case confirmUninstall:
 				return m, getInstalledPackages()
 			case confirmUpdate:
-				return m, loadRepoPackages()
+				return m, checkUpdates()
 			case confirmSelectiveUpdate:
-				return m, loadRepoPackages()
+				return m, checkUpdates()
 			case confirmCleanCache, confirmRemoveOrphans:
 				return m, getDashboardData()
 			}
@@ -1522,7 +1538,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case confirmUpdate:
 			m.lastCompletedOp = "System update completed"
 			m.statusMessage = m.lastCompletedOp
-			return m, loadRepoPackages()
+			m.checkAfterUpdate = true
+			m.pendingUpdates = nil
+			m.updatableAll = nil
+			m.filtered = nil
+			return m, checkUpdates()
 		case confirmSelectiveUpdate:
 			if len(msg.packages) == 1 {
 				m.lastCompletedOp = fmt.Sprintf("Updated: %s", msg.packages[0])
@@ -1530,7 +1550,32 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.lastCompletedOp = fmt.Sprintf("Updated %d packages", len(msg.packages))
 			}
 			m.statusMessage = m.lastCompletedOp
-			return m, loadRepoPackages()
+			m.checkAfterUpdate = true
+
+			// Remove updated packages from our local state immediately for better UX
+			updatedMap := make(map[string]bool)
+			for _, name := range msg.packages {
+				updatedMap[name] = true
+			}
+
+			newPending := []Package{}
+			for _, p := range m.pendingUpdates {
+				if !updatedMap[p.Name] {
+					newPending = append(newPending, p)
+				}
+			}
+			m.pendingUpdates = newPending
+
+			newUpdatableAll := []Package{}
+			for _, p := range m.updatableAll {
+				if !updatedMap[p.Name] {
+					newUpdatableAll = append(newUpdatableAll, p)
+				}
+			}
+			m.updatableAll = newUpdatableAll
+			m.filtered = m.updatableAll // Refresh filtered list too
+
+			return m, checkUpdates()
 		case confirmCleanCache:
 			m.lastCompletedOp = "Cache cleaned successfully"
 			m.statusMessage = m.lastCompletedOp
