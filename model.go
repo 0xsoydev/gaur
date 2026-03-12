@@ -27,6 +27,7 @@ type model struct {
 	infoForPackage        string
 	pendingInfoPackage    string // Package waiting for debounce to complete
 	infoScrollOffset      int    // Scroll offset for the info/details pane
+	maxInfoScroll         int    // Maximum allowed scroll for info pane
 	loadingInfo           bool
 	mode                  viewMode
 	width                 int
@@ -44,10 +45,12 @@ type model struct {
 	confirmPackages     []string  // Package names to operate on
 	pendingUpdates      []Package // Updates available (for update confirmation)
 	confirmScrollOffset int       // Scroll offset for confirmation package list
+	maxConfirmScroll    int       // Max scroll for confirmation list
 	lastCompletedOp     string    // Description of last completed operation
 	// Update selection state
 	updatableAll []Package // All packages available for update (before selection)
 	updateScrollOffset int   // Scroll offset for the simple update view
+	maxUpdateScroll    int   // Max scroll for update view
 	// Error overlay state
 	showErrorOverlay bool
 	errorTitle       string
@@ -91,7 +94,7 @@ func initialModel(initialMode viewMode) model {
 	}
 }
 
-func (m model) Init() tea.Cmd {
+func (m *model) Init() tea.Cmd {
 	cmds := []tea.Cmd{textinput.Blink, loadRepoPackages()}
 
 	switch m.mode {
@@ -112,7 +115,7 @@ func (m model) Init() tea.Cmd {
 }
 
 // currentPackageList returns the appropriate package list based on current mode.
-func (m model) currentPackageList() []Package {
+func (m *model) currentPackageList() []Package {
 	switch m.mode {
 	case modeInstall:
 		return m.filtered
@@ -124,7 +127,7 @@ func (m model) currentPackageList() []Package {
 }
 
 // maxSelectableIndex returns the maximum valid index for the current package list.
-func (m model) maxSelectableIndex() int {
+func (m *model) maxSelectableIndex() int {
 	pkgList := m.currentPackageList()
 	if len(pkgList) == 0 {
 		return 0
@@ -133,7 +136,7 @@ func (m model) maxSelectableIndex() int {
 }
 
 // selectedPackage returns the currently selected package, or nil if none.
-func (m model) selectedPackage() *Package {
+func (m *model) selectedPackage() *Package {
 	pkgList := m.currentPackageList()
 	if m.selectedIndex >= 0 && m.selectedIndex < len(pkgList) {
 		return &pkgList[m.selectedIndex]
