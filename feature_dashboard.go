@@ -102,8 +102,12 @@ func parseParuStats(output string) (totalSize string, totalSizeBytes int64, miss
 			continue
 		}
 
-		if inTopPackages && (strings.HasPrefix(line, "===") || line == "") {
+		if inTopPackages && line == "" {
 			inTopPackages = false
+			continue
+		}
+
+		if inTopPackages && strings.HasPrefix(line, "===") {
 			continue
 		}
 
