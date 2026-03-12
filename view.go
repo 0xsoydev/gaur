@@ -57,11 +57,8 @@ func (m *model) View() string {
 		return "Loading..."
 	}
 
-	// Remove line and column padding entirely. Let the UI touch the terminal edges.
 	innerWidth := m.width
-	
-	// Since we need 1 row for the hint menu at the bottom, the border height gets the rest.
-	innerHeight := m.height - 1
+	innerHeight := m.height // Use full terminal height for base calculations
 
 	activeColor := modeColors[m.mode]
 	if activeColor == "" {
@@ -90,10 +87,12 @@ func (m *model) View() string {
 			padding = 0
 		}
 		footer := strings.Repeat(" ", padding) + helpText
+		if lipgloss.Width(footer) > innerWidth {
+			footer = truncateWithAnsi(footer, innerWidth)
+		}
 		content = m.renderPackageListLayout(innerWidth, innerHeight, activeColor, "", footer)
 	}
 
-	// No artificial padding needed anymore.
 	return lipgloss.Place(
 		m.width,
 		m.height,
@@ -557,8 +556,6 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 		Padding(0, 1).
 		Render(infoContent)
 
-	// FIX 1: Outer panel uses targetInfoPanelHeight - 2 to account for borders
-	// Lipgloss's .Height() combined with borders adds 2 to the total outer height
 	infoPanel := borderStyle.
 		Width(innerWidth - 2).
 		Height(targetInfoPanelHeight - 2).
@@ -685,8 +682,6 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 		inputLine,
 	)
 
-	// FIX 1: Outer panel uses targetBottomPanelHeight - 2 to account for borders
-	// Lipgloss's .Height() combined with borders adds 2 to the total outer height
 	bottomPanel := borderStyle.
 		Width(innerWidth - 2).
 		Height(targetBottomPanelHeight - 2).
@@ -1141,12 +1136,12 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 		padding = 0
 	}
 	footerLine := strings.Repeat(" ", padding) + helpText
+	if lipgloss.Width(footerLine) > innerWidth {
+		footerLine = truncateWithAnsi(footerLine, innerWidth)
+	}
 
 	footerHeight := 1
-	panelHeight := innerHeight - footerHeight - 2 // -2 for borders
-	if panelHeight < 1 {
-		panelHeight = 1
-	}
+	panelHeight := innerHeight - footerHeight
 
 	var content strings.Builder
 	innerContentHeight := 0
@@ -1163,7 +1158,7 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 		innerContentHeight += 2
 
 		innerFooterHeight := 1
-		availableLinesForList := panelHeight - innerContentHeight - innerFooterHeight
+		availableLinesForList := panelHeight - innerContentHeight - innerFooterHeight - 2 // -2 for borders
 		if availableLinesForList < 1 {
 			availableLinesForList = 1
 		}
@@ -1216,17 +1211,8 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 		}
 	}
 
-	// Fill remaining space
-	fillerLines := panelHeight - innerContentHeight - 1
-	if fillerLines < 0 {
-		fillerLines = 0
-	}
-
+	// Fill remaining space - removed manual fillerLines loops
 	if !strings.HasSuffix(content.String(), "\n") {
-		content.WriteString("\n")
-	}
-
-	for i := 0; i < fillerLines; i++ {
 		content.WriteString("\n")
 	}
 
@@ -1255,19 +1241,17 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 		}
 
 		content.WriteString(strings.Repeat(" ", padding) + buttons)
-	} else {
-		content.WriteString("\n")
 	}
 
 	panelContent := lipgloss.NewStyle().
 		Width(innerWidth-2).
-		Height(panelHeight).
+		Height(panelHeight - 2). // content height within borders
 		Padding(0, 1). // Minimal top/left padding inside panel
 		Render(content.String())
 
 	mainPanel := borderStyle.
 		Width(innerWidth - 2).
-		Height(panelHeight).
+		Height(panelHeight - 2). // Total height = (panelHeight-2) + 2 = panelHeight
 		Render(panelContent)
 
 	return lipgloss.JoinVertical(lipgloss.Left, mainPanel, footerLine)
