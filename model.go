@@ -60,7 +60,7 @@ type model struct {
 	checkAfterUpdate bool // Whether we should perform a sync+check if updates are zero
 }
 
-func initialModel(initialMode viewMode) model {
+func initialModel(initialMode viewMode) *model {
 	ti := textinput.New()
 	ti.CharLimit = textInputCharLimit
 	ti.Width = textInputDefaultWidth
@@ -80,7 +80,7 @@ func initialModel(initialMode viewMode) model {
 	}
 	ti.Placeholder = placeholder
 
-	return model{
+	return &model{
 		textInput:      ti,
 		repoPackages:   []Package{},
 		installedSet:   make(map[string]bool),

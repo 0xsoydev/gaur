@@ -14,127 +14,124 @@ func TestSelectiveUpdateFlow(t *testing.T) {
 		{Source: "aur", Name: "yay", Version: "12.5.7"},
 	}
 	m := initialModel(modeUpdate)
-	mp := &m
-	mp.loading = false
-	mp.pendingUpdates = pkgs
-	mp.updatableAll = pkgs
-	mp.filtered = pkgs
-	mp.selectedIndex = 0
-	mp.width = 80
-	mp.height = 24
+	m.loading = false
+	m.pendingUpdates = pkgs
+	m.updatableAll = pkgs
+	m.filtered = pkgs
+	m.selectedIndex = 0
+	m.width = 80
+	m.height = 24
 
 	// 2. Press 's' to enter Selective Update mode
-	newModel, _ := mp.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("s")})
-	mp = newModel.(*model)
+	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("s")})
+	m = newModel.(*model)
 
-	if mp.mode != modeUpdateSelective {
-		t.Errorf("Expected modeUpdateSelective, got %v", mp.mode)
+	if m.mode != modeUpdateSelective {
+		t.Errorf("Expected modeUpdateSelective, got %v", m.mode)
 	}
 
 	// 3. Blur text input to enable navigation
 	// We call Blur() manually to avoid the 'esc' logic that resets the mode.
-	mp.textInput.Blur()
-	if mp.textInput.Focused() {
+	m.textInput.Blur()
+	if m.textInput.Focused() {
 		t.Error("Expected text input to be blurred")
 	}
 
 	// 4. Mark 'firefox' (index 0) and 'yay' (index 2)
 	// Current selectedIndex should be 0 (firefox)
-	newModel, _ = mp.Update(tea.KeyMsg{Type: tea.KeyTab}) // Mark firefox
-	mp = newModel.(*model)
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyTab}) // Mark firefox
+	m = newModel.(*model)
 
-	if len(mp.markedPackages) != 1 {
-		t.Errorf("Expected 1 marked package, got %d. Marked: %v", len(mp.markedPackages), mp.markedPackages)
+	if len(m.markedPackages) != 1 {
+		t.Errorf("Expected 1 marked package, got %d. Marked: %v", len(m.markedPackages), m.markedPackages)
 	}
 
 	// In this app, 'k' (up) increases selectedIndex.
-	newModel, _ = mp.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("k")}) // move to vlc (index 1)
-	mp = newModel.(*model)
-	newModel, _ = mp.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("k")}) // move to yay (index 2)
-	mp = newModel.(*model)
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("k")}) // move to vlc (index 1)
+	m = newModel.(*model)
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("k")}) // move to yay (index 2)
+	m = newModel.(*model)
 	
-	if mp.selectedIndex != 2 {
-		t.Errorf("Expected selectedIndex 2, got %d", mp.selectedIndex)
+	if m.selectedIndex != 2 {
+		t.Errorf("Expected selectedIndex 2, got %d", m.selectedIndex)
 	}
 
-	newModel, _ = mp.Update(tea.KeyMsg{Type: tea.KeyTab}) // Mark yay
-	mp = newModel.(*model)
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyTab}) // Mark yay
+	m = newModel.(*model)
 
-	if len(mp.markedPackages) != 2 {
-		t.Errorf("Expected 2 marked packages, got %d. Marked: %v", len(mp.markedPackages), mp.markedPackages)
+	if len(m.markedPackages) != 2 {
+		t.Errorf("Expected 2 marked packages, got %d. Marked: %v", len(m.markedPackages), m.markedPackages)
 	}
-	if !mp.markedPackages["firefox"] || !mp.markedPackages["yay"] {
+	if !m.markedPackages["firefox"] || !m.markedPackages["yay"] {
 		t.Error("Marked packages mismatch")
 	}
 
 	// 5. Press Enter to show confirmation
-	newModel, _ = mp.Update(tea.KeyMsg{Type: tea.KeyEnter})
-	mp = newModel.(*model)
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = newModel.(*model)
 
-	if !mp.showConfirmation {
+	if !m.showConfirmation {
 		t.Error("Expected confirmation dialog to be shown")
 	}
-	if mp.confirmType != confirmSelectiveUpdate {
-		t.Errorf("Expected confirmSelectiveUpdate, got %v", mp.confirmType)
+	if m.confirmType != confirmSelectiveUpdate {
+		t.Errorf("Expected confirmSelectiveUpdate, got %v", m.confirmType)
 	}
-	if len(mp.confirmPackages) != 2 {
-		t.Errorf("Expected 2 packages in confirmation, got %d", len(mp.confirmPackages))
+	if len(m.confirmPackages) != 2 {
+		t.Errorf("Expected 2 packages in confirmation, got %d", len(m.confirmPackages))
 	}
 }
 
 func TestSelectiveUpdateMouseScrollWithInfo(t *testing.T) {
 	m := initialModel(modeUpdateSelective)
-	mp := &m
-	mp.width = 80
-	mp.height = 24
-	mp.loading = false
-	mp.updatableAll = []Package{{Name: "pkg1"}, {Name: "pkg2"}}
-	mp.filtered = mp.updatableAll
-	mp.selectedIndex = 0
+	m.width = 80
+	m.height = 24
+	m.loading = false
+	m.updatableAll = []Package{{Name: "pkg1"}, {Name: "pkg2"}}
+	m.filtered = m.updatableAll
+	m.selectedIndex = 0
 	
 	// Set package info - this SHOULD prevent list scrolling
-	mp.packageInfo = "Some multi-line\npackage info\nto scroll through."
-	mp.maxInfoScroll = 5
-	mp.infoScrollOffset = 0
+	m.packageInfo = "Some multi-line\npackage info\nto scroll through."
+	m.maxInfoScroll = 5
+	m.infoScrollOffset = 0
 
 	// Scroll mouse wheel up - RIGHT SIDE (X=60) should scroll info
-	newModel, _ := mp.Update(tea.MouseMsg{Type: tea.MouseWheelUp, X: 60})
-	mp = newModel.(*model)
+	newModel, _ := m.Update(tea.MouseMsg{Type: tea.MouseWheelUp, X: 60})
+	m = newModel.(*model)
 	
-	if mp.selectedIndex != 0 {
-		t.Errorf("Expected selectedIndex 0, got %d (should NOT move list when scrolling on right side)", mp.selectedIndex)
+	if m.selectedIndex != 0 {
+		t.Errorf("Expected selectedIndex 0, got %d (should NOT move list when scrolling on right side)", m.selectedIndex)
 	}
 	
 	// Scroll mouse wheel down - RIGHT SIDE (X=60) should scroll info
-	newModel, _ = mp.Update(tea.MouseMsg{Type: tea.MouseWheelDown, X: 60})
-	mp = newModel.(*model)
+	newModel, _ = m.Update(tea.MouseMsg{Type: tea.MouseWheelDown, X: 60})
+	m = newModel.(*model)
 	
-	if mp.selectedIndex != 0 {
-		t.Errorf("Expected selectedIndex 0, got %d (should NOT move list when scrolling on right side)", mp.selectedIndex)
+	if m.selectedIndex != 0 {
+		t.Errorf("Expected selectedIndex 0, got %d (should NOT move list when scrolling on right side)", m.selectedIndex)
 	}
-	if mp.infoScrollOffset != 1 {
-		t.Errorf("Expected infoScrollOffset 1, got %d", mp.infoScrollOffset)
+	if m.infoScrollOffset != 1 {
+		t.Errorf("Expected infoScrollOffset 1, got %d", m.infoScrollOffset)
 	}
 }
 
 func TestSelectiveUpdateMouseScrollWithoutInfo(t *testing.T) {
 	m := initialModel(modeUpdateSelective)
-	mp := &m
-	mp.width = 80
-	mp.height = 24
-	mp.loading = false
-	mp.updatableAll = []Package{{Name: "pkg1"}, {Name: "pkg2"}}
-	mp.filtered = mp.updatableAll
-	mp.selectedIndex = 0
+	m.width = 80
+	m.height = 24
+	m.loading = false
+	m.updatableAll = []Package{{Name: "pkg1"}, {Name: "pkg2"}}
+	m.filtered = m.updatableAll
+	m.selectedIndex = 0
 	
 	// EMPTY package info
-	mp.packageInfo = ""
+	m.packageInfo = ""
 
 	// Scroll mouse wheel up - LEFT SIDE (X=10) should move list cursor
-	newModel, _ := mp.Update(tea.MouseMsg{Type: tea.MouseWheelUp, X: 10})
-	mp = newModel.(*model)
+	newModel, _ := m.Update(tea.MouseMsg{Type: tea.MouseWheelUp, X: 10})
+	m = newModel.(*model)
 	
-	if mp.selectedIndex != 1 {
-		t.Errorf("Expected selectedIndex 1, got %d (list SHOULD move when scrolling on left side)", mp.selectedIndex)
+	if m.selectedIndex != 1 {
+		t.Errorf("Expected selectedIndex 1, got %d (list SHOULD move when scrolling on left side)", m.selectedIndex)
 	}
 }

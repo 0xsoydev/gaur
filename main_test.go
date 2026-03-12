@@ -601,7 +601,7 @@ func newTestModelUpdate(packages []Package) *model {
 	m.updatableAll = packages
 	m.confirmScrollOffset = 0
 	m.statusMessage = fmt.Sprintf("%d updates available", len(packages))
-	return &m
+	return m
 }
 
 // testPackages returns a set of test packages for use in tests
