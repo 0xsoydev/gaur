@@ -43,7 +43,7 @@ func TestGlobalLayoutIntegrity(t *testing.T) {
 		{
 			name:   "Dashboard - Fully Loaded",
 			width:  100,
-			height: 30,
+			height: 27,
 			mode:   modeInstalled,
 			setup: func(m *model) {
 				m.loading = false
