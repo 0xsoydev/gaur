@@ -378,8 +378,8 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 		boxWidth = 30
 	}
 
-	countsBox := renderBox(boxTitleStyle.Render(" 📦 Package Counts "), countsLines, boxWidth)
-	storageBox := renderBox(boxTitleStyle.Render(" 💾 Storage "), storageLines, boxWidth)
+	countsBox := renderBox(boxTitleStyle.Render(" \U000f03d7  Package Counts "), countsLines, boxWidth)
+	storageBox := renderBox(boxTitleStyle.Render(" \uf0c7  Storage "), storageLines, boxWidth)
 
 	countsBoxLines := strings.Split(countsBox, "\n")
 	storageBoxLines := strings.Split(storageBox, "\n")
@@ -432,7 +432,7 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 		Render(strings.Repeat(" ", availableBarWidth-filledWidth))
 
 	ratioTitle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("229")).
-		Render("📊 Explicit vs Dependencies")
+		Render("\ueea8  Explicit vs Dependencies")
 	ratioSuffix := fmt.Sprintf("%d/%d (%.0f%% explicit)", m.dashboard.ExplicitlyInstalled, dependencies, explicitRatio*100)
 	ratioBar := renderBarLine(filledBar+emptyBar, ratioSuffix)
 
@@ -449,7 +449,7 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 	// Disk Usage Analysis (Combined Stacked Bar)
 	// ═══════════════════════════════════════════════════════
 	diskTitle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("229")).
-		Render("💽 Disk Usage Analysis")
+		Render("\U000f02ca  Disk Usage Analysis")
 	dashboard.WriteString(diskTitle + "\n")
 
 	// Calculate breakdown
@@ -518,7 +518,7 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 
 	// Repo Distribution Bar
 	repoTitle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("229")).
-		Render("📦 Repository Distribution")
+		Render("\ueb9c  Repository Distribution")
 	dashboard.WriteString(repoTitle + "\n")
 
 	if m.dashboard.TotalPackages > 0 {
@@ -590,7 +590,7 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 
 	if len(m.dashboard.TopPackages) > 0 {
 		topTitle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("229")).
-			Render("🏆 Top 10 Packages by Size")
+			Render("\ueddf  Top by Weight")
 		dashboard.WriteString(topTitle + "\n")
 
 		for i, pkg := range m.dashboard.TopPackages {

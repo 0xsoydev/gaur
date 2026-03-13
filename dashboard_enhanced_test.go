@@ -69,11 +69,11 @@ func TestDashboardRendering(t *testing.T) {
 
 	// 1. Verify all major sections exist
 	sections := []string{
-		"📦 Package Counts",
-		"📊 Explicit vs Dependencies",
-		"💽 Disk Usage Analysis",
-		"📦 Repository Distribution",
-		"🏆 Top 10 Packages by Size",
+		"\U000f03d7  Package Counts",
+		"\ueea8  Explicit vs Dependencies",
+		"\U000f02ca  Disk Usage Analysis",
+		"\ueb9c  Repository Distribution",
+		"\ueddf  Top by Weight",
 	}
 
 	for _, section := range sections {
