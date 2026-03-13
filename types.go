@@ -126,6 +126,7 @@ type DashboardData struct {
 	MissingFromAUR       int
 	TopPackages          []PackageSize // Top 10 packages by size
 	RecentlyInstalled    []RecentPackage // Details of 5 recently installed packages
+	TopCacheHogs         []PackageSize // Top 5 packages taking up cache space
 	// Disk usage info
 	DiskTotal      string
 	DiskUsed       string
