@@ -566,6 +566,7 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 		for repo, count := range m.dashboard.RepoDistribution {
 			if count > 0 {
 				w := int(float64(count) / float64(m.dashboard.TotalPackages) * float64(availableBarWidth))
+				if w < 1 { w = 1 } // Ensure visibility
 				color, ok := sourceColors[repo]
 				if !ok {
 					color = lipgloss.Color("246") // Grey for unknown repos
@@ -578,6 +579,7 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 		// Handle Foreign (AUR)
 		if m.dashboard.ForeignPackages > 0 {
 			w := int(float64(m.dashboard.ForeignPackages) / float64(m.dashboard.TotalPackages) * float64(availableBarWidth))
+			if w < 1 { w = 1 } // Ensure visibility
 			segments = append(segments, segment{"aur", m.dashboard.ForeignPackages, w, sourceColors["aur"]})
 			totalWidthUsed += w
 		}
