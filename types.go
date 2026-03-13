@@ -125,6 +125,7 @@ type DashboardData struct {
 	Orphans              int
 	MissingFromAUR       int
 	TopPackages          []PackageSize // Top 10 packages by size
+	RecentlyInstalled    []string      // Names of 5 recently installed packages
 	// Disk usage info
 	DiskTotal      string
 	DiskUsed       string
