@@ -677,9 +677,9 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 			if pkgSizeBytes > 1024*1024*1024 { sizeColor = redColor } else if pkgSizeBytes > 500*1024*1024 { sizeColor = orangeColor }
 			sizeStyle := lipgloss.NewStyle().Foreground(sizeColor)
 
-			line := fmt.Sprintf("%s %-25s %s",
+			line := fmt.Sprintf("%s %s %s",
 				rankStyle.Render(fmt.Sprintf("%d.", i+1)),
-				nameStyle.Render(truncateWithAnsi(pkg.Name, 25)),
+				lipgloss.NewStyle().Width(25).Render(nameStyle.Render(truncateWithAnsi(pkg.Name, 25))),
 				sizeStyle.Render(pkg.Size))
 			topWeightLines = append(topWeightLines, line)
 		}
