@@ -291,32 +291,79 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 
 	shortcutStyle := lipgloss.NewStyle().Foreground(dimColor)
 
-	renderCountLine := func(char, label string, count int, color lipgloss.Color) string {
+	boxWidth := (innerWidth - 6) / 2
+	if boxWidth < 30 {
+		boxWidth = 30
+	}
+
+	renderCountLine := func(char, label string, count int, color lipgloss.Color, innerWidth int) string {
 		shortcut := fmt.Sprintf("[%s]", char)
 		sStyle := lipgloss.NewStyle().Bold(true)
 		vStyle := lipgloss.NewStyle().Bold(true)
-		if count > 0 {
+		
+		// 1. Unified Prefix Alignment (10 chars for label part)
+		fullLabel := shortcut + label
+		prefixPart := fmt.Sprintf("  %-10s │ ", fullLabel)
+		
+		// 2. Fixed Value Alignment (use 6 chars for the count)
+		countStr := fmt.Sprintf("%d", count)
+		valuePart := vStyle.Render(fmt.Sprintf("%-6s", countStr))
+		
+		// Calculate used width for the bar starting point
+		// 2 (left margin) + 10 (label) + 3 (sep) + 6 (value width)
+		const barStartOffset = 21 
+		dynamicBarWidth := innerWidth - barStartOffset - 10 // Increased reserve to match padding
+		if dynamicBarWidth < 5 { dynamicBarWidth = 5 }
+
+		bar := ""
+		if count > 0 && m.dashboard.TotalPackages > 0 {
 			sStyle = sStyle.Foreground(color)
 			vStyle = vStyle.Foreground(color)
+			
+			// Re-render prefix with color if count > 0
+			prefixPart = fmt.Sprintf("  %-10s │ ", sStyle.Render(fullLabel))
+			valuePart = vStyle.Render(fmt.Sprintf("%-6s", countStr))
+
+			filled := int(float64(count) / float64(m.dashboard.TotalPackages) * float64(dynamicBarWidth))
+			if filled < 1 && count > 0 { filled = 1 }
+			if filled > dynamicBarWidth { filled = dynamicBarWidth }
+			
+			bar = lipgloss.NewStyle().Background(color).Render(strings.Repeat(" ", filled))
 		}
-		// Prefix is exactly 3 chars "[x]", align labels to start at same column
-		return fmt.Sprintf("  %s%-7s │ %s", sStyle.Render(shortcut), label, vStyle.Render(fmt.Sprintf("%d", count)))
+
+		return prefixPart + valuePart + " " + bar
 	}
 
 	countsLines := []string{
-		renderCountLine("t", "otal", m.dashboard.TotalPackages, cyanColor),
-		renderCountLine("e", "xplicit", m.dashboard.ExplicitlyInstalled, greenColor),
-		renderCountLine("f", "oreign", m.dashboard.ForeignPackages, yellowColor),
+		renderCountLine("t", "otal", m.dashboard.TotalPackages, cyanColor, boxWidth),
+		renderCountLine("e", "xplicit", m.dashboard.ExplicitlyInstalled, greenColor, boxWidth),
+		renderCountLine("f", "oreign", m.dashboard.ForeignPackages, yellowColor, boxWidth),
 	}
 
 	orphanStyle := lipgloss.NewStyle().Bold(true)
+	orphanCountStr := fmt.Sprintf("%d", m.dashboard.Orphans)
+	
+	// Calculate orphan layout consistently
+	const oBarOffset = 21
+	oBarW := boxWidth - oBarOffset - 10
+	if oBarW < 5 { oBarW = 5 }
+
+	orphanBar := ""
+	orphanFullLabel := "[o]rphans"
+	orphanPrefix := fmt.Sprintf("  %-10s │ ", orphanFullLabel)
+	orphanValue := fmt.Sprintf("%-6s", orphanCountStr)
+
 	if m.dashboard.Orphans > 0 {
 		orphanStyle = orphanStyle.Foreground(redColor)
+		orphanPrefix = fmt.Sprintf("  %-10s │ ", orphanStyle.Render(orphanFullLabel))
+		orphanValue = orphanStyle.Render(fmt.Sprintf("%-6s", orphanCountStr))
+
+		filled := int(float64(m.dashboard.Orphans) / float64(m.dashboard.TotalPackages) * float64(oBarW))
+		if filled < 1 { filled = 1 }
+		orphanBar = lipgloss.NewStyle().Background(redColor).Render(strings.Repeat(" ", filled))
 	}
-	orphanLine := fmt.Sprintf("  %s%-7s │ %s",
-		orphanStyle.Render("[o]"),
-		"rphans",
-		orphanStyle.Render(fmt.Sprintf("%d", m.dashboard.Orphans)))
+	
+	orphanLine := orphanPrefix + orphanValue + " " + orphanBar
 	countsLines = append(countsLines, orphanLine)
 
 	cacheStyle := lipgloss.NewStyle().Bold(true).Foreground(greenColor)
@@ -334,12 +381,12 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 	}
 
 	storageLines := []string{
-		fmt.Sprintf("  System  │ %s",
+		fmt.Sprintf("  %-10s │ %s", "System",
 			lipgloss.NewStyle().Bold(true).Foreground(cyanColor).Render(m.dashboard.TotalSize)),
-		fmt.Sprintf("  Cache   │ %s %s",
+		fmt.Sprintf("  %-10s │ %s %s", "Cache",
 			cacheStyle.Render(m.dashboard.CleanerSize),
 			shortcutStyle.Render("[c]lean")),
-		fmt.Sprintf("  Missing │ %s",
+		fmt.Sprintf("  %-10s │ %s", "Missing",
 			missingStyle.Render(fmt.Sprintf("%d AUR", m.dashboard.MissingFromAUR))),
 		"",
 	}
@@ -378,11 +425,6 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 		b.WriteString(borderColor.Render("╰" + strings.Repeat("─", innerWidth+2) + "╯"))
 
 		return b.String()
-	}
-
-	boxWidth := (innerWidth - 6) / 2
-	if boxWidth < 30 {
-		boxWidth = 30
 	}
 
 	countsBox := renderBox(boxTitleStyle.Render(" \U000f03d7  Package Counts "), countsLines, boxWidth)
