@@ -525,7 +525,7 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 	pkgBar := lipgloss.NewStyle().Background(cyanColor).Render(strings.Repeat(" ", pkgWidth))
 	cacheBar := lipgloss.NewStyle().Background(orangeColor).Render(strings.Repeat(" ", cacheWidth))
 	otherBar := lipgloss.NewStyle().Background(otherColor).Render(strings.Repeat(" ", otherWidth))
-	freeBar := lipgloss.NewStyle().Background(freeColor).Render(strings.Repeat(" ", freeWidth))
+	freeBar := lipgloss.NewStyle().Foreground(freeColor).Render(strings.Repeat("\u2591", freeWidth))
 
 	dashboard.WriteString(renderBarLine(pkgBar+cacheBar+otherBar+freeBar, "") + "\n")
 
