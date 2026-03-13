@@ -693,7 +693,7 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 		line := fmt.Sprintf("%s %s", rankStyle.Render(fmt.Sprintf("%d.", i+1)), nameStyle.Render(truncateWithAnsi(name, 35)))
 		recentLines = append(recentLines, line)
 	}
-	recentBox := renderBox(boxTitleStyle.Render(" \U000f0740  Recently Installed "), recentLines, bottomVizWidth)
+	recentBox := renderBox(boxTitleStyle.Render(" \uf1da  Recently Installed "), recentLines, bottomVizWidth)
 
 	// Join side-by-side
 	twLines := strings.Split(topWeightBox, "\n")

@@ -74,6 +74,7 @@ func TestDashboardRendering(t *testing.T) {
 		"\U000f02ca  Disk Usage Analysis",
 		"\ueb9c  Repository Distribution",
 		"\ueddf  Top by Weight",
+		"\uf1da  Recently Installed",
 	}
 
 	for _, section := range sections {
