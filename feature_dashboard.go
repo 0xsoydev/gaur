@@ -359,6 +359,7 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 		renderCountLine("t", "otal", m.dashboard.TotalPackages, cyanColor, boxWidth),
 		renderCountLine("e", "xplicit", m.dashboard.ExplicitlyInstalled, greenColor, boxWidth),
 		renderCountLine("f", "oreign", m.dashboard.ForeignPackages, yellowColor, boxWidth),
+		renderCountLine("m", "issing", m.dashboard.MissingFromAUR, redColor, boxWidth),
 	}
 
 	orphanStyle := lipgloss.NewStyle().Bold(true)
@@ -396,11 +397,6 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 		cacheStyle = lipgloss.NewStyle().Bold(true).Foreground(redColor)
 	}
 
-	missingStyle := lipgloss.NewStyle().Bold(true).Foreground(greenColor)
-	if m.dashboard.MissingFromAUR > 0 {
-		missingStyle = lipgloss.NewStyle().Bold(true).Foreground(redColor)
-	}
-
 	storageLines := []string{
 		fmt.Sprintf("  %s │ %s",
 			lipgloss.NewStyle().Width(10).Render("System"),
@@ -409,9 +405,7 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 			lipgloss.NewStyle().Width(10).Render("Cache"),
 			cacheStyle.Render(m.dashboard.CleanerSize),
 			shortcutStyle.Render("[c]lean")),
-		fmt.Sprintf("  %s │ %s",
-			lipgloss.NewStyle().Width(10).Render("Missing"),
-			missingStyle.Render(fmt.Sprintf("%d AUR", m.dashboard.MissingFromAUR))),
+		"",
 		"",
 	}
 
