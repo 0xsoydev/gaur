@@ -306,18 +306,18 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 	// ═══════════════════════════════════════════════════════
 	// Bar Layout Constants - ensures all bars align perfectly
 	// ═══════════════════════════════════════════════════════
-	const barLeftMargin = 2    // Spaces before bar
+	const barLeftMargin = 0    // No margin, let the box padding handle it
 	barStartCol := barLeftMargin
-	availableBarWidth := innerWidth - barStartCol - 2 // -2 for right safety margin
+	availableBarWidth := innerWidth - 2 // Exactly fills the panel width
 	if availableBarWidth < 20 {
 		availableBarWidth = 20
 	}
 
 	renderBarLine := func(bar string, suffix string) string {
 		if suffix == "" {
-			return fmt.Sprintf("%*s%s", barLeftMargin, "", bar)
+			return bar
 		}
-		return fmt.Sprintf("%*s%s %s", barLeftMargin, "", bar, suffix)
+		return bar + " " + suffix
 	}
 
 	var dashboard strings.Builder
@@ -496,36 +496,36 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 		totalDiskBytes = 1
 	}
 
-	pkgWidth := int(float64(m.dashboard.TotalSizeBytes) / float64(totalDiskBytes) * float64(availableBarWidth))
-	cacheWidth := int(float64(m.dashboard.CleanerSizeBytes) / float64(totalDiskBytes) * float64(availableBarWidth))
-
 	usedDiskBytes := parseSizeToBytes(m.dashboard.DiskUsed)
 	otherUsedBytes := usedDiskBytes - m.dashboard.TotalSizeBytes - m.dashboard.CleanerSizeBytes
 	if otherUsedBytes < 0 {
 		otherUsedBytes = 0
 	}
-	otherWidth := int(float64(otherUsedBytes) / float64(totalDiskBytes) * float64(availableBarWidth))
 
-	// Ensure segments don't exceed total width
-	if pkgWidth+cacheWidth+otherWidth > availableBarWidth {
-		// Adjust proportional to avoid overflow
-		sum := pkgWidth + cacheWidth + otherWidth
-		pkgWidth = pkgWidth * availableBarWidth / sum
-		cacheWidth = cacheWidth * availableBarWidth / sum
-		otherWidth = otherWidth * availableBarWidth / sum
-	}
+	pkgWidth := int(float64(m.dashboard.TotalSizeBytes) / float64(totalDiskBytes) * float64(availableBarWidth))
+	cacheWidth := int(float64(m.dashboard.CleanerSizeBytes) / float64(totalDiskBytes) * float64(availableBarWidth))
+	otherWidth := int(float64(otherUsedBytes) / float64(totalDiskBytes) * float64(availableBarWidth))
+	
+	if pkgWidth < 1 && m.dashboard.TotalSizeBytes > 0 { pkgWidth = 1 }
+	if cacheWidth < 1 && m.dashboard.CleanerSizeBytes > 0 { cacheWidth = 1 }
+	if otherWidth < 1 && otherUsedBytes > 0 { otherWidth = 1 }
 
 	freeWidth := availableBarWidth - pkgWidth - cacheWidth - otherWidth
-	if freeWidth < 0 {
-		freeWidth = 0
+	if freeWidth < 1 { freeWidth = 1 }
+
+	// Adjust sum
+	totalW := pkgWidth + cacheWidth + otherWidth + freeWidth
+	if totalW != availableBarWidth {
+		diff := availableBarWidth - totalW
+		if pkgWidth > 10 { pkgWidth += diff } else { freeWidth += diff }
 	}
 
 	otherColor := lipgloss.Color("135") // Purple for "Other" files
-	freeColor := lipgloss.Color("244")  // Dim grey for "Free" space
+	freeColor := lipgloss.Color("238")  // Dark grey for "Free"
 	pkgBar := lipgloss.NewStyle().Background(cyanColor).Render(strings.Repeat(" ", pkgWidth))
 	cacheBar := lipgloss.NewStyle().Background(orangeColor).Render(strings.Repeat(" ", cacheWidth))
 	otherBar := lipgloss.NewStyle().Background(otherColor).Render(strings.Repeat(" ", otherWidth))
-	freeBar := lipgloss.NewStyle().Foreground(freeColor).Render(strings.Repeat("\u2591", freeWidth))
+	freeBar := lipgloss.NewStyle().Background(freeColor).Foreground(lipgloss.Color("240")).Render(strings.Repeat("\u2591", freeWidth))
 
 	dashboard.WriteString(renderBarLine(pkgBar+cacheBar+otherBar+freeBar, "") + "\n")
 
@@ -540,13 +540,13 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 	diskSizes := []string{pkgSize, cacheSize, otherSize, freeSize}
 
 	diskWidths := []int{pkgWidth, cacheWidth, otherWidth, freeWidth}
-	diskColors := []lipgloss.Color{cyanColor, orangeColor, otherColor, freeColor}
+	diskColors := []lipgloss.Color{cyanColor, orangeColor, otherColor, lipgloss.Color("246")}
 	
 	labelsLine := renderCenteredLabels(diskWidths, diskLabels, diskColors)
 	sizesLine := renderCenteredLabels(diskWidths, diskSizes, diskColors)
 	
-	dashboard.WriteString(fmt.Sprintf("%*s%s\n", barStartCol, "", labelsLine))
-	dashboard.WriteString(fmt.Sprintf("%*s%s\n\n", barStartCol, "", sizesLine))
+	dashboard.WriteString(labelsLine + "\n")
+	dashboard.WriteString(sizesLine + "\n\n")
 
 	// Repo Distribution Bar
 	repoTitle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("229")).
@@ -601,12 +601,10 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 			lipgloss.NewStyle().Foreground(sourceColors["aur"]).Render(fmt.Sprintf("AUR(%d)", m.dashboard.ForeignPackages)))
 		
 		repoSuffixWidth := lipgloss.Width(repoSuffix)
-		// availableBarWidth is the visual width of the bar itself
 		repoPadding := (availableBarWidth - repoSuffixWidth) / 2
 		if repoPadding < 0 { repoPadding = 0 }
 		
-		// Use renderBarLine style or simple padding to align with bar
-		dashboard.WriteString(fmt.Sprintf("%*s%*s%s\n\n", barLeftMargin, "", repoPadding, "", repoSuffix))
+		dashboard.WriteString(fmt.Sprintf("%*s%*s%s\n\n", barStartCol, "", repoPadding, "", repoSuffix))
 	}
 
 	// ═══════════════════════════════════════════════════════
