@@ -307,15 +307,17 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 	// ═══════════════════════════════════════════════════════
 	// Bar Layout Constants - ensures all bars align perfectly
 	// ═══════════════════════════════════════════════════════
-	const barLeftMargin = 2     // Spaces before bar
-	const barSuffixReserve = 55 // Increased to allow full names on the right
+	const barLeftMargin = 2    // Spaces before bar
 	barStartCol := barLeftMargin
-	availableBarWidth := innerWidth - barStartCol - barSuffixReserve
+	availableBarWidth := innerWidth - barStartCol - 2 // -2 for right safety margin
 	if availableBarWidth < 20 {
 		availableBarWidth = 20
 	}
 
 	renderBarLine := func(bar string, suffix string) string {
+		if suffix == "" {
+			return fmt.Sprintf("%*s%s", barLeftMargin, "", bar)
+		}
 		return fmt.Sprintf("%*s%s %s", barLeftMargin, "", bar, suffix)
 	}
 
@@ -524,8 +526,7 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 	otherBar := lipgloss.NewStyle().Background(lipgloss.Color("240")).Render(strings.Repeat(" ", otherWidth))
 	freeBar := lipgloss.NewStyle().Background(lipgloss.Color("236")).Render(strings.Repeat(" ", freeWidth))
 
-	diskSuffix := fmt.Sprintf("%s/%s", m.dashboard.DiskUsed, m.dashboard.DiskTotal)
-	dashboard.WriteString(renderBarLine(pkgBar+cacheBar+otherBar+freeBar, diskSuffix) + "\n")
+	dashboard.WriteString(renderBarLine(pkgBar+cacheBar+otherBar+freeBar, "") + "\n")
 
 	// Centered Labels & Sizes below bar
 	diskLabels := []string{"Packages", "Cache", "Other", "Free"}
@@ -610,12 +611,19 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 			}
 		}
 
+		dashboard.WriteString(renderBarLine(repoBar.String(), "") + "\n")
+
+		// Centered Repo Suffix below bar
 		repoSuffix := fmt.Sprintf("%s %s %s %s",
 			lipgloss.NewStyle().Foreground(sourceColors["core"]).Render(fmt.Sprintf("Core(%d)", m.dashboard.RepoDistribution["core"])),
 			lipgloss.NewStyle().Foreground(sourceColors["extra"]).Render(fmt.Sprintf("Extra(%d)", m.dashboard.RepoDistribution["extra"])),
 			lipgloss.NewStyle().Foreground(sourceColors["multilib"]).Render(fmt.Sprintf("Multilib(%d)", m.dashboard.RepoDistribution["multilib"])),
 			lipgloss.NewStyle().Foreground(sourceColors["aur"]).Render(fmt.Sprintf("AUR(%d)", m.dashboard.ForeignPackages)))
-		dashboard.WriteString(renderBarLine(repoBar.String(), repoSuffix) + "\n\n")
+		
+		repoSuffixWidth := lipgloss.Width(repoSuffix)
+		repoPadding := (availableBarWidth - repoSuffixWidth) / 2
+		if repoPadding < 0 { repoPadding = 0 }
+		dashboard.WriteString(fmt.Sprintf("%*s%*s%s\n\n", barStartCol, "", repoPadding, "", repoSuffix))
 	}
 
 	// ═══════════════════════════════════════════════════════
