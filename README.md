@@ -188,6 +188,7 @@ Filter installed packages by type:
 | 🔵 Blue    | extra    |
 | 🟠 Orange  | multilib |
 | 🟣 Magenta | AUR      |
+| ⚪ Grey    | Other    |
 
 ### Themes
 
