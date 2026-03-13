@@ -74,9 +74,10 @@ func TestDashboardRendering(t *testing.T) {
 	// 1. Verify all major sections exist
 	sections := []string{
 		"\U000f03d7  Package Counts",
-		"\U000f02ca  Disk Usage Analysis",
+		"Disk Space (/:40%)",
 		"\ueb9c  Repository Distribution",
 		"\ueddf  Top by Weight",
+		"\uf0c7  Top Cache Hogs",
 		"\uf1da  Recently Installed",
 	}
 
@@ -86,31 +87,36 @@ func TestDashboardRendering(t *testing.T) {
 		}
 	}
 
-	// 2. Verify Disk Usage Labels & Sizes exist below the bar
+	// 2. Verify Disk Space components exist
 	lines := strings.Split(view, "\n")
-	foundLabels := false
-	foundSizes := false
+	components := []string{"total", "packages", "ache", "other", "free"}
+	foundComponents := make(map[string]bool)
 	for _, line := range lines {
-		if strings.Contains(line, "Packages") && strings.Contains(line, "Cache") {
-			foundLabels = true
-		}
-		if strings.Contains(line, "40.0 GiB") && strings.Contains(line, "20.0 GiB") {
-			foundSizes = true
+		for _, comp := range components {
+			if strings.Contains(line, comp) {
+				foundComponents[comp] = true
+			}
 		}
 	}
-	if !foundLabels || !foundSizes {
-		t.Errorf("Disk usage centered labels/sizes not found. Labels: %v, Sizes: %v", foundLabels, foundSizes)
+	for _, comp := range components {
+		if !foundComponents[comp] {
+			t.Errorf("Disk space component not found: %s", comp)
+		}
 	}
 
-	// 3. Verify Repo Distribution Bar exists
-	foundRepoBar := false
+	// 3. Verify Repo Distribution Legend exists
+	foundRepoLabels := false
+	foundRepoCounts := false
 	for _, line := range lines {
-		if strings.Contains(line, "Core(") && strings.Contains(line, "Extra(") && strings.Contains(line, "AUR(") {
-			foundRepoBar = true
+		if strings.Contains(line, "Core") && strings.Contains(line, "Extra") && strings.Contains(line, "AUR") {
+			foundRepoLabels = true
+		}
+		if strings.Contains(line, "100") && strings.Contains(line, "800") && strings.Contains(line, "50") {
+			foundRepoCounts = true
 		}
 	}
-	if !foundRepoBar {
-		t.Error("Repository distribution bar or labels not found in view")
+	if !foundRepoLabels || !foundRepoCounts {
+		t.Error("Repository distribution labels or counts not found in view")
 	}
 }
 
