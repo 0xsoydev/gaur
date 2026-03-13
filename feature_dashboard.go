@@ -521,10 +521,11 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 	}
 
 	otherColor := lipgloss.Color("135") // Purple for "Other" files
+	freeColor := lipgloss.Color("244")  // Dim grey for "Free" space
 	pkgBar := lipgloss.NewStyle().Background(cyanColor).Render(strings.Repeat(" ", pkgWidth))
 	cacheBar := lipgloss.NewStyle().Background(orangeColor).Render(strings.Repeat(" ", cacheWidth))
 	otherBar := lipgloss.NewStyle().Background(otherColor).Render(strings.Repeat(" ", otherWidth))
-	freeBar := lipgloss.NewStyle().Background(lipgloss.Color("236")).Render(strings.Repeat(" ", freeWidth))
+	freeBar := lipgloss.NewStyle().Background(freeColor).Render(strings.Repeat(" ", freeWidth))
 
 	dashboard.WriteString(renderBarLine(pkgBar+cacheBar+otherBar+freeBar, "") + "\n")
 
@@ -539,7 +540,7 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 	diskSizes := []string{pkgSize, cacheSize, otherSize, freeSize}
 
 	diskWidths := []int{pkgWidth, cacheWidth, otherWidth, freeWidth}
-	diskColors := []lipgloss.Color{cyanColor, orangeColor, otherColor, lipgloss.Color("236")}
+	diskColors := []lipgloss.Color{cyanColor, orangeColor, otherColor, freeColor}
 	
 	labelsLine := renderCenteredLabels(diskWidths, diskLabels, diskColors)
 	sizesLine := renderCenteredLabels(diskWidths, diskSizes, diskColors)
