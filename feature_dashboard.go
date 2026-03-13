@@ -291,24 +291,31 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 
 	shortcutStyle := lipgloss.NewStyle().Foreground(dimColor)
 
-	countsLines := []string{
-		fmt.Sprintf("  %sotal    │ %s",
-			lipgloss.NewStyle().Bold(true).Foreground(cyanColor).Render("[t]"),
-			lipgloss.NewStyle().Bold(true).Foreground(cyanColor).Render(fmt.Sprintf("%d", m.dashboard.TotalPackages))),
-		fmt.Sprintf("  %sxplicit │ %s",
-			lipgloss.NewStyle().Bold(true).Foreground(greenColor).Render("[e]"),
-			lipgloss.NewStyle().Bold(true).Foreground(greenColor).Render(fmt.Sprintf("%d", m.dashboard.ExplicitlyInstalled))),
-		fmt.Sprintf("  %soreign  │ %s",
-			lipgloss.NewStyle().Bold(true).Foreground(yellowColor).Render("[f]"),
-			lipgloss.NewStyle().Bold(true).Foreground(yellowColor).Render(fmt.Sprintf("%d", m.dashboard.ForeignPackages))),
+	renderCountLine := func(char, label string, count int, color lipgloss.Color) string {
+		shortcut := fmt.Sprintf("[%s]", char)
+		sStyle := lipgloss.NewStyle().Bold(true)
+		vStyle := lipgloss.NewStyle().Bold(true)
+		if count > 0 {
+			sStyle = sStyle.Foreground(color)
+			vStyle = vStyle.Foreground(color)
+		}
+		// Prefix is exactly 3 chars "[x]", align labels to start at same column
+		return fmt.Sprintf("  %s%-7s │ %s", sStyle.Render(shortcut), label, vStyle.Render(fmt.Sprintf("%d", count)))
 	}
 
-	orphanStyle := lipgloss.NewStyle().Bold(true).Foreground(greenColor)
-	if m.dashboard.Orphans > 0 {
-		orphanStyle = lipgloss.NewStyle().Bold(true).Foreground(redColor)
+	countsLines := []string{
+		renderCountLine("t", "otal", m.dashboard.TotalPackages, cyanColor),
+		renderCountLine("e", "xplicit", m.dashboard.ExplicitlyInstalled, greenColor),
+		renderCountLine("f", "oreign", m.dashboard.ForeignPackages, yellowColor),
 	}
-	orphanLine := fmt.Sprintf("  %srphans  │ %s",
+
+	orphanStyle := lipgloss.NewStyle().Bold(true)
+	if m.dashboard.Orphans > 0 {
+		orphanStyle = orphanStyle.Foreground(redColor)
+	}
+	orphanLine := fmt.Sprintf("  %s%-7s │ %s",
 		orphanStyle.Render("[o]"),
+		"rphans",
 		orphanStyle.Render(fmt.Sprintf("%d", m.dashboard.Orphans)))
 	countsLines = append(countsLines, orphanLine)
 
