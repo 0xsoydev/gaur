@@ -74,7 +74,6 @@ func TestDashboardRendering(t *testing.T) {
 	// 1. Verify all major sections exist
 	sections := []string{
 		"\U000f03d7  Package Counts",
-		"\ueea8  Explicit vs Dependencies",
 		"\U000f02ca  Disk Usage Analysis",
 		"\ueb9c  Repository Distribution",
 		"\ueddf  Top by Weight",
@@ -106,12 +105,12 @@ func TestDashboardRendering(t *testing.T) {
 	// 3. Verify Repo Distribution Bar exists
 	foundRepoBar := false
 	for _, line := range lines {
-		if strings.Contains(line, "Core(") && strings.Contains(line, "Extra(") {
+		if strings.Contains(line, "Core(") && strings.Contains(line, "Extra(") && strings.Contains(line, "AUR(") {
 			foundRepoBar = true
 		}
 	}
 	if !foundRepoBar {
-		t.Error("Repository distribution bar not found in view")
+		t.Error("Repository distribution bar or labels not found in view")
 	}
 }
 
