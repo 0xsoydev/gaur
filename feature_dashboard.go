@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
 	"strings"
 	"syscall"
 
@@ -553,64 +552,41 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 	dashboard.WriteString(repoTitle + "\n")
 
 	if m.dashboard.TotalPackages > 0 {
-		type segment struct {
-			name  string
-			count int
-			width int
-			color lipgloss.Color
-		}
-		var segments []segment
-		totalWidthUsed := 0
-
-		// Handle standard and custom repos
-		for repo, count := range m.dashboard.RepoDistribution {
-			if count > 0 {
-				w := int(float64(count) / float64(m.dashboard.TotalPackages) * float64(availableBarWidth))
-				if w < 1 { w = 1 } // Ensure visibility
-				color, ok := sourceColors[repo]
-				if !ok {
-					color = lipgloss.Color("246") // Grey for unknown repos
-				}
-				segments = append(segments, segment{repo, count, w, color})
-				totalWidthUsed += w
-			}
-		}
-
-		// Handle Foreign (AUR)
-		if m.dashboard.ForeignPackages > 0 {
-			w := int(float64(m.dashboard.ForeignPackages) / float64(m.dashboard.TotalPackages) * float64(availableBarWidth))
-			if w < 1 { w = 1 } // Ensure visibility
-			segments = append(segments, segment{"aur", m.dashboard.ForeignPackages, w, sourceColors["aur"]})
-			totalWidthUsed += w
-		}
-
-		// Distribute remainder to the largest segment to fill 100%
-		remainder := availableBarWidth - totalWidthUsed
-		if remainder > 0 && len(segments) > 0 {
-			largestIdx := 0
-			for i := 1; i < len(segments); i++ {
-				if segments[i].count > segments[largestIdx].count {
-					largestIdx = i
-				}
-			}
-			segments[largestIdx].width += remainder
-		}
-
-		// Sort segments for consistent display (core, extra, multilib, then others)
-		sort.Slice(segments, func(i, j int) bool {
-			order := map[string]int{"core": 0, "extra": 1, "multilib": 2, "aur": 4}
-			oi, oki := order[segments[i].name]
-			oj, okj := order[segments[j].name]
-			if !oki { oi = 3 }
-			if !okj { oj = 3 }
-			return oi < oj
-		})
-
 		var repoBar strings.Builder
-		for _, seg := range segments {
-			if seg.width > 0 {
-				repoBar.WriteString(lipgloss.NewStyle().Background(seg.color).Render(strings.Repeat(" ", seg.width)))
-			}
+		totalWUsed := 0
+		
+		// 1. Core
+		if count := m.dashboard.RepoDistribution["core"]; count > 0 {
+			w := int(float64(count) / float64(m.dashboard.TotalPackages) * float64(availableBarWidth))
+			if w < 1 { w = 1 }
+			repoBar.WriteString(lipgloss.NewStyle().Background(sourceColors["core"]).Render(strings.Repeat(" ", w)))
+			totalWUsed += w
+		}
+		// 2. Extra
+		if count := m.dashboard.RepoDistribution["extra"]; count > 0 {
+			w := int(float64(count) / float64(m.dashboard.TotalPackages) * float64(availableBarWidth))
+			if w < 1 { w = 1 }
+			repoBar.WriteString(lipgloss.NewStyle().Background(sourceColors["extra"]).Render(strings.Repeat(" ", w)))
+			totalWUsed += w
+		}
+		// 3. Multilib
+		if count := m.dashboard.RepoDistribution["multilib"]; count > 0 {
+			w := int(float64(count) / float64(m.dashboard.TotalPackages) * float64(availableBarWidth))
+			if w < 1 { w = 1 }
+			repoBar.WriteString(lipgloss.NewStyle().Background(sourceColors["multilib"]).Render(strings.Repeat(" ", w)))
+			totalWUsed += w
+		}
+		// 4. Foreign (AUR)
+		if count := m.dashboard.ForeignPackages; count > 0 {
+			w := int(float64(count) / float64(m.dashboard.TotalPackages) * float64(availableBarWidth))
+			if w < 1 { w = 1 }
+			repoBar.WriteString(lipgloss.NewStyle().Background(sourceColors["aur"]).Render(strings.Repeat(" ", w)))
+			totalWUsed += w
+		}
+
+		// Fill remaining with background
+		if totalWUsed < availableBarWidth {
+			repoBar.WriteString(lipgloss.NewStyle().Background(lipgloss.Color("238")).Render(strings.Repeat(" ", availableBarWidth-totalWUsed)))
 		}
 
 		dashboard.WriteString(renderBarLine(repoBar.String(), "") + "\n")
@@ -623,9 +599,12 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 			lipgloss.NewStyle().Foreground(sourceColors["aur"]).Render(fmt.Sprintf("AUR(%d)", m.dashboard.ForeignPackages)))
 		
 		repoSuffixWidth := lipgloss.Width(repoSuffix)
+		// availableBarWidth is the visual width of the bar itself
 		repoPadding := (availableBarWidth - repoSuffixWidth) / 2
 		if repoPadding < 0 { repoPadding = 0 }
-		dashboard.WriteString(fmt.Sprintf("%*s%*s%s\n\n", barStartCol, "", repoPadding, "", repoSuffix))
+		
+		// Use renderBarLine style or simple padding to align with bar
+		dashboard.WriteString(fmt.Sprintf("%*s%*s%s\n\n", barLeftMargin, "", repoPadding, "", repoSuffix))
 	}
 
 	// ═══════════════════════════════════════════════════════
