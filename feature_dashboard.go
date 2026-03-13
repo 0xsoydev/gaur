@@ -91,11 +91,18 @@ func getDashboardData() tea.Cmd {
 			seen := make(map[string]bool)
 			for i := len(lines) - 1; i >= 0 && len(data.RecentlyInstalled) < 5; i-- {
 				parts := strings.Fields(lines[i])
-				// parts[0] is timestamp, parts[1] is [ALPM], parts[2] is installed, parts[3] is pkgname
 				if len(parts) >= 4 {
 					pkg := parts[3]
 					if !seen[pkg] {
-						data.RecentlyInstalled = append(data.RecentlyInstalled, pkg)
+						// Extract date/time from [2024-03-12T10:00:00+0000]
+						ts := parts[0]
+						if len(ts) > 17 {
+							ts = ts[1:11] + " " + ts[12:17] // "2024-03-12 10:00"
+						}
+						data.RecentlyInstalled = append(data.RecentlyInstalled, RecentPackage{
+							Name:      pkg,
+							Timestamp: ts,
+						})
 						seen[pkg] = true
 					}
 				}
@@ -687,10 +694,15 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 	topWeightBox := renderBox(boxTitleStyle.Render(" \ueddf  Top by Weight "), topWeightLines, bottomVizWidth)
 
 	var recentLines []string
-	for i, name := range m.dashboard.RecentlyInstalled {
+	for i, pkg := range m.dashboard.RecentlyInstalled {
 		rankStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
 		nameStyle := lipgloss.NewStyle().Foreground(greenColor)
-		line := fmt.Sprintf("%s %s", rankStyle.Render(fmt.Sprintf("%d.", i+1)), nameStyle.Render(truncateWithAnsi(name, 35)))
+		timeStyle := lipgloss.NewStyle().Foreground(dimColor)
+		
+		line := fmt.Sprintf("%s %s %s",
+			rankStyle.Render(fmt.Sprintf("%d.", i+1)),
+			lipgloss.NewStyle().Width(18).Render(nameStyle.Render(truncateWithAnsi(pkg.Name, 18))),
+			timeStyle.Render(pkg.Timestamp))
 		recentLines = append(recentLines, line)
 	}
 	recentBox := renderBox(boxTitleStyle.Render(" \uf1da  Recently Installed "), recentLines, bottomVizWidth)

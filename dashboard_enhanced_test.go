@@ -58,6 +58,10 @@ func TestDashboardRendering(t *testing.T) {
 		DiskUsed:         "40 GiB",
 		DiskFree:         "60 GiB",
 		DiskUsedPercent:  0.4,
+		RecentlyInstalled: []RecentPackage{
+			{Name: "pkg1", Timestamp: "2024-03-12 10:00"},
+			{Name: "pkg2", Timestamp: "2024-03-12 09:00"},
+		},
 		TopPackages: []PackageSize{
 			{Name: "huge-pkg", Size: "2.5 GiB"}, // Should be red
 			{Name: "big-pkg", Size: "750 MiB"},  // Should be orange

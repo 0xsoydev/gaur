@@ -125,7 +125,7 @@ type DashboardData struct {
 	Orphans              int
 	MissingFromAUR       int
 	TopPackages          []PackageSize // Top 10 packages by size
-	RecentlyInstalled    []string      // Names of 5 recently installed packages
+	RecentlyInstalled    []RecentPackage // Details of 5 recently installed packages
 	// Disk usage info
 	DiskTotal      string
 	DiskUsed       string
@@ -137,6 +137,12 @@ type DashboardData struct {
 type PackageSize struct {
 	Name string
 	Size string
+}
+
+// RecentPackage holds details about a recently installed package
+type RecentPackage struct {
+	Name      string
+	Timestamp string // e.g. "2024-03-12 10:00"
 }
 
 // Dashboard action messages
