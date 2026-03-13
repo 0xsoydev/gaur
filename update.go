@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"os/exec"
 	"sort"
@@ -253,7 +252,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 				}
 				return m, nil
-			case "tab":
+			case "tab", "m":
 
 				if m.selectionPanelIndex < len(pkgNames) {
 					nameToRemove := pkgNames[m.selectionPanelIndex]
@@ -466,7 +465,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 				}
 				return m, nil
-			case "tab":
+			case "tab", "m":
 
 				if m.mode == modeInstall && len(m.filtered) > 0 {
 					pkg := m.filtered[m.selectedIndex]
@@ -743,18 +742,16 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			if m.mode == modeInstalled && !m.loading && m.dashboard.Orphans > 0 {
 
-				cmd := exec.Command("paru", "-Qdtq")
-				var orphanList bytes.Buffer
-				cmd.Stdout = &orphanList
-				if err := cmd.Run(); err != nil {
+				orphanList, err := runner.Run("paru", "-Qdtq")
+				if err != nil {
 					m.statusMessage = fmt.Sprintf("Failed to get orphan list: %v", err)
 					return m, nil
 				}
-				if orphanList.Len() == 0 {
+				if len(orphanList) == 0 {
 					m.statusMessage = "No orphans to remove"
 					return m, nil
 				}
-				orphans := strings.Fields(orphanList.String())
+				orphans := strings.Fields(string(orphanList))
 				m.confirmPackages = orphans
 				m.showConfirmation = true
 				m.confirmType = confirmRemoveOrphans
@@ -924,6 +921,35 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 
+		case "pgdown":
+			if m.mode == modeUpdate {
+				if len(m.pendingUpdates) > 0 {
+					m.updateScrollOffset += 10
+					if m.updateScrollOffset >= len(m.pendingUpdates) {
+						m.updateScrollOffset = len(m.pendingUpdates) - 1
+					}
+				}
+				return m, nil
+			}
+			if m.selectedIndex > 0 {
+				m.selectedIndex -= 10
+				if m.selectedIndex < 0 {
+					m.selectedIndex = 0
+				}
+				m.infoScrollOffset = 0
+				name := ""
+				if m.mode == modeUninstall {
+					name = m.filteredInstalled[m.selectedIndex].Name
+				} else if len(m.filtered) > 0 {
+					name = m.filtered[m.selectedIndex].Name
+				}
+				if name != "" {
+					m.loadingInfo = true
+					m.pendingInfoPackage = name
+					return m, debouncePackageInfo(m.pendingInfoPackage)
+				}
+			}
+
 		case "up", "k":
 			if m.mode == modeUpdate {
 				if m.updateScrollOffset > 0 {
@@ -951,6 +977,39 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				} else if m.mode == modeUpdateSelective && len(m.filtered) > 0 {
 					m.loadingInfo = true
 					m.pendingInfoPackage = m.filtered[m.selectedIndex].Name
+					return m, debouncePackageInfo(m.pendingInfoPackage)
+				}
+			}
+
+		case "pgup":
+			if m.mode == modeUpdate {
+				m.updateScrollOffset -= 10
+				if m.updateScrollOffset < 0 {
+					m.updateScrollOffset = 0
+				}
+				return m, nil
+			}
+			maxIndex := 0
+			if m.mode == modeInstall || m.mode == modeUpdateSelective {
+				maxIndex = len(m.filtered) - 1
+			} else if m.mode == modeUninstall {
+				maxIndex = len(m.filteredInstalled) - 1
+			}
+			if m.selectedIndex < maxIndex {
+				m.selectedIndex += 10
+				if m.selectedIndex > maxIndex {
+					m.selectedIndex = maxIndex
+				}
+				m.infoScrollOffset = 0
+				name := ""
+				if m.mode == modeUninstall {
+					name = m.filteredInstalled[m.selectedIndex].Name
+				} else if len(m.filtered) > 0 {
+					name = m.filtered[m.selectedIndex].Name
+				}
+				if name != "" {
+					m.loadingInfo = true
+					m.pendingInfoPackage = name
 					return m, debouncePackageInfo(m.pendingInfoPackage)
 				}
 			}
@@ -1050,7 +1109,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.statusMessage = fmt.Sprintf("Confirm update for %d packages", len(m.pendingUpdates))
 			}
 
-		case "tab":
+		case "tab", "m":
 
 			if m.mode == modeInstall && len(m.filtered) > 0 {
 				pkg := m.filtered[m.selectedIndex]

@@ -1,10 +1,8 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -56,15 +54,11 @@ func fuzzyFilter(packages []Package, query string) []Package {
 		input.WriteString(fmt.Sprintf("%d\t%s\n", i, pkg.Name))
 	}
 
-	cmd := exec.Command("fzf", "--filter", query, "-d", "\t", "-n2", "--tiebreak=begin,length")
-	cmd.Stdin = strings.NewReader(input.String())
-	var stdout bytes.Buffer
-	cmd.Stdout = &stdout
-	_ = cmd.Run()
+	stdout, _ := runner.RunWithInput(input.String(), "fzf", "--filter", query, "-d", "\t", "-n2", "--tiebreak=begin,length")
 
 	// Parse output and rebuild package list
 	var result []Package
-	lines := strings.Split(strings.TrimSpace(stdout.String()), "\n")
+	lines := strings.Split(strings.TrimSpace(string(stdout)), "\n")
 	for _, line := range lines {
 		if line == "" {
 			continue

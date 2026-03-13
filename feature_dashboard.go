@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -33,11 +32,9 @@ func getDashboardData() tea.Cmd {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			cmd := exec.Command("paru", "-Q")
-			var out bytes.Buffer
-			cmd.Stdout = &out
-			if err := cmd.Run(); err == nil {
-				val := countLines(out.String())
+			out, err := runner.Run("paru", "-Q")
+			if err == nil {
+				val := countLines(string(out))
 				dataMu.Lock()
 				data.TotalPackages = val
 				dataMu.Unlock()
@@ -50,11 +47,9 @@ func getDashboardData() tea.Cmd {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			cmd := exec.Command("paru", "-Qe")
-			var out bytes.Buffer
-			cmd.Stdout = &out
-			if err := cmd.Run(); err == nil {
-				val := countLines(out.String())
+			out, err := runner.Run("paru", "-Qe")
+			if err == nil {
+				val := countLines(string(out))
 				dataMu.Lock()
 				data.ExplicitlyInstalled = val
 				dataMu.Unlock()
@@ -67,11 +62,9 @@ func getDashboardData() tea.Cmd {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			cmd := exec.Command("paru", "-Qm")
-			var out bytes.Buffer
-			cmd.Stdout = &out
-			if err := cmd.Run(); err == nil {
-				val := countLines(out.String())
+			out, err := runner.Run("paru", "-Qm")
+			if err == nil {
+				val := countLines(string(out))
 				dataMu.Lock()
 				data.ForeignPackages = val
 				dataMu.Unlock()
@@ -84,16 +77,14 @@ func getDashboardData() tea.Cmd {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			cmd := exec.Command("paru", "-Qdt")
-			var out bytes.Buffer
-			cmd.Stdout = &out
-			if err := cmd.Run(); err == nil {
-				val := countLines(out.String())
+			out, err := runner.Run("paru", "-Qdt")
+			if err == nil {
+				val := countLines(string(out))
 				dataMu.Lock()
 				data.Orphans = val
 				dataMu.Unlock()
 			} else {
-				if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 && out.Len() == 0 {
+				if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 && len(out) == 0 {
 					dataMu.Lock()
 					data.Orphans = 0
 					dataMu.Unlock()
@@ -107,12 +98,10 @@ func getDashboardData() tea.Cmd {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			cmd := exec.Command("pacman", "-Sl")
-			var out bytes.Buffer
-			cmd.Stdout = &out
-			if err := cmd.Run(); err == nil {
+			out, err := runner.Run("pacman", "-Sl")
+			if err == nil {
 				dist := make(map[string]int)
-				lines := strings.Split(strings.TrimSpace(out.String()), "\n")
+				lines := strings.Split(strings.TrimSpace(string(out)), "\n")
 				for _, line := range lines {
 					if strings.Contains(line, "[installed") {
 						parts := strings.Fields(line)
@@ -131,11 +120,9 @@ func getDashboardData() tea.Cmd {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			cmd := exec.Command("paru", "-Ps")
-			var out bytes.Buffer
-			cmd.Stdout = &out
-			if err := cmd.Run(); err == nil {
-				ts, tsb, miss, top := parseParuStats(out.String())
+			out, err := runner.Run("paru", "-Ps")
+			if err == nil {
+				ts, tsb, miss, top := parseParuStats(string(out))
 				dataMu.Lock()
 				data.TotalSize = ts
 				data.TotalSizeBytes = tsb
@@ -151,12 +138,10 @@ func getDashboardData() tea.Cmd {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			cmd := exec.Command("grep", " installed ", "/var/log/pacman.log")
-			var logOut bytes.Buffer
-			cmd.Stdout = &logOut
-			if err := cmd.Run(); err == nil {
+			out, err := runner.Run("grep", " installed ", "/var/log/pacman.log")
+			if err == nil {
 				var recent []RecentPackage
-				lines := strings.Split(strings.TrimSpace(logOut.String()), "\n")
+				lines := strings.Split(strings.TrimSpace(string(out)), "\n")
 				seen := make(map[string]bool)
 				for i := len(lines) - 1; i >= 0 && len(recent) < 5; i-- {
 					parts := strings.Fields(lines[i])

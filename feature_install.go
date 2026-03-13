@@ -1,9 +1,7 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
-	"os/exec"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -14,22 +12,18 @@ import (
 func loadRepoPackages() tea.Cmd {
 	return func() tea.Msg {
 
-		cmd := exec.Command("pacman", "-Sl")
-		var stdout bytes.Buffer
-		cmd.Stdout = &stdout
-		if err := cmd.Run(); err != nil {
+		stdout, err := runner.Run("pacman", "-Sl")
+		if err != nil {
 			return repoPackagesMsg{err: err}
 		}
 
-		installedCmd := exec.Command("pacman", "-Qq")
-		var installedOut bytes.Buffer
-		installedCmd.Stdout = &installedOut
-		if err := installedCmd.Run(); err != nil {
+		installedOut, err := runner.Run("pacman", "-Qq")
+		if err != nil {
 			return repoPackagesMsg{err: fmt.Errorf("failed to get installed packages list: %w", err)}
 		}
 
 		installedSet := make(map[string]bool)
-		for _, name := range strings.Split(installedOut.String(), "\n") {
+		for _, name := range strings.Split(string(installedOut), "\n") {
 			name = strings.TrimSpace(name)
 			if name != "" {
 				installedSet[name] = true
@@ -38,7 +32,7 @@ func loadRepoPackages() tea.Cmd {
 
 		// Parse "repo name version [installed]" format
 		var packages []Package
-		for _, line := range strings.Split(stdout.String(), "\n") {
+		for _, line := range strings.Split(string(stdout), "\n") {
 			parts := strings.Fields(line)
 			if len(parts) < 3 {
 				continue
@@ -124,18 +118,16 @@ func searchAUR(query string) tea.Cmd {
 			return aurSearchMsg{packages: []Package{}, query: query}
 		}
 
-		cmd := exec.Command("paru", "-Ss", "-a", searchQuery)
-		var stdout bytes.Buffer
-		cmd.Stdout = &stdout
-		if err := cmd.Run(); err != nil {
+		stdout, err := runner.Run("paru", "-Ss", "-a", searchQuery)
+		if err != nil {
 			return aurSearchMsg{packages: nil, query: query, err: fmt.Errorf("AUR search command failed: %w", err)}
 		}
 
-		if stdout.Len() == 0 {
+		if len(stdout) == 0 {
 			return aurSearchMsg{packages: []Package{}, query: query}
 		}
 
-		packages := parseAUROutput(stdout.String())
+		packages := parseAUROutput(string(stdout))
 		return aurSearchMsg{packages: packages, query: query}
 	}
 }
@@ -150,15 +142,10 @@ func installPackage(pkg Package) tea.Cmd {
 			}
 		}
 
-		cmd := exec.Command("paru", "-S", "--noconfirm", pkg.Name)
-		var out bytes.Buffer
-		cmd.Stdout = &out
-		cmd.Stderr = &out
-
-		err := cmd.Run()
+		out, err := runner.Run("paru", "-S", "--noconfirm", pkg.Name)
 		if err != nil {
 			return actionCompleteMsg{
-				message: fmt.Sprintf("Failed to install %s: %s", pkg.Name, out.String()),
+				message: fmt.Sprintf("Failed to install %s: %s", pkg.Name, string(out)),
 				err:     err,
 			}
 		}
@@ -187,15 +174,10 @@ func installMultiplePackages(pkgNames []string) tea.Cmd {
 		}
 
 		args := append([]string{"-S", "--noconfirm"}, validNames...)
-		cmd := exec.Command("paru", args...)
-		var out bytes.Buffer
-		cmd.Stdout = &out
-		cmd.Stderr = &out
-
-		err := cmd.Run()
+		out, err := runner.Run("paru", args...)
 		if err != nil {
 			return actionCompleteMsg{
-				message: fmt.Sprintf("Failed to install packages: %s", out.String()),
+				message: fmt.Sprintf("Failed to install packages: %s", string(out)),
 				err:     err,
 			}
 		}

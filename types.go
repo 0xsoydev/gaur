@@ -2,8 +2,38 @@ package main
 
 import (
 	"fmt"
+	"os/exec"
+	"strings"
 	"time"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
+
+// CommandRunner defines an interface for executing shell commands.
+type CommandRunner interface {
+	Run(name string, args ...string) ([]byte, error)
+	RunWithInput(input string, name string, args ...string) ([]byte, error)
+	Interactive(onExit func(error) tea.Msg, name string, args ...string) tea.Cmd
+}
+
+// RealCommandRunner implements CommandRunner using os/exec.
+type RealCommandRunner struct{}
+
+func (r RealCommandRunner) Run(name string, args ...string) ([]byte, error) {
+	return exec.Command(name, args...).CombinedOutput()
+}
+
+func (r RealCommandRunner) RunWithInput(input string, name string, args ...string) ([]byte, error) {
+	cmd := exec.Command(name, args...)
+	cmd.Stdin = strings.NewReader(input)
+	return cmd.CombinedOutput()
+}
+
+func (r RealCommandRunner) Interactive(onExit func(error) tea.Msg, name string, args ...string) tea.Cmd {
+	return tea.ExecProcess(exec.Command(name, args...), onExit)
+}
+
+var runner CommandRunner = RealCommandRunner{}
 
 // View modes for the TUI application
 type viewMode int

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -11,13 +10,8 @@ import (
 
 func updateSystem() tea.Cmd {
 	return func() tea.Msg {
-		cmd := exec.Command("paru", "-Syu", "--noconfirm")
-		var out bytes.Buffer
-		cmd.Stdout = &out
-		cmd.Stderr = &out
-
-		err := cmd.Run()
-		output := out.String()
+		out, err := runner.Run("paru", "-Syu", "--noconfirm")
+		output := string(out)
 
 		if err != nil {
 			return updateOutputMsg{
@@ -38,12 +32,10 @@ func updateSystem() tea.Cmd {
 func checkUpdates() tea.Cmd {
 	return func() tea.Msg {
 
-		cmd := exec.Command("pacman", "-Qm")
-		var foreignOut bytes.Buffer
-		cmd.Stdout = &foreignOut
+		foreignOut, err := runner.Run("pacman", "-Qm")
 		foreignPkgs := make(map[string]bool)
-		if err := cmd.Run(); err == nil {
-			for _, line := range strings.Split(foreignOut.String(), "\n") {
+		if err == nil {
+			for _, line := range strings.Split(string(foreignOut), "\n") {
 				line = strings.TrimSpace(line)
 				if line != "" {
 
@@ -55,12 +47,10 @@ func checkUpdates() tea.Cmd {
 			}
 		}
 
-		cmd = exec.Command("pacman", "-Sl")
-		var repoOut bytes.Buffer
-		cmd.Stdout = &repoOut
+		repoOut, err := runner.Run("pacman", "-Sl")
 		repoMap := make(map[string]string)
-		if err := cmd.Run(); err == nil {
-			for _, line := range strings.Split(repoOut.String(), "\n") {
+		if err == nil {
+			for _, line := range strings.Split(string(repoOut), "\n") {
 				parts := strings.Fields(line)
 				if len(parts) >= 2 {
 
@@ -71,12 +61,8 @@ func checkUpdates() tea.Cmd {
 			}
 		}
 
-		cmd = exec.Command("paru", "-Qu")
-		var stdout bytes.Buffer
-		var stderr bytes.Buffer
-		cmd.Stdout = &stdout
-		cmd.Stderr = &stderr
-		if err := cmd.Run(); err != nil {
+		stdout, err := runner.Run("paru", "-Qu")
+		if err != nil {
 
 			if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
 
@@ -88,7 +74,7 @@ func checkUpdates() tea.Cmd {
 
 		// Step 4: Parse updates and assign accurate source
 		var packages []Package
-		for _, line := range strings.Split(strings.TrimSpace(stdout.String()), "\n") {
+		for _, line := range strings.Split(strings.TrimSpace(string(stdout)), "\n") {
 			if line == "" {
 				continue
 			}

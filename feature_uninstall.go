@@ -1,9 +1,7 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
-	"os/exec"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -12,17 +10,12 @@ import (
 func getInstalledPackages() tea.Cmd {
 	return func() tea.Msg {
 
-		cmd := exec.Command("pacman", "-Qi")
-		var out bytes.Buffer
-		cmd.Stdout = &out
-		cmd.Stderr = &out
-
-		err := cmd.Run()
+		out, err := runner.Run("pacman", "-Qi")
 		if err != nil {
 			return installedPackagesMsg{err: err}
 		}
 
-		packages, err := parseInstalledPackages(out.String())
+		packages, err := parseInstalledPackages(string(out))
 		if err != nil {
 			return installedPackagesMsg{err: fmt.Errorf("failed to parse installed packages: %w", err)}
 		}
@@ -69,13 +62,11 @@ func parseInstalledPackages(output string) ([]Package, error) {
 	}
 
 	repoMap := make(map[string]string)
-	cmd := exec.Command("pacman", "-Sl")
-	var repoOut bytes.Buffer
-	cmd.Stdout = &repoOut
-	if err := cmd.Run(); err != nil {
+	repoOut, err := runner.Run("pacman", "-Sl")
+	if err != nil {
 		return nil, fmt.Errorf("failed to query package repositories: %w", err)
 	}
-	for _, line := range strings.Split(repoOut.String(), "\n") {
+	for _, line := range strings.Split(string(repoOut), "\n") {
 		parts := strings.Fields(line)
 		if len(parts) >= 2 {
 
@@ -89,12 +80,10 @@ func parseInstalledPackages(output string) ([]Package, error) {
 		}
 	}
 
-	cmd = exec.Command("pacman", "-Qm")
-	var foreignOut bytes.Buffer
-	cmd.Stdout = &foreignOut
-	if err := cmd.Run(); err == nil {
+	foreignOut, err := runner.Run("pacman", "-Qm")
+	if err == nil {
 		foreignPkgs := make(map[string]bool)
-		for _, line := range strings.Split(foreignOut.String(), "\n") {
+		for _, line := range strings.Split(string(foreignOut), "\n") {
 			parts := strings.Fields(line)
 			if len(parts) >= 1 {
 				foreignPkgs[parts[0]] = true
@@ -107,12 +96,10 @@ func parseInstalledPackages(output string) ([]Package, error) {
 		}
 	}
 
-	cmd = exec.Command("pacman", "-Qe")
-	var explicitOut bytes.Buffer
-	cmd.Stdout = &explicitOut
-	if err := cmd.Run(); err == nil {
+	explicitOut, err := runner.Run("pacman", "-Qe")
+	if err == nil {
 		explicitPkgs := make(map[string]bool)
-		for _, line := range strings.Split(explicitOut.String(), "\n") {
+		for _, line := range strings.Split(string(explicitOut), "\n") {
 			parts := strings.Fields(line)
 			if len(parts) >= 1 {
 				explicitPkgs[parts[0]] = true
@@ -123,12 +110,10 @@ func parseInstalledPackages(output string) ([]Package, error) {
 		}
 	}
 
-	cmd = exec.Command("pacman", "-Qdt")
-	var orphanOut bytes.Buffer
-	cmd.Stdout = &orphanOut
-	if err := cmd.Run(); err == nil {
+	orphanOut, err := runner.Run("pacman", "-Qdt")
+	if err == nil {
 		orphanPkgs := make(map[string]bool)
-		for _, line := range strings.Split(orphanOut.String(), "\n") {
+		for _, line := range strings.Split(string(orphanOut), "\n") {
 			parts := strings.Fields(line)
 			if len(parts) >= 1 {
 				orphanPkgs[parts[0]] = true
@@ -152,15 +137,10 @@ func uninstallPackage(pkg Package) tea.Cmd {
 			}
 		}
 
-		cmd := exec.Command("paru", "-Rns", "--noconfirm", pkg.Name)
-		var out bytes.Buffer
-		cmd.Stdout = &out
-		cmd.Stderr = &out
-
-		err := cmd.Run()
+		out, err := runner.Run("paru", "-Rns", "--noconfirm", pkg.Name)
 		if err != nil {
 			return actionCompleteMsg{
-				message: fmt.Sprintf("Failed to uninstall %s: %s", pkg.Name, out.String()),
+				message: fmt.Sprintf("Failed to uninstall %s: %s", pkg.Name, string(out)),
 				err:     err,
 			}
 		}
@@ -189,15 +169,10 @@ func uninstallMultiplePackages(pkgNames []string) tea.Cmd {
 		}
 
 		args := append([]string{"-Rns", "--noconfirm"}, validNames...)
-		cmd := exec.Command("paru", args...)
-		var out bytes.Buffer
-		cmd.Stdout = &out
-		cmd.Stderr = &out
-
-		err := cmd.Run()
+		out, err := runner.Run("paru", args...)
 		if err != nil {
 			return actionCompleteMsg{
-				message: fmt.Sprintf("Failed to uninstall packages: %s", out.String()),
+				message: fmt.Sprintf("Failed to uninstall packages: %s", string(out)),
 				err:     err,
 			}
 		}

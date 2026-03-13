@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -29,22 +28,17 @@ func getPackageInfo(pkg Package) tea.Cmd {
 		// However, for updates/installs, we want -Si (remote info). 
 		// We execute this with a timeout to prevent UI freezes on slow networks during rapid scrolling.
 		arg := "-Si"
-		if pkg.Installed && pkg.Source == "unknown" { 
+		if pkg.Installed && pkg.Source == "unknown" {
 			// Only fallback to Qi if it's an orphaned/unknown local package
 			arg = "-Qi"
 		}
 
-		cmd := exec.Command("paru", "--noconfirm", arg, pkg.Name)
-		var out bytes.Buffer
-		cmd.Stdout = &out
-		cmd.Stderr = &out
-
-		err := cmd.Run()
+		out, err := runner.Run("paru", "--noconfirm", arg, pkg.Name)
 		if err != nil {
 			return packageInfoMsg{info: "Failed to get package info", packageName: pkg.Name, err: err}
 		}
 
-		return packageInfoMsg{info: out.String(), packageName: pkg.Name}
+		return packageInfoMsg{info: string(out), packageName: pkg.Name}
 	}
 }
 
@@ -86,10 +80,9 @@ func executeInstallInTerminal(packages []string) tea.Cmd {
 	}
 
 	args := append([]string{"-S"}, validNames...)
-	c := exec.Command("paru", args...)
-	return tea.ExecProcess(c, func(err error) tea.Msg {
+	return runner.Interactive(func(err error) tea.Msg {
 		return execCompleteMsg{operation: confirmInstall, packages: validNames, err: err}
-	})
+	}, "paru", args...)
 }
 
 // executeUninstallInTerminal runs paru -Rns interactively using tea.ExecProcess
@@ -103,26 +96,23 @@ func executeUninstallInTerminal(packages []string) tea.Cmd {
 	}
 
 	args := append([]string{"-Rns"}, validNames...)
-	c := exec.Command("paru", args...)
-	return tea.ExecProcess(c, func(err error) tea.Msg {
+	return runner.Interactive(func(err error) tea.Msg {
 		return execCompleteMsg{operation: confirmUninstall, packages: validNames, err: err}
-	})
+	}, "paru", args...)
 }
 
 // executeUpdateInTerminal runs paru -Syu interactively using tea.ExecProcess
 func executeUpdateInTerminal() tea.Cmd {
-	c := exec.Command("paru", "-Syu")
-	return tea.ExecProcess(c, func(err error) tea.Msg {
+	return runner.Interactive(func(err error) tea.Msg {
 		return execCompleteMsg{operation: confirmUpdate, err: err}
-	})
+	}, "paru", "-Syu")
 }
 
 // executeCleanCacheInTerminal runs paru -Sc interactively using tea.ExecProcess
 func executeCleanCacheInTerminal() tea.Cmd {
-	c := exec.Command("paru", "-Sc")
-	return tea.ExecProcess(c, func(err error) tea.Msg {
+	return runner.Interactive(func(err error) tea.Msg {
 		return execCompleteMsg{operation: confirmCleanCache, err: err}
-	})
+	}, "paru", "-Sc")
 }
 
 // executeRemoveOrphansInTerminal runs paru -Rns $(paru -Qdtq) interactively using tea.ExecProcess
@@ -136,10 +126,9 @@ func executeRemoveOrphansInTerminal(orphans []string) tea.Cmd {
 	}
 
 	args := append([]string{"-Rns"}, validNames...)
-	c := exec.Command("paru", args...)
-	return tea.ExecProcess(c, func(err error) tea.Msg {
+	return runner.Interactive(func(err error) tea.Msg {
 		return execCompleteMsg{operation: confirmRemoveOrphans, packages: validNames, err: err}
-	})
+	}, "paru", args...)
 }
 
 // executeSelectiveUpdateInTerminal runs paru -S interactively using tea.ExecProcess
@@ -152,16 +141,14 @@ func executeSelectiveUpdateInTerminal(packages []string) tea.Cmd {
 	}
 
 	args := append([]string{"-S"}, validNames...)
-	c := exec.Command("paru", args...)
-	return tea.ExecProcess(c, func(err error) tea.Msg {
+	return runner.Interactive(func(err error) tea.Msg {
 		return execCompleteMsg{operation: confirmSelectiveUpdate, packages: validNames, err: err}
-	})
+	}, "paru", args...)
 }
 
 // syncRepositoriesInTerminal runs paru -Sy interactively to sync databases
 func syncRepositoriesInTerminal() tea.Cmd {
-	c := exec.Command("paru", "-Sy")
-	return tea.ExecProcess(c, func(err error) tea.Msg {
+	return runner.Interactive(func(err error) tea.Msg {
 		return syncRepositoriesMsg{err: err}
-	})
+	}, "paru", "-Sy")
 }
