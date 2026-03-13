@@ -37,8 +37,9 @@ Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea) • Powered 
 ### 📊 System Dashboard
 
 - **Package Statistics** — Total, explicit, foreign (AUR), and orphan package counts
-- **Storage Analysis** — System size, cache size, and visual size comparisons
+- **Disk Space Analysis** — Capacity, usage breakdown (packages, cache, other, free) with visual proportional bars
 - **Top 10 Packages** — See your largest installed packages at a glance
+- **Top Cache Hogs** — Identifies the top 5 largest aggregated packages taking up space across both pacman and paru caches
 - **Cache Management** — Clean package caches directly from the dashboard
 - **Orphan Removal** — Identify and remove orphaned packages
 
@@ -122,15 +123,17 @@ gaur
 | `/`       | Focus search input               |
 | `↑` / `k` | Move selection up                |
 | `↓` / `j` | Move selection down              |
+| `PgUp`    | Jump 10 items up                 |
+| `PgDown`  | Jump 10 items down               |
 | `Esc`     | Defocus input / Clear selections |
 
 #### Package Operations
 
-| Key     | Action                                     |
-| ------- | ------------------------------------------ |
-| `Tab`   | Mark/unmark package for batch operation    |
-| `Enter` | Install/remove selected or marked packages |
-| `*`     | Toggle selection panel focus               |
+| Key       | Action                                     |
+| --------- | ------------------------------------------ |
+| `Tab`/`m` | Mark/unmark package for batch operation    |
+| `Enter`   | Install/remove selected or marked packages |
+| `*`       | Toggle selection panel focus               |
 
 #### Dashboard (Info Mode)
 
