@@ -87,28 +87,20 @@ func TestDashboardRendering(t *testing.T) {
 		}
 	}
 
-	// 2. Verify Disk Usage Sizes exist below the bar
+	// 2. Verify Disk Usage Labels & Sizes exist below the bar
 	lines := strings.Split(view, "\n")
+	foundLabels := false
 	foundSizes := false
 	for _, line := range lines {
-		// Use substrings to check for mock sizes (40.0 GiB, 20.0 GiB)
+		if strings.Contains(line, "Packages") && strings.Contains(line, "Cache") {
+			foundLabels = true
+		}
 		if strings.Contains(line, "40.0 GiB") && strings.Contains(line, "20.0 GiB") {
 			foundSizes = true
 		}
 	}
-	if !foundSizes {
-		t.Error("Disk usage centered size labels not found in view")
-	}
-
-	// 2b. Verify Legend exists aligned with suffix
-	foundLegend := false
-	for _, line := range lines {
-		if strings.Contains(line, "Packages") && strings.Contains(line, "Cache") && strings.Contains(line, "Other") {
-			foundLegend = true
-		}
-	}
-	if !foundLegend {
-		t.Error("Disk usage legend not found in view")
+	if !foundLabels || !foundSizes {
+		t.Errorf("Disk usage centered labels/sizes not found. Labels: %v, Sizes: %v", foundLabels, foundSizes)
 	}
 
 	// 3. Verify Repo Distribution Bar exists

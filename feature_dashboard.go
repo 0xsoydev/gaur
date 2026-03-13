@@ -563,31 +563,24 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 	diskSuffix := fmt.Sprintf("%s/%s (%.0f%% used)", m.dashboard.DiskUsed, m.dashboard.DiskTotal, m.dashboard.DiskUsedPercent*100)
 	dashboard.WriteString(renderBarLine(pkgBar+cacheBar+otherBar+freeBar, diskSuffix) + "\n")
 
-	// Legend for the disk bar (aligned with suffix)
-	pkgLegend := lipgloss.NewStyle().Foreground(cyanColor).Render("Packages ")
-	cacheLegend := lipgloss.NewStyle().Foreground(orangeColor).Render("Cache ")
-	otherLegend := lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render("Other ")
-	freeLegend := lipgloss.NewStyle().Foreground(lipgloss.Color("236")).Render("Free")
-	legendContent := pkgLegend + cacheLegend + otherLegend + freeLegend
-
-	// Centered sizes below bar
+	// Centered Labels & Sizes below bar
+	diskLabels := []string{"Packages", "Cache", "Other", "Free"}
 	pkgSize := m.dashboard.TotalSize
 	cacheSize := m.dashboard.CleanerSize
 	otherSize := formatBytes(otherUsedBytes)
 	freeBytes := totalDiskBytes - usedDiskBytes
-	if freeBytes < 0 {
-		freeBytes = 0
-	}
+	if freeBytes < 0 { freeBytes = 0 }
 	freeSize := formatBytes(int64(freeBytes))
+	diskSizes := []string{pkgSize, cacheSize, otherSize, freeSize}
 
-	diskSizeLabels := []string{pkgSize, cacheSize, otherSize, freeSize}
 	diskWidths := []int{pkgWidth, cacheWidth, otherWidth, freeWidth}
 	diskColors := []lipgloss.Color{cyanColor, orangeColor, lipgloss.Color("240"), lipgloss.Color("236")}
 	
-	sizesLine := renderCenteredLabels(diskWidths, diskSizeLabels, diskColors)
+	labelsLine := renderCenteredLabels(diskWidths, diskLabels, diskColors)
+	sizesLine := renderCenteredLabels(diskWidths, diskSizes, diskColors)
 	
-	// Write the sizes line followed by the legend aligned with suffix
-	dashboard.WriteString(fmt.Sprintf("%*s%s %s\n\n", barStartCol, "", sizesLine, legendContent))
+	dashboard.WriteString(fmt.Sprintf("%*s%s\n", barStartCol, "", labelsLine))
+	dashboard.WriteString(fmt.Sprintf("%*s%s\n\n", barStartCol, "", sizesLine))
 
 	// Repo Distribution Bar
 	repoTitle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("229")).
