@@ -1211,12 +1211,11 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 		}
 	}
 
-	// Fill remaining space - removed manual fillerLines loops
-	if !strings.HasSuffix(content.String(), "\n") {
-		content.WriteString("\n")
-	}
+	// Build main list content
+	listContent := content.String()
 
-	// Add the inner highlighted menu at the bottom right
+	// Build buttons separately to pin them to the bottom right
+	var buttonsContent string
 	if !m.loading && len(m.pendingUpdates) > 0 {
 		buttonStyle := lipgloss.NewStyle().
 			Background(lipgloss.Color("238")).
@@ -1225,7 +1224,7 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 			Bold(true)
 
 		buttonStyleRed := lipgloss.NewStyle().
-			Background(lipgloss.Color("196")). // Bright Red
+			Background(lipgloss.Color("196")).
 			Foreground(lipgloss.Color("255")).
 			Padding(0, 1).
 			Bold(true)
@@ -1234,24 +1233,28 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 		btnSelective := buttonStyleRed.Render("[s]elective")
 
 		buttons := btnUpdate + "   " + btnSelective
-		buttonsWidth := lipgloss.Width(buttons)
-		padding := innerWidth - 4 - buttonsWidth
-		if padding < 0 {
-			padding = 0
-		}
-
-		content.WriteString(strings.Repeat(" ", padding) + buttons)
+		
+		// Use lipgloss.Place to push buttons to the bottom-right corner
+		// Total inner width is innerWidth - 4 (padding+borders)
+		buttonsContent = lipgloss.Place(innerWidth-4, 1, lipgloss.Right, lipgloss.Bottom, buttons)
 	}
 
+	// Join list and buttons, ensuring buttons are at the bottom
+	// Total available inner height is panelHeight - 2
+	innerPanelContent := lipgloss.JoinVertical(lipgloss.Left,
+		lipgloss.NewStyle().Height(panelHeight-2-1).Render(listContent), // List takes all but the last line
+		buttonsContent, // Buttons take exactly the last line
+	)
+
 	panelContent := lipgloss.NewStyle().
-		Width(innerWidth-2).
-		Height(panelHeight - 2). // content height within borders
-		Padding(0, 1). // Minimal top/left padding inside panel
-		Render(content.String())
+		Width(innerWidth - 2).
+		Height(panelHeight - 2).
+		Padding(0, 1).
+		Render(innerPanelContent)
 
 	mainPanel := borderStyle.
 		Width(innerWidth - 2).
-		Height(panelHeight - 2). // Total height = (panelHeight-2) + 2 = panelHeight
+		Height(panelHeight - 2).
 		Render(panelContent)
 
 	return lipgloss.JoinVertical(lipgloss.Left, mainPanel, footerLine)
