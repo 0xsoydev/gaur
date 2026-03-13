@@ -304,6 +304,21 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 		return lipgloss.JoinVertical(lipgloss.Left, loadingBox, footerLine)
 	}
 
+	// ═══════════════════════════════════════════════════════
+	// Bar Layout Constants - ensures all bars align perfectly
+	// ═══════════════════════════════════════════════════════
+	const barLeftMargin = 2     // Spaces before bar
+	const barSuffixReserve = 55 // Increased to allow full names on the right
+	barStartCol := barLeftMargin
+	availableBarWidth := innerWidth - barStartCol - barSuffixReserve
+	if availableBarWidth < 20 {
+		availableBarWidth = 20
+	}
+
+	renderBarLine := func(bar string, suffix string) string {
+		return fmt.Sprintf("%*s%s %s", barLeftMargin, "", bar, suffix)
+	}
+
 	var dashboard strings.Builder
 
 	greenColor := lipgloss.Color("42")
@@ -468,55 +483,10 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 	dashboard.WriteString("\n")
 
 	// ═══════════════════════════════════════════════════════
-	// Bar Layout Constants - ensures all bars align perfectly
-	// ═══════════════════════════════════════════════════════
-	const barLeftMargin = 2     // Spaces before bar
-	const barSuffixReserve = 55 // Increased to allow full names on the right
-	barStartCol := barLeftMargin
-	availableBarWidth := innerWidth - barStartCol - barSuffixReserve
-	if availableBarWidth < 20 {
-		availableBarWidth = 20
-	}
-
-	renderBarLine := func(bar string, suffix string) string {
-		return fmt.Sprintf("%*s%s %s", barLeftMargin, "", bar, suffix)
-	}
-
-	dependencies := m.dashboard.TotalPackages - m.dashboard.ExplicitlyInstalled
-	explicitRatio := float64(m.dashboard.ExplicitlyInstalled) / float64(m.dashboard.TotalPackages)
-	if m.dashboard.TotalPackages == 0 {
-		explicitRatio = 0
-	}
-
-	filledWidth := int(explicitRatio * float64(availableBarWidth))
-	if filledWidth > availableBarWidth {
-		filledWidth = availableBarWidth
-	}
-
-	filledBar := lipgloss.NewStyle().Background(greenColor).Foreground(lipgloss.Color("0")).
-		Render(strings.Repeat(" ", filledWidth))
-	emptyBar := lipgloss.NewStyle().Background(lipgloss.Color("238")).
-		Render(strings.Repeat(" ", availableBarWidth-filledWidth))
-
-	ratioTitle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("229")).
-		Render("\ueea8  Explicit vs Dependencies")
-	ratioSuffix := fmt.Sprintf("%d/%d (%.0f%% explicit)", m.dashboard.ExplicitlyInstalled, dependencies, explicitRatio*100)
-	ratioBar := renderBarLine(filledBar+emptyBar, ratioSuffix)
-
-	dashboard.WriteString(ratioTitle + "\n")
-	dashboard.WriteString(ratioBar + "\n")
-
-	// Centered Labels below bar
-	labels := []string{fmt.Sprintf("%d", m.dashboard.ExplicitlyInstalled), fmt.Sprintf("%d", dependencies)}
-	widths := []int{filledWidth, availableBarWidth - filledWidth}
-	labelColors := []lipgloss.Color{greenColor, dimColor}
-	dashboard.WriteString(fmt.Sprintf("%*s%s\n", barStartCol, "", renderCenteredLabels(widths, labels, labelColors)))
-
-	// ═══════════════════════════════════════════════════════
 	// Disk Usage Analysis (Combined Stacked Bar)
 	// ═══════════════════════════════════════════════════════
 	diskTitle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("229")).
-		Render("\U000f02ca  Disk Usage Analysis")
+		Render(fmt.Sprintf("\U000f02ca  Disk Usage Analysis (%.0f%% used)", m.dashboard.DiskUsedPercent*100))
 	dashboard.WriteString(diskTitle + "\n")
 
 	// Calculate breakdown
@@ -554,7 +524,7 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 	otherBar := lipgloss.NewStyle().Background(lipgloss.Color("240")).Render(strings.Repeat(" ", otherWidth))
 	freeBar := lipgloss.NewStyle().Background(lipgloss.Color("236")).Render(strings.Repeat(" ", freeWidth))
 
-	diskSuffix := fmt.Sprintf("%s/%s (%.0f%% used)", m.dashboard.DiskUsed, m.dashboard.DiskTotal, m.dashboard.DiskUsedPercent*100)
+	diskSuffix := fmt.Sprintf("%s/%s", m.dashboard.DiskUsed, m.dashboard.DiskTotal)
 	dashboard.WriteString(renderBarLine(pkgBar+cacheBar+otherBar+freeBar, diskSuffix) + "\n")
 
 	// Centered Labels & Sizes below bar
