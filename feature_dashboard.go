@@ -292,11 +292,14 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 	shortcutStyle := lipgloss.NewStyle().Foreground(dimColor)
 
 	countsLines := []string{
-		fmt.Sprintf("  [t]otal    │ %s",
+		fmt.Sprintf("  [%s]otal    │ %s",
+			lipgloss.NewStyle().Bold(true).Foreground(cyanColor).Render("t"),
 			lipgloss.NewStyle().Bold(true).Foreground(cyanColor).Render(fmt.Sprintf("%d", m.dashboard.TotalPackages))),
-		fmt.Sprintf("  [e]xplicit │ %s",
+		fmt.Sprintf("  [%s]xplicit │ %s",
+			lipgloss.NewStyle().Bold(true).Foreground(greenColor).Render("e"),
 			lipgloss.NewStyle().Bold(true).Foreground(greenColor).Render(fmt.Sprintf("%d", m.dashboard.ExplicitlyInstalled))),
-		fmt.Sprintf("  [f]oreign  │ %s",
+		fmt.Sprintf("  [%s]oreign  │ %s",
+			lipgloss.NewStyle().Bold(true).Foreground(yellowColor).Render("f"),
 			lipgloss.NewStyle().Bold(true).Foreground(yellowColor).Render(fmt.Sprintf("%d", m.dashboard.ForeignPackages))),
 	}
 
@@ -304,7 +307,8 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 	if m.dashboard.Orphans > 0 {
 		orphanStyle = lipgloss.NewStyle().Bold(true).Foreground(redColor)
 	}
-	orphanLine := fmt.Sprintf("  [o]rphans  │ %s",
+	orphanLine := fmt.Sprintf("  [%s]rphans  │ %s",
+		orphanStyle.Render("o"),
 		orphanStyle.Render(fmt.Sprintf("%d", m.dashboard.Orphans)))
 	countsLines = append(countsLines, orphanLine)
 
