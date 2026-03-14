@@ -63,7 +63,7 @@ func (m *model) renderCacheMenu(helpText string, innerWidth, innerHeight int) st
 	}
 
 	var menuContent strings.Builder
-	menuContent.WriteString(titleStyle.Width(menuWidth - 4).Render(" \uf12a Cache Management Menu"))
+	menuContent.WriteString(titleStyle.Width(menuWidth - 4).Render(" \U000f00e2 Cache Management Menu"))
 	menuContent.WriteString("\n\n")
 
 	for i, opt := range options {
