@@ -111,11 +111,20 @@ func executeUpdateInTerminal() tea.Cmd {
 	}, "paru", "-Syu")
 }
 
-// executePaccacheInTerminal runs paccache with given args
-func executePaccacheInTerminal(op confirmationType, args ...string) tea.Cmd {
+// executeCleanCache cleans both pacman and paru caches
+func executeCleanCache(op confirmationType, keep int, uninstalled bool) tea.Cmd {
 	return runner.Interactive(func(err error) tea.Msg {
 		return execCompleteMsg{operation: op, err: err}
-	}, "paccache", args...)
+	}, "bash", "-c", fmt.Sprintf(`
+		# Clean pacman cache
+		paccache -r %s -k %d
+		# Clean paru cache (recursive)
+		find ~/.cache/paru/clone -maxdepth 2 -type d -exec paccache -r %s -k %d -c {} +
+	`, 
+	func() string { if uninstalled { return "-u" }; return "" }(),
+	keep,
+	func() string { if uninstalled { return "-u" }; return "" }(),
+	keep))
 }
 
 // executeSelectiveClean specifically deletes selected cache files
