@@ -334,6 +334,7 @@ func (m *model) handleActionTrigger() (tea.Model, tea.Cmd) {
 		switch m.cacheMenuIndex {
 		case 4:
 			m.mode = modeCacheSelective; m.selectedIndex = 0; m.markedPackages = make(map[string]bool); m.cacheToFree = 0
+			m.textInput.SetValue(""); m.lastQuery = ""
 			m.filtered = make([]Package, len(m.dashboard.AllCacheHogs))
 			for i, h := range m.dashboard.AllCacheHogs { m.filtered[i] = Package{Name: h.Name, Size: h.Size, SizeBytes: h.SizeBytes} }
 		default:
@@ -412,6 +413,18 @@ func (m *model) performFiltering() {
 	if m.mode == modeInstall { m.filterAllPackages(query) }
 	if m.mode == modeUninstall { m.filteredInstalled = fuzzyFilter(m.installed, query) }
 	if m.mode == modeUpdateSelective { m.filtered = fuzzyFilter(m.updatableAll, query) }
+	if m.mode == modeCacheSelective {
+		// Convert AllCacheHogs to Package slice for fuzzyFilter
+		var allPkgs []Package
+		for _, h := range m.dashboard.AllCacheHogs {
+			allPkgs = append(allPkgs, Package{Name: h.Name, Size: h.Size, SizeBytes: h.SizeBytes})
+		}
+		if query == "" {
+			m.filtered = allPkgs
+		} else {
+			m.filtered = fuzzyFilter(allPkgs, query)
+		}
+	}
 }
 
 func (m *model) getSelectedPkg() *Package {

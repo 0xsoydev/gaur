@@ -178,8 +178,7 @@ func (m *model) renderSelectiveCacheView(helpText string, innerWidth, innerHeigh
 	
 	statusLine := statusStyle.Render(statusMsg)
 	
-	// Hide input text in selective cache mode
-	inputLine := ""
+	inputLine := m.textInput.View()
 
 	bottomContent := lipgloss.JoinVertical(
 		lipgloss.Left,
