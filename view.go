@@ -759,43 +759,64 @@ func (m *model) overlaySelectionsPanel(content string, innerWidth int, headerHei
 
 // renderConfirmationDialog renders a centered confirmation dialog for install/uninstall/update
 func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColor lipgloss.Color) string {
-
-	dialogWidth := innerWidth - 20
-	if dialogWidth < 50 {
-		dialogWidth = 50
-	}
-	if dialogWidth > 80 {
-		dialogWidth = 80
-	}
-
-	// Determine packages to display and title
 	var packages []Package
 	var title string
 	var actionDesc string
-	var simpleConfirm bool // For confirmations without package lists
+	var simpleConfirm bool
+
+	sourceStyle := func(source string) lipgloss.Style {
+		if color, ok := sourceColors[source]; ok {
+			return lipgloss.NewStyle().Foreground(color)
+		}
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
+	}
 
 	switch m.confirmType {
 	case confirmInstall:
 		title = "📦 Confirm Installation"
 		actionDesc = "install"
+		simpleConfirm = false
 		for _, name := range m.confirmPackages {
-			packages = append(packages, Package{Name: name})
+			pkg := m.getPackageByName(name)
+			if pkg != nil {
+				packages = append(packages, *pkg)
+			} else {
+				packages = append(packages, Package{Name: name, Source: "aur"})
+			}
 		}
 	case confirmUninstall:
-		title = "🗑️  Confirm Removal"
-		actionDesc = "remove"
+		title = "🗑 Confirm Removal"
+		actionDesc = "uninstall"
+		simpleConfirm = false
 		for _, name := range m.confirmPackages {
-			packages = append(packages, Package{Name: name})
+			pkg := m.getPackageByName(name)
+			if pkg != nil {
+				packages = append(packages, *pkg)
+			} else {
+				packages = append(packages, Package{Name: name, Source: "core"})
+			}
 		}
 	case confirmUpdate:
 		title = "🔄 Confirm System Update"
 		actionDesc = "update"
+		simpleConfirm = false
 		packages = m.pendingUpdates
 	case confirmSelectiveUpdate:
 		title = "🔄 Confirm Selective Update"
 		actionDesc = "update"
+		simpleConfirm = false
 		for _, name := range m.confirmPackages {
-			packages = append(packages, Package{Name: name})
+			pkg := m.getPackageByName(name)
+			if pkg != nil {
+				packages = append(packages, *pkg)
+			}
+		}
+	case confirmRemoveOrphans:
+		title = "🧹 Confirm Orphan Removal"
+		actionDesc = "remove orphans"
+		simpleConfirm = false
+		for _, name := range m.confirmPackages {
+			packages = append(packages, Package{Name: name, Source: "core"})
 		}
 	case confirmCleanKeep3, confirmCleanKeep1, confirmCleanNuke:
 		title = "🧹 Confirm Cache Cleaning"
@@ -820,347 +841,157 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 	case confirmCleanSelective:
 		title = "🧹 Confirm Selective Clean"
 		actionDesc = "clean selected packages from cache"
+		simpleConfirm = false
 		for _, name := range m.confirmPackages {
 			packages = append(packages, Package{Name: name})
 		}
-	case confirmRemoveOrphans:
-		title = "🗑️  Confirm Orphan Removal"
-		actionDesc = "remove"
-		for _, name := range m.confirmPackages {
-			packages = append(packages, Package{Name: name})
-		}
+	}
+
+	dialogWidth := innerWidth - 10
+	if dialogWidth < 60 { dialogWidth = 60 }
+	if dialogWidth > 90 { dialogWidth = 90 }
+
+	activeBorderColor := activeColor
+	if m.confirmType == confirmCleanNuke {
+		activeBorderColor = lipgloss.Color("196")
 	}
 
 	dialogBorderStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(activeColor).
+		BorderForeground(activeBorderColor).
 		Padding(1, 2).
 		Align(lipgloss.Left)
 
-	titleStyle := lipgloss.NewStyle().
-		Bold(true).
-		Foreground(activeColor).
-		MarginBottom(1)
+	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(activeBorderColor)
+	packageNameStyle := lipgloss.NewStyle().Foreground(activeBorderColor).Bold(true)
+	packageVersionStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("246"))
+	countStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Bold(true)
+	promptStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("252")).MarginTop(1)
+	keyStyle := lipgloss.NewStyle().Foreground(activeBorderColor).Bold(true)
+	scrollHintStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
 
-	packageNameStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("39"))
+	var lines []string
+	
+	// Center Title
+	lines = append(lines, lipgloss.PlaceHorizontal(dialogWidth-4, lipgloss.Center, titleStyle.Render(title)))
+	lines = append(lines, "")
 
-	packageVersionStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("241"))
-
-	sourceStyle := func(source string) lipgloss.Style {
-		if color, ok := sourceColors[source]; ok {
-			return lipgloss.NewStyle().Foreground(color)
+	// Warning/Description
+	descStyle := lipgloss.NewStyle().Width(dialogWidth - 4)
+	if m.confirmType == confirmCleanNuke {
+		warningStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Bold(true).Width(dialogWidth - 4).Align(lipgloss.Center)
+		lines = append(lines, warningStyle.Render("WARNING: This will completely empty the package cache."))
+		lines = append(lines, "")
+	} else if simpleConfirm {
+		if m.confirmType == confirmCleanKeep3 {
+			lines = append(lines, descStyle.Render("This will remove all but the 3 most recent cached versions of packages."))
+		} else if m.confirmType == confirmCleanKeep1 {
+			lines = append(lines, descStyle.Render("This will aggressively remove all but the currently installed cached versions."))
 		}
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
-	}
-
-	countStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("214")).
-		Bold(true)
-
-	promptStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("252")).
-		MarginTop(1)
-
-	keyStyle := lipgloss.NewStyle().
-		Foreground(activeColor).
-		Bold(true)
-
-	scrollHintStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("241"))
-
-	// Build dialog content
-	var content strings.Builder
-
-	content.WriteString(titleStyle.Render(title))
-	content.WriteString("\n\n")
-
-	// Shared descriptive text
-	if m.confirmType == confirmCleanKeep3 {
-		content.WriteString("This will remove all but the 3 most recent cached versions of packages.\n\n")
-	} else if m.confirmType == confirmCleanKeep1 {
-		content.WriteString("This will aggressively remove all but the currently installed cached versions.\n\n")
-	} else if m.confirmType == confirmCleanUninstalled {
-		content.WriteString("This will remove cached packages that are no longer installed.\n\n")
-	} else if m.confirmType == confirmCleanNuke {
-		content.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Bold(true).Render("WARNING: This will completely empty the package cache.\n\n"))
+		lines = append(lines, "")
 	}
 
 	if simpleConfirm {
-		if m.confirmType == confirmCleanKeep3 || m.confirmType == confirmCleanKeep1 || m.confirmType == confirmCleanUninstalled || m.confirmType == confirmCleanNuke {
-			
-			// Show directory paths only for Orphans/Nuke (High severity actions)
-			if m.confirmType == confirmCleanUninstalled || m.confirmType == confirmCleanNuke {
-				labelStyle := lipgloss.NewStyle().Width(8).Foreground(lipgloss.Color("241"))
-				content.WriteString(packageNameStyle.Render("System Cache:\n"))
-				content.WriteString(fmt.Sprintf("  %s %s\n", labelStyle.Render("Path:"), scrollHintStyle.Render(m.dashboard.PacmanCachePath)))
-				content.WriteString(packageNameStyle.Render("User Cache:\n"))
-				content.WriteString(fmt.Sprintf("  %s %s\n\n", labelStyle.Render("Path:"), scrollHintStyle.Render(m.dashboard.ParuCachePath)))
-			}
-
-			// Show breakdown for all cleaning modes
-			breakdownHeaderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Bold(true)
-			content.WriteString(breakdownHeaderStyle.Render("Breakdown:") + "\n")
-			
-			pacmanEstimate := m.dashboard.CacheFreedPacman[m.confirmType]
-			paruEstimate := m.dashboard.CacheFreedParu[m.confirmType]
-			
-			// Special handling for Nuke since it clears everything
-			if m.confirmType == confirmCleanNuke {
-				pacmanEstimate = m.dashboard.PacmanCacheSize
-				paruEstimate = m.dashboard.ParuCacheSize
-			}
-
-			if pacmanEstimate == "" { pacmanEstimate = "calculating..." }
-			if paruEstimate == "" { paruEstimate = "calculating..." }
-
-			valStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
-			
-			pacmanLabel := sourceStyle("core").Render("  pacman:")
-			paruLabel := sourceStyle("aur").Render("  paru:  ") // Added space for alignment
-
-			content.WriteString(fmt.Sprintf("%s %s\n", pacmanLabel, valStyle.Render(pacmanEstimate)))
-			content.WriteString(fmt.Sprintf("%s %s\n\n", paruLabel, valStyle.Render(paruEstimate)))
-
-			estimate := m.dashboard.CacheFreedEstimates[m.confirmType]
-			if estimate == "" {
-				estimate = "calculating..."
-			}
-			content.WriteString(fmt.Sprintf("Estimated space to be freed: %s\n",
-				lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("214")).Render(estimate)))
+		if m.confirmType == confirmCleanNuke {
+			labelStyle := lipgloss.NewStyle().Width(8).Foreground(lipgloss.Color("241"))
+			lines = append(lines, packageNameStyle.Render("System Cache:"))
+			lines = append(lines, fmt.Sprintf("  %s %s", labelStyle.Render("Path:"), scrollHintStyle.Render(m.dashboard.PacmanCachePath)))
+			lines = append(lines, packageNameStyle.Render("User Cache:"))
+			lines = append(lines, fmt.Sprintf("  %s %s", labelStyle.Render("Path:"), scrollHintStyle.Render(m.dashboard.ParuCachePath)))
+			lines = append(lines, "")
 		}
+
+		breakdownHeaderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Bold(true)
+		lines = append(lines, breakdownHeaderStyle.Render("Breakdown:"))
+		
+		pacmanEstimate := m.dashboard.CacheFreedPacman[m.confirmType]
+		paruEstimate := m.dashboard.CacheFreedParu[m.confirmType]
+		if m.confirmType == confirmCleanNuke {
+			pacmanEstimate = m.dashboard.PacmanCacheSize
+			paruEstimate = m.dashboard.ParuCacheSize
+		}
+		if pacmanEstimate == "" { pacmanEstimate = "calculating..." }
+		if paruEstimate == "" { paruEstimate = "calculating..." }
+
+		valStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
+		pacmanLabel := sourceStyle("core").Render("  pacman:")
+		paruLabel := sourceStyle("aur").Render("  paru:  ")
+
+		lines = append(lines, fmt.Sprintf("%s %s", pacmanLabel, valStyle.Render(pacmanEstimate)))
+		lines = append(lines, fmt.Sprintf("%s %s", paruLabel, valStyle.Render(paruEstimate)))
+		lines = append(lines, "")
+
+		estimate := m.dashboard.CacheFreedEstimates[m.confirmType]
+		if estimate == "" { estimate = "calculating..." }
+		lines = append(lines, fmt.Sprintf("Estimated space to be freed: %s", lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("214")).Render(estimate)))
 	} else {
-
+		// List-based Confirmations
 		if m.confirmType == confirmUpdate {
-			if len(packages) == 1 {
-				content.WriteString("The following update is available:\n\n")
-			} else {
-				content.WriteString(fmt.Sprintf("The following %s updates are available:\n\n",
-					countStyle.Render(fmt.Sprintf("%d", len(packages)))))
-			}
-			if actionDesc == "update" {
-				if len(packages) == 1 {
-					content.WriteString("The following update is available:\n\n")
-				} else {
-					content.WriteString(fmt.Sprintf("The following %s updates are available:\n\n",
-						countStyle.Render(fmt.Sprintf("%d", len(packages)))))
-				}
-			} else {
-				if len(packages) == 1 {
-					content.WriteString(fmt.Sprintf("The following package will be %sd:\n\n", actionDesc))
-				} else {
-					content.WriteString(fmt.Sprintf("The following %s packages will be %sd:\n\n",
-						countStyle.Render(fmt.Sprintf("%d", len(packages))), actionDesc))
-				}
-			}
+			lines = append(lines, fmt.Sprintf("The following %s updates are available:", countStyle.Render(fmt.Sprintf("%d", len(packages)))))
+		} else if m.confirmType == confirmCleanUninstalled {
+			lines = append(lines, "This will remove cached packages that are no longer installed.")
+		} else {
+			lines = append(lines, fmt.Sprintf("The following %s packages will be %sd:", countStyle.Render(fmt.Sprintf("%d", len(packages))), actionDesc))
 		}
+		lines = append(lines, "")
 
 		maxVisible := 10
 		startIdx := m.confirmScrollOffset
 		endIdx := startIdx + maxVisible
-		if endIdx > len(packages) {
-			endIdx = len(packages)
-		}
+		if endIdx > len(packages) { endIdx = len(packages) }
+		m.maxConfirmScroll = len(packages) - maxVisible
+		if m.maxConfirmScroll < 0 { m.maxConfirmScroll = 0 }
 
-		maxScroll := len(packages) - maxVisible
-		if maxScroll < 0 {
-			maxScroll = 0
-		}
-		m.maxConfirmScroll = maxScroll
-		visibleCount := endIdx - startIdx
-
-		innerWidth := dialogWidth - 6
-		if innerWidth < 10 {
-			innerWidth = 10
-		}
-
-		showScrollbar := len(packages) > maxVisible
-
-		// Build list entries
-		type listEntry struct {
-			text  string
-			isPkg bool
-		}
-		var entries []listEntry
-
-		if showScrollbar {
-
-			topHintText := ""
-			if startIdx > 0 {
-				topHintText = fmt.Sprintf("  ↑ %d more above", startIdx)
+		for i := startIdx; i < endIdx; i++ {
+			pkg := packages[i]
+			var line string
+			if m.confirmType == confirmUpdate {
+				line = fmt.Sprintf("  • %s %s %s", sourceStyle(pkg.Source).Render(fmt.Sprintf("[%s]", pkg.Source)), packageNameStyle.Render(pkg.Name), packageVersionStyle.Render(pkg.Version))
+			} else if pkg.Version == "HEADER" {
+				line = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("229")).Render(pkg.Name)
+			} else if m.confirmType == confirmCleanUninstalled || m.confirmType == confirmCleanSelective {
+				namePart := "  • " + packageNameStyle.Render(pkg.Name)
+				sizePart := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render(pkg.Size)
+				spacing := (dialogWidth - 10) - lipgloss.Width(namePart) - lipgloss.Width(sizePart)
+				if spacing < 1 { spacing = 1 }
+				line = namePart + strings.Repeat(" ", spacing) + sizePart
+			} else {
+				line = fmt.Sprintf("  • %s", packageNameStyle.Render(pkg.Name))
 			}
-			entries = append(entries, listEntry{text: topHintText})
-
-			for i := startIdx; i < endIdx; i++ {
-				pkg := packages[i]
-				var line string
-				if m.confirmType == confirmUpdate {
-					sourceBadge := sourceStyle(pkg.Source).Render(fmt.Sprintf("[%s]", pkg.Source))
-					line = fmt.Sprintf("  • %s %s %s",
-						sourceBadge,
-						packageNameStyle.Render(pkg.Name),
-						packageVersionStyle.Render(pkg.Version))
-				} else if pkg.Version == "HEADER" {
-					line = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("229")).Render(pkg.Name)
-				} else if m.confirmType == confirmCleanUninstalled || m.confirmType == confirmCleanSelective {
-					namePart := "  • " + packageNameStyle.Render(pkg.Name)
-					sizePart := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render(pkg.Size)
-					
-					// Calculate spacing to align size to the right
-					spacing := innerWidth - lipgloss.Width(namePart) - lipgloss.Width(sizePart) - 2
-					if spacing < 1 { spacing = 1 }
-					line = namePart + strings.Repeat(" ", spacing) + sizePart
-				} else {
-					line = fmt.Sprintf("  • %s", packageNameStyle.Render(pkg.Name))
-				}
-				entries = append(entries, listEntry{text: line, isPkg: true})
-			}
-
-			bottomHintText := ""
-			remaining := len(packages) - endIdx
-			if remaining > 0 {
-				bottomHintText = fmt.Sprintf("  ↓ %d more below", remaining)
-			}
-			entries = append(entries, listEntry{text: bottomHintText})
-		} else {
-
-			for i := 0; i < len(packages); i++ {
-				pkg := packages[i]
-				var line string
-				if m.confirmType == confirmUpdate {
-					sourceBadge := sourceStyle(pkg.Source).Render(fmt.Sprintf("[%s]", pkg.Source))
-					line = fmt.Sprintf("  • %s %s %s",
-						sourceBadge,
-						packageNameStyle.Render(pkg.Name),
-						packageVersionStyle.Render(pkg.Version))
-				} else if pkg.Version == "HEADER" {
-					line = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("229")).Render(pkg.Name)
-				} else if m.confirmType == confirmCleanUninstalled || m.confirmType == confirmCleanSelective {
-					namePart := "  • " + packageNameStyle.Render(pkg.Name)
-					sizePart := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render(pkg.Size)
-					
-					// Calculate spacing to align size to the right
-					spacing := innerWidth - lipgloss.Width(namePart) - lipgloss.Width(sizePart) - 2
-					if spacing < 1 { spacing = 1 }
-					line = namePart + strings.Repeat(" ", spacing) + sizePart
-				} else {
-					line = fmt.Sprintf("  • %s", packageNameStyle.Render(pkg.Name))
-				}
-				entries = append(entries, listEntry{text: line, isPkg: true})
-			}
-		}
-
-		// Calculate scrollbar metrics if needed
-		var thumbSize, thumbTop int
-
-		trackHeight := maxVisible
-		if showScrollbar && len(packages) > maxVisible {
-
-			thumbSize = (visibleCount * trackHeight) / len(packages)
-			if thumbSize < 1 {
-				thumbSize = 1
-			}
-			if thumbSize > trackHeight {
-				thumbSize = trackHeight
-			}
-
-			if len(packages) > maxVisible {
-				thumbTop = 1 + startIdx*(trackHeight-thumbSize)/(len(packages)-maxVisible)
-			}
-		}
-
-		scrollbarTrackStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("236"))
-		scrollbarThumbStyle := lipgloss.NewStyle().Foreground(activeColor).Bold(true)
-
-		for i, entry := range entries {
-			innerWidth := innerWidth
-			var sbChar string
-			if showScrollbar {
-				innerWidth = innerWidth - 1
-				if entry.isPkg {
-					if i >= thumbTop && i < thumbTop+thumbSize {
-						sbChar = scrollbarThumbStyle.Render("█")
-					} else {
-						sbChar = scrollbarTrackStyle.Render("│")
-					}
-				} else {
-					sbChar = " "
-				}
-			}
-			line := lipgloss.NewStyle().Width(innerWidth).Render(entry.text)
-			if sbChar != "" {
-				line = line + sbChar
-			}
-			content.WriteString(line + "\n")
+			lines = append(lines, line)
 		}
 
 		if len(packages) > maxVisible {
+			lines = append(lines, "")
+			lines = append(lines, scrollHintStyle.Render("  Use [↑/↓] or [j/k] to scroll"))
+		}
 
-			content.WriteString("\n")
-			hint := scrollHintStyle.Render("  Use [↑/↓] or [j/k] to scroll")
-
-			if lipgloss.Width(hint) > innerWidth {
-				hint = lipgloss.NewStyle().Width(innerWidth).Render(hint)
-			}
-			content.WriteString(hint + "\n")
+		if m.confirmType == confirmCleanUninstalled {
+			lines = append(lines, "")
+			breakdownHeaderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Bold(true)
+			lines = append(lines, breakdownHeaderStyle.Render("Breakdown:"))
+			pacmanEst := m.dashboard.CacheFreedPacman[m.confirmType]
+			paruEst := m.dashboard.CacheFreedParu[m.confirmType]
+			if pacmanEst == "" { pacmanEst = "calculating..." }
+			if paruEst == "" { paruEst = "calculating..." }
+			lines = append(lines, fmt.Sprintf("%s %s", sourceStyle("core").Render("  pacman:"), lipgloss.NewStyle().Foreground(lipgloss.Color("252")).Render(pacmanEst)))
+			lines = append(lines, fmt.Sprintf("%s %s", sourceStyle("aur").Render("  paru:  "), lipgloss.NewStyle().Foreground(lipgloss.Color("252")).Render(paruEst)))
 		}
 
 		if m.confirmType == confirmCleanUninstalled || m.confirmType == confirmCleanSelective {
-			content.WriteString("\n")
-			
-			if m.confirmType == confirmCleanUninstalled {
-				breakdownHeaderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Bold(true)
-				content.WriteString(breakdownHeaderStyle.Render("Breakdown:") + "\n")
-				
-				pacmanEstimate := m.dashboard.CacheFreedPacman[m.confirmType]
-				paruEstimate := m.dashboard.CacheFreedParu[m.confirmType]
-				if pacmanEstimate == "" { pacmanEstimate = "calculating..." }
-				if paruEstimate == "" { paruEstimate = "calculating..." }
-
-				valStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
-				
-				pacmanLabel := sourceStyle("core").Render("  pacman:")
-				paruLabel := sourceStyle("aur").Render("  paru:  ") // Added space for alignment
-
-				content.WriteString(fmt.Sprintf("%s %s\n", pacmanLabel, valStyle.Render(pacmanEstimate)))
-				content.WriteString(fmt.Sprintf("%s %s\n\n", paruLabel, valStyle.Render(paruEstimate)))
-			}
-
-			estimate := ""
-			if m.confirmType == confirmCleanUninstalled {
-				estimate = m.dashboard.CacheFreedEstimates[m.confirmType]
-			} else {
-				// For selective clean, we have m.cacheToFree
-				estimate = formatBytes(m.cacheToFree)
-			}
-
-			if estimate == "" {
-				estimate = "calculating..."
-			}
-			content.WriteString(fmt.Sprintf("Estimated space to be freed: %s\n",
-				lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("214")).Render(estimate)))
+			lines = append(lines, "")
+			est := m.dashboard.CacheFreedEstimates[m.confirmType]
+			if m.confirmType == confirmCleanSelective { est = formatBytes(m.cacheToFree) }
+			if est == "" { est = "calculating..." }
+			lines = append(lines, fmt.Sprintf("Estimated space to be freed: %s", lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("214")).Render(est)))
 		}
 	}
 
-	content.WriteString("\n")
-	var promptLine string
-	promptLine = fmt.Sprintf("Proceed? %ses  %so",
-		keyStyle.Render("[y]"),
-		keyStyle.Render("[n]"))
-	content.WriteString(promptStyle.Render(promptLine))
+	lines = append(lines, "")
+	lines = append(lines, promptStyle.Render(fmt.Sprintf("Proceed? %ses  %so", keyStyle.Render("[y]"), keyStyle.Render("[n]"))))
 
-	dialogContent := content.String()
-	dialog := dialogBorderStyle.Width(dialogWidth).Render(dialogContent)
-
-	// Use lipgloss.Place for reliable centering instead of manual string padding
-	return lipgloss.Place(
-		innerWidth,
-		innerHeight,
-		lipgloss.Center,
-		lipgloss.Center,
-		dialog,
-	)
+	dialog := dialogBorderStyle.Width(dialogWidth).Render(strings.Join(lines, "\n"))
+	return lipgloss.Place(innerWidth, innerHeight, lipgloss.Center, lipgloss.Center, dialog)
 }
 
 // renderErrorOverlay renders a centered error overlay dialog
