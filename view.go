@@ -1109,15 +1109,21 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 			content.WriteString("\n")
 			
 			if m.confirmType == confirmCleanUninstalled {
-				labelStyle := lipgloss.NewStyle().Width(8).Foreground(lipgloss.Color("241"))
-				content.WriteString(packageNameStyle.Render("Breakdown:\n"))
+				breakdownHeaderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Bold(true)
+				content.WriteString(breakdownHeaderStyle.Render("Breakdown:") + "\n")
+				
 				pacmanEstimate := m.dashboard.CacheFreedPacman[m.confirmType]
 				paruEstimate := m.dashboard.CacheFreedParu[m.confirmType]
 				if pacmanEstimate == "" { pacmanEstimate = "calculating..." }
 				if paruEstimate == "" { paruEstimate = "calculating..." }
 
-				content.WriteString(fmt.Sprintf("  %s %s\n", labelStyle.Render("pacman:"), countStyle.Render(pacmanEstimate)))
-				content.WriteString(fmt.Sprintf("  %s %s\n", labelStyle.Render("paru:"), countStyle.Render(paruEstimate)))
+				valStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
+				
+				pacmanLabel := sourceStyle("core").Render("  pacman:")
+				paruLabel := sourceStyle("aur").Render("  paru:  ") // Added space for alignment
+
+				content.WriteString(fmt.Sprintf("%s %s\n", pacmanLabel, valStyle.Render(pacmanEstimate)))
+				content.WriteString(fmt.Sprintf("%s %s\n\n", paruLabel, valStyle.Render(paruEstimate)))
 			}
 
 			estimate := ""
