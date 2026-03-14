@@ -168,7 +168,9 @@ type DashboardData struct {
 	AllCacheHogs         []PackageSize // All packages taking up cache space
 	UninstalledPacmanCache []PackageSize // Uninstalled packages in pacman cache
 	UninstalledParuCache   []PackageSize // Uninstalled packages in paru cache
-	CacheFreedEstimates  map[confirmationType]string // Estimated savings for different clean modes
+	CacheFreedPacman     map[confirmationType]string // Estimated savings for pacman
+	CacheFreedParu       map[confirmationType]string // Estimated savings for paru
+	CacheFreedEstimates  map[confirmationType]string // Total estimated savings
 	// Disk usage info
 	DiskTotal      string
 	DiskUsed       string

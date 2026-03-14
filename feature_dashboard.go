@@ -242,6 +242,7 @@ func getDashboardData() tea.Cmd {
 
 			paruHogs := make(map[string]int64)
 			var paruOrphanSaved, paruKeep1Saved, paruKeep3Saved int64
+			var paruOrphanCount, paruKeep1Count, paruKeep3Count int
 			var paruPackagesSize int64
 
 			for name, files := range paruFiles {
@@ -261,14 +262,21 @@ func getDashboardData() tea.Cmd {
 				// Orphans
 				if !installed[name] {
 					paruOrphanSaved += totalSize
+					paruOrphanCount += len(files)
 				}
 
 				// Keep N logic
 				if len(files) > 1 {
-					for i := 1; i < len(files); i++ { paruKeep1Saved += files[i].size }
+					for i := 1; i < len(files); i++ { 
+						paruKeep1Saved += files[i].size 
+						paruKeep1Count++
+					}
 				}
 				if len(files) > 3 {
-					for i := 3; i < len(files); i++ { paruKeep3Saved += files[i].size }
+					for i := 3; i < len(files); i++ { 
+						paruKeep3Saved += files[i].size 
+						paruKeep3Count++
+					}
 				}
 			}
 
@@ -329,25 +337,51 @@ func getDashboardData() tea.Cmd {
 			totalCache := pacmanSize + paruBaseSize
 
 			// Estimates for paccache (summing system and manual paru calculation)
-			estimates := make(map[confirmationType]string)
-			fetchCombinedEstimate := func(ct confirmationType, paruSaved int64, args ...string) {
+			estimatesPacman := make(map[confirmationType]string)
+			estimatesParu := make(map[confirmationType]string)
+			estimatesTotal := make(map[confirmationType]string)
+
+			fetchDetailedEstimate := func(ct confirmationType, paruCount int, paruSaved int64, args ...string) {
 				out, _ := runner.Run("paccache", append([]string{"-d", "-c", pacmanCachePath}, args...)...)
-				pacmanSaved := parseSizeToBytes(parsePaccacheDryRun(string(out)))
-				estimates[ct] = formatBytes(pacmanSaved + paruSaved)
+				pacmanCount, pacmanSavedStr := parsePaccacheDryRunDetailed(string(out))
+				pacmanSavedBytes := parseSizeToBytes(pacmanSavedStr)
+				
+				if pacmanCount > 0 {
+					estimatesPacman[ct] = fmt.Sprintf("%d pkgs (%s)", pacmanCount, pacmanSavedStr)
+				} else {
+					estimatesPacman[ct] = "0 B"
+				}
+
+				if paruCount > 0 {
+					estimatesParu[ct] = fmt.Sprintf("%d pkgs (%s)", paruCount, formatBytes(paruSaved))
+				} else {
+					estimatesParu[ct] = "0 B"
+				}
+
+				totalBytes := pacmanSavedBytes + paruSaved
+				if totalBytes > 0 {
+					estimatesTotal[ct] = formatBytes(totalBytes)
+				} else {
+					estimatesTotal[ct] = "0 B"
+				}
 			}
 
-			fetchCombinedEstimate(confirmCleanKeep3, paruKeep3Saved, "-k3")
-			fetchCombinedEstimate(confirmCleanKeep1, paruKeep1Saved, "-k1")
-			fetchCombinedEstimate(confirmCleanUninstalled, paruOrphanSaved, "-uk0")
-			estimates[confirmCleanNuke] = formatBytes(pacmanSize + paruBaseSize)
-
+			fetchDetailedEstimate(confirmCleanKeep3, paruKeep3Count, paruKeep3Saved, "-k3")
+			fetchDetailedEstimate(confirmCleanKeep1, paruKeep1Count, paruKeep1Saved, "-k1")
+			fetchDetailedEstimate(confirmCleanUninstalled, paruOrphanCount, paruOrphanSaved, "-uk0")
+			
+			estimatesPacman[confirmCleanNuke] = formatBytes(pacmanSize)
+			estimatesParu[confirmCleanNuke] = formatBytes(paruBaseSize)
+			estimatesTotal[confirmCleanNuke] = formatBytes(pacmanSize + paruBaseSize)
 
 			dataMu.Lock()
 			data.TopCacheHogs = topHogs
 			data.AllCacheHogs = toPkgSize(allSorted)
 			data.UninstalledPacmanCache = toPkgSize(sortEntries(uninstalledPacman))
 			data.UninstalledParuCache = toPkgSize(sortEntries(uninstalledParu))
-			data.CacheFreedEstimates = estimates
+			data.CacheFreedPacman = estimatesPacman
+			data.CacheFreedParu = estimatesParu
+			data.CacheFreedEstimates = estimatesTotal
 			data.PacmanCachePath = pacmanCachePath
 			data.PacmanCacheSizeBytes = pacmanSize
 			data.PacmanCacheSize = formatBytes(pacmanSize)
@@ -448,6 +482,27 @@ func parseParuStats(output string) (totalSize string, totalSizeBytes int64, miss
 		}
 	}
 	return
+}
+
+// parsePaccacheDryRunDetailed extracts both package count and disk space saved from paccache -d output
+func parsePaccacheDryRunDetailed(output string) (int, string) {
+	if strings.Contains(output, "no candidate packages found") {
+		return 0, "0 B"
+	}
+	// Format: ==> finished dry run: 78 candidates (disk space saved: 782.43 MiB)
+	var count int
+	if idx := strings.Index(output, "finished dry run: "); idx != -1 {
+		fmt.Sscanf(output[idx+len("finished dry run: "):], "%d", &count)
+	}
+
+	parts := strings.Split(output, "disk space saved: ")
+	if len(parts) > 1 {
+		resParts := strings.Fields(parts[1])
+		if len(resParts) >= 2 {
+			return count, resParts[0] + " " + strings.TrimSuffix(resParts[1], ")")
+		}
+	}
+	return count, "0 B"
 }
 
 // parsePaccacheDryRun extracts the "disk space saved" string from paccache -d output
