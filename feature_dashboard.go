@@ -375,8 +375,11 @@ func parsePaccacheDryRun(output string) string {
 	// Format: ==> finished dry run: 78 candidates (disk space saved: 782.43 MiB)
 	parts := strings.Split(output, "disk space saved: ")
 	if len(parts) > 1 {
-		res := strings.TrimSuffix(parts[1], ")")
-		return strings.TrimSpace(res)
+		// Split by space or ")" to get the size part
+		resParts := strings.Fields(parts[1])
+		if len(resParts) >= 2 {
+			return resParts[0] + " " + strings.TrimSuffix(resParts[1], ")")
+		}
 	}
 	return "0 B"
 }

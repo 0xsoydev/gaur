@@ -882,8 +882,12 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 			content.WriteString(fmt.Sprintf("  %s %s\n", labelStyle.Render("Path:"), scrollHintStyle.Render(m.dashboard.ParuCachePath)))
 			content.WriteString(fmt.Sprintf("  %s %s\n\n", labelStyle.Render("Size:"), countStyle.Render(m.dashboard.ParuCacheSize)))
 
-			content.WriteString(fmt.Sprintf("Total cache size: %s\n",
-				lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("214")).Render(m.dashboard.CleanerSize)))
+			estimate := m.dashboard.CacheFreedEstimates[m.confirmType]
+			if estimate == "" {
+				estimate = "calculating..."
+			}
+			content.WriteString(fmt.Sprintf("Estimated space to be freed: %s\n",
+				lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("214")).Render(estimate)))
 		}
 	} else {
 
