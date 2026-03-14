@@ -106,7 +106,7 @@ func TestGlobalLayoutIntegrity(t *testing.T) {
 			mode:   modeInstalled,
 			setup: func(m *model) {
 				m.showConfirmation = true
-				m.confirmType = confirmCleanCache
+				m.confirmType = confirmCleanKeep3
 			},
 		},
 		{

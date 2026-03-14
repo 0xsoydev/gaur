@@ -73,6 +73,10 @@ func (m *model) View() string {
 		content = m.renderConfirmationDialog(innerWidth, innerHeight, activeColor)
 	} else if m.showErrorOverlay {
 		content = m.renderErrorOverlay(innerWidth, innerHeight)
+	} else if m.mode == modeCacheMenu {
+		content = m.renderCacheMenu(helpText, innerWidth, innerHeight)
+	} else if m.mode == modeCacheSelective {
+		content = m.renderSelectiveCacheView(helpText, innerWidth, innerHeight, activeColor)
 	} else if m.mode == modeInstalled {
 		content = m.renderDashboard(helpText, innerWidth, innerHeight)
 	} else if m.mode == modeUpdate {
@@ -793,10 +797,16 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 		for _, name := range m.confirmPackages {
 			packages = append(packages, Package{Name: name})
 		}
-	case confirmCleanCache:
+	case confirmCleanKeep3, confirmCleanKeep1, confirmCleanUninstalled, confirmCleanNuke:
 		title = "🧹 Confirm Cache Cleaning"
 		actionDesc = "clean"
 		simpleConfirm = true
+	case confirmCleanSelective:
+		title = "🧹 Confirm Selective Clean"
+		actionDesc = "clean selected packages from cache"
+		for _, name := range m.confirmPackages {
+			packages = append(packages, Package{Name: name})
+		}
 	case confirmRemoveOrphans:
 		title = "🗑️  Confirm Orphan Removal"
 		actionDesc = "remove"
@@ -850,9 +860,17 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 	content.WriteString("\n\n")
 
 	if simpleConfirm {
-		if m.confirmType == confirmCleanCache {
+		if m.confirmType == confirmCleanKeep3 {
+			content.WriteString("This will remove all but the 3 most recent cached versions of packages.\n\n")
+		} else if m.confirmType == confirmCleanKeep1 {
+			content.WriteString("This will aggressively remove all but the currently installed cached versions.\n\n")
+		} else if m.confirmType == confirmCleanUninstalled {
 			content.WriteString("This will remove cached packages that are no longer installed.\n\n")
+		} else if m.confirmType == confirmCleanNuke {
+			content.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Bold(true).Render("WARNING: This will completely empty the package cache.\n\n"))
+		}
 
+		if m.confirmType == confirmCleanKeep3 || m.confirmType == confirmCleanKeep1 || m.confirmType == confirmCleanUninstalled || m.confirmType == confirmCleanNuke {
 			content.WriteString(packageNameStyle.Render("Pacman Cache (system):\n"))
 			content.WriteString(fmt.Sprintf("  Path: %s\n", scrollHintStyle.Render(m.dashboard.PacmanCachePath)))
 			content.WriteString(fmt.Sprintf("  Size: %s\n\n", countStyle.Render(m.dashboard.PacmanCacheSize)))

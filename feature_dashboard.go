@@ -228,12 +228,18 @@ func getDashboardData() tea.Cmd {
 			sort.Slice(sortedHogs, func(i, j int) bool {
 				return sortedHogs[i].size > sortedHogs[j].size
 			})
-			var topHogs []PackageSize
-			for i := 0; i < 5 && i < len(sortedHogs); i++ {
-				topHogs = append(topHogs, PackageSize{
-					Name: sortedHogs[i].name,
-					Size: formatBytes(sortedHogs[i].size),
+			var allHogs []PackageSize
+			for i := 0; i < len(sortedHogs); i++ {
+				allHogs = append(allHogs, PackageSize{
+					Name:      sortedHogs[i].name,
+					Size:      formatBytes(sortedHogs[i].size),
+					SizeBytes: sortedHogs[i].size,
 				})
+			}
+			
+			var topHogs []PackageSize
+			for i := 0; i < 5 && i < len(allHogs); i++ {
+				topHogs = append(topHogs, allHogs[i])
 			}
 
 			paruSize := calculateDirSize(paruBase)
@@ -241,6 +247,7 @@ func getDashboardData() tea.Cmd {
 
 			dataMu.Lock()
 			data.TopCacheHogs = topHogs
+			data.AllCacheHogs = allHogs
 			data.PacmanCachePath = pacmanCachePath
 			data.PacmanCacheSizeBytes = pacmanSize
 			data.PacmanCacheSize = formatBytes(pacmanSize)

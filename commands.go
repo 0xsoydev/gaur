@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -52,6 +54,7 @@ func checkDependencies() error {
 		{"pacman", "system package manager", true},
 		{"paru", "AUR helper", true},
 		{"fzf", "fuzzy finder", true},
+		{"paccache", "cache management tool (pacman-contrib)", true},
 	}
 
 	var missing []string
@@ -108,11 +111,76 @@ func executeUpdateInTerminal() tea.Cmd {
 	}, "paru", "-Syu")
 }
 
-// executeCleanCacheInTerminal runs paru -Sc interactively using tea.ExecProcess
-func executeCleanCacheInTerminal() tea.Cmd {
+// executePaccacheInTerminal runs paccache with given args
+func executePaccacheInTerminal(op confirmationType, args ...string) tea.Cmd {
 	return runner.Interactive(func(err error) tea.Msg {
-		return execCompleteMsg{operation: confirmCleanCache, err: err}
-	}, "paru", "-Sc")
+		return execCompleteMsg{operation: op, err: err}
+	}, "paccache", args...)
+}
+
+// executeSelectiveClean specifically deletes selected cache files
+func executeSelectiveClean(packages []string, pacmanCachePath string, paruCachePath string) tea.Cmd {
+	return func() tea.Msg {
+		if len(packages) == 0 {
+			return execCompleteMsg{operation: confirmCleanSelective, err: fmt.Errorf("no packages selected")}
+		}
+
+		// Create a quick lookup map for the base names we want to delete
+		toDelete := make(map[string]bool)
+		for _, p := range packages {
+			toDelete[p] = true
+		}
+
+		deleteMatches := func(dirPath string) error {
+			entries, err := os.ReadDir(dirPath)
+			if err != nil {
+				return err
+			}
+			for _, entry := range entries {
+				if entry.IsDir() {
+					continue
+				}
+				name := entry.Name()
+				if !strings.HasSuffix(name, ".pkg.tar.zst") && !strings.HasSuffix(name, ".pkg.tar.xz") {
+					continue
+				}
+				parts := strings.Split(name, "-")
+				if len(parts) > 3 {
+					baseName := strings.Join(parts[:len(parts)-3], "-")
+					if toDelete[baseName] {
+						// Found a match, delete it
+						filePath := filepath.Join(dirPath, name)
+						_ = os.Remove(filePath)
+					}
+				}
+			}
+			return nil
+		}
+
+		// Delete from pacman cache
+		_ = deleteMatches(pacmanCachePath)
+
+		// Delete from paru clone cache (nested)
+		_ = filepath.WalkDir(paruCachePath, func(path string, d os.DirEntry, err error) error {
+			if err != nil || d.IsDir() {
+				return nil
+			}
+			name := d.Name()
+			if !strings.HasSuffix(name, ".pkg.tar.zst") && !strings.HasSuffix(name, ".pkg.tar.xz") {
+				return nil
+			}
+			parts := strings.Split(name, "-")
+			if len(parts) > 3 {
+				baseName := strings.Join(parts[:len(parts)-3], "-")
+				if toDelete[baseName] {
+					_ = os.Remove(path)
+				}
+			}
+			return nil
+		})
+
+		return execCompleteMsg{operation: confirmCleanSelective, err: nil}
+	}
 }
 
 // executeRemoveOrphansInTerminal runs paru -Rns $(paru -Qdtq) interactively using tea.ExecProcess

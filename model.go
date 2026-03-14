@@ -58,6 +58,9 @@ type model struct {
 	errorDetails     string
 	// Sync logic
 	checkAfterUpdate bool // Whether we should perform a sync+check if updates are zero
+	// Cache cleaning state
+	cacheMenuIndex int
+	cacheToFree    int64
 }
 
 func initialModel(initialMode viewMode) *model {

@@ -44,6 +44,8 @@ const (
 	modeUninstall
 	modeUpdate          // Viewing available updates
 	modeUpdateSelective // Selecting specific updates
+	modeCacheMenu       // Menu for selecting cache clearing strategy
+	modeCacheSelective  // Selecting specific packages to clear from cache
 )
 
 // Confirmation operation types
@@ -54,7 +56,11 @@ const (
 	confirmUninstall
 	confirmUpdate
 	confirmSelectiveUpdate
-	confirmCleanCache
+	confirmCleanKeep3       // paccache -r
+	confirmCleanKeep1       // paccache -rk1
+	confirmCleanUninstalled // paccache -ruk0
+	confirmCleanNuke        // paccache -rk0
+	confirmCleanSelective   // Custom selective clean
 	confirmRemoveOrphans
 )
 
@@ -75,6 +81,8 @@ type Package struct {
 	Installed   bool
 	Explicit    bool // Explicitly installed (not a dependency)
 	Orphan      bool // Orphan package (no longer required)
+	Size        string // For formatted sizes, like in cache hogs
+	SizeBytes   int64  // Raw size
 }
 
 func (p Package) String() string {
@@ -157,6 +165,7 @@ type DashboardData struct {
 	TopPackages          []PackageSize // Top 10 packages by size
 	RecentlyInstalled    []RecentPackage // Details of 5 recently installed packages
 	TopCacheHogs         []PackageSize // Top 5 packages taking up cache space
+	AllCacheHogs         []PackageSize // All packages taking up cache space
 	// Disk usage info
 	DiskTotal      string
 	DiskUsed       string
@@ -166,8 +175,9 @@ type DashboardData struct {
 
 // PackageSize holds package name and its installed size
 type PackageSize struct {
-	Name string
-	Size string
+	Name      string
+	Size      string
+	SizeBytes int64
 }
 
 // RecentPackage holds details about a recently installed package

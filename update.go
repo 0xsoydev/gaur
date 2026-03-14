@@ -159,9 +159,21 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				case confirmSelectiveUpdate:
 					m.statusMessage = fmt.Sprintf("Updating %d package(s)...", len(m.confirmPackages))
 					return m, executeSelectiveUpdateInTerminal(m.confirmPackages)
-				case confirmCleanCache:
-					m.statusMessage = "Cleaning package cache..."
-					return m, executeCleanCacheInTerminal()
+				case confirmCleanKeep3:
+					m.statusMessage = "Cleaning package cache (Keep 3)..."
+					return m, executePaccacheInTerminal(confirmCleanKeep3, "-r")
+				case confirmCleanKeep1:
+					m.statusMessage = "Cleaning package cache (Keep 1)..."
+					return m, executePaccacheInTerminal(confirmCleanKeep1, "-rk1")
+				case confirmCleanUninstalled:
+					m.statusMessage = "Cleaning package cache (Uninstalled)..."
+					return m, executePaccacheInTerminal(confirmCleanUninstalled, "-ruk0")
+				case confirmCleanNuke:
+					m.statusMessage = "Cleaning package cache (Nuke Everything)..."
+					return m, executePaccacheInTerminal(confirmCleanNuke, "-rk0")
+				case confirmCleanSelective:
+					m.statusMessage = "Running selective cache clean..."
+					return m, executeSelectiveClean(m.confirmPackages, m.dashboard.PacmanCachePath, m.dashboard.ParuCachePath)
 				case confirmRemoveOrphans:
 					m.statusMessage = fmt.Sprintf("Removing %d orphan package(s)...", len(m.confirmPackages))
 					orphans := m.confirmPackages
@@ -722,6 +734,20 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 
+			if m.mode == modeCacheMenu {
+				m.mode = modeInstalled
+				m.statusMessage = "Cache menu cancelled"
+				return m, nil
+			}
+
+			if m.mode == modeCacheSelective {
+				m.mode = modeCacheMenu
+				m.markedPackages = make(map[string]bool)
+				m.cacheToFree = 0
+				m.statusMessage = "Selective cache cleaning cancelled"
+				return m, nil
+			}
+
 			if len(m.markedPackages) > 0 {
 				m.markedPackages = make(map[string]bool)
 				m.statusMessage = "Selections cleared"
@@ -731,10 +757,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "c":
 
 			if m.mode == modeInstalled && !m.loading {
-				m.showConfirmation = true
-				m.confirmType = confirmCleanCache
-				m.confirmScrollOffset = 0
-				m.statusMessage = "Confirm cache cleaning"
+				m.mode = modeCacheMenu
+				m.cacheMenuIndex = 0
+				m.statusMessage = "Select cache cleaning strategy"
 				return m, nil
 			}
 
@@ -897,6 +922,12 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case "down", "j":
+			if m.mode == modeCacheMenu {
+				if m.cacheMenuIndex < 4 {
+					m.cacheMenuIndex++
+				}
+				return m, nil
+			}
 			if m.mode == modeUpdate {
 				if m.updateScrollOffset < len(m.pendingUpdates)-1 {
 					m.updateScrollOffset++
@@ -918,10 +949,30 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.loadingInfo = true
 					m.pendingInfoPackage = m.filtered[m.selectedIndex].Name
 					return m, debouncePackageInfo(m.pendingInfoPackage)
+				} else if m.mode == modeUpdateSelective && len(m.filtered) > 0 {
+				pkg := m.filtered[m.selectedIndex]
+				if m.markedPackages[pkg.Name] {
+					delete(m.markedPackages, pkg.Name)
+				} else {
+					m.markedPackages[pkg.Name] = true
+				}
+				markedCount := len(m.markedPackages)
+				if markedCount > 0 {
+					m.statusMessage = fmt.Sprintf("%d packages marked", markedCount)
+				} else {
+					m.statusMessage = fmt.Sprintf("%d updates available", len(m.updatableAll))
+				}
+			} else if m.mode == modeCacheSelective && len(m.filtered) > 0 {
+					// No info to load for cache hogs
+					return m, nil
 				}
 			}
 
 		case "pgdown":
+			if m.mode == modeCacheMenu {
+				m.cacheMenuIndex = 4
+				return m, nil
+			}
 			if m.mode == modeUpdate {
 				if len(m.pendingUpdates) > 0 {
 					m.updateScrollOffset += 10
@@ -943,7 +994,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				} else if len(m.filtered) > 0 {
 					name = m.filtered[m.selectedIndex].Name
 				}
-				if name != "" {
+				if name != "" && m.mode != modeCacheSelective {
 					m.loadingInfo = true
 					m.pendingInfoPackage = name
 					return m, debouncePackageInfo(m.pendingInfoPackage)
@@ -951,6 +1002,12 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case "up", "k":
+			if m.mode == modeCacheMenu {
+				if m.cacheMenuIndex > 0 {
+					m.cacheMenuIndex--
+				}
+				return m, nil
+			}
 			if m.mode == modeUpdate {
 				if m.updateScrollOffset > 0 {
 					m.updateScrollOffset--
@@ -958,7 +1015,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			maxIndex := 0
-			if m.mode == modeInstall || m.mode == modeUpdateSelective {
+			if m.mode == modeInstall || m.mode == modeUpdateSelective || m.mode == modeCacheSelective {
 				maxIndex = len(m.filtered) - 1
 			} else if m.mode == modeUninstall {
 				maxIndex = len(m.filteredInstalled) - 1
@@ -978,10 +1035,29 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.loadingInfo = true
 					m.pendingInfoPackage = m.filtered[m.selectedIndex].Name
 					return m, debouncePackageInfo(m.pendingInfoPackage)
+				} else if m.mode == modeUpdateSelective && len(m.filtered) > 0 {
+				pkg := m.filtered[m.selectedIndex]
+				if m.markedPackages[pkg.Name] {
+					delete(m.markedPackages, pkg.Name)
+				} else {
+					m.markedPackages[pkg.Name] = true
+				}
+				markedCount := len(m.markedPackages)
+				if markedCount > 0 {
+					m.statusMessage = fmt.Sprintf("%d packages marked", markedCount)
+				} else {
+					m.statusMessage = fmt.Sprintf("%d updates available", len(m.updatableAll))
+				}
+			} else if m.mode == modeCacheSelective && len(m.filtered) > 0 {
+					return m, nil
 				}
 			}
 
 		case "pgup":
+			if m.mode == modeCacheMenu {
+				m.cacheMenuIndex = 0
+				return m, nil
+			}
 			if m.mode == modeUpdate {
 				m.updateScrollOffset -= 10
 				if m.updateScrollOffset < 0 {
@@ -990,7 +1066,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			maxIndex := 0
-			if m.mode == modeInstall || m.mode == modeUpdateSelective {
+			if m.mode == modeInstall || m.mode == modeUpdateSelective || m.mode == modeCacheSelective {
 				maxIndex = len(m.filtered) - 1
 			} else if m.mode == modeUninstall {
 				maxIndex = len(m.filteredInstalled) - 1
@@ -1007,7 +1083,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				} else if len(m.filtered) > 0 {
 					name = m.filtered[m.selectedIndex].Name
 				}
-				if name != "" {
+				if name != "" && m.mode != modeCacheSelective {
 					m.loadingInfo = true
 					m.pendingInfoPackage = name
 					return m, debouncePackageInfo(m.pendingInfoPackage)
@@ -1107,6 +1183,54 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				m.confirmPackages = packageNames
 				m.statusMessage = fmt.Sprintf("Confirm update for %d packages", len(m.pendingUpdates))
+			} else if m.mode == modeCacheMenu {
+				switch m.cacheMenuIndex {
+				case 0:
+					m.showConfirmation = true
+					m.confirmType = confirmCleanKeep3
+					m.confirmScrollOffset = 0
+					m.statusMessage = "Confirm Safe Clean (Keep 3)"
+				case 1:
+					m.showConfirmation = true
+					m.confirmType = confirmCleanKeep1
+					m.confirmScrollOffset = 0
+					m.statusMessage = "Confirm Aggressive Clean (Keep 1)"
+				case 2:
+					m.showConfirmation = true
+					m.confirmType = confirmCleanUninstalled
+					m.confirmScrollOffset = 0
+					m.statusMessage = "Confirm Orphaned Cache Clean"
+				case 3:
+					m.showConfirmation = true
+					m.confirmType = confirmCleanNuke
+					m.confirmScrollOffset = 0
+					m.statusMessage = "Confirm Nuke Everything"
+				case 4:
+					m.mode = modeCacheSelective
+					m.filtered = make([]Package, len(m.dashboard.AllCacheHogs))
+					for i, h := range m.dashboard.AllCacheHogs {
+						m.filtered[i] = Package{
+							Name:      h.Name,
+							Size:      h.Size,
+							SizeBytes: h.SizeBytes,
+						}
+					}
+					m.selectedIndex = 0
+					m.markedPackages = make(map[string]bool)
+					m.cacheToFree = 0
+					m.statusMessage = fmt.Sprintf("Select packages to remove... (Total Cache: %s)", m.dashboard.CleanerSize)
+				}
+			} else if m.mode == modeCacheSelective && len(m.markedPackages) > 0 {
+				var pkgsToClean []string
+				for name := range m.markedPackages {
+					pkgsToClean = append(pkgsToClean, name)
+				}
+				sort.Strings(pkgsToClean)
+				m.showConfirmation = true
+				m.confirmType = confirmCleanSelective
+				m.confirmPackages = pkgsToClean
+				m.confirmScrollOffset = 0
+				m.statusMessage = fmt.Sprintf("Confirm removing %d packages from cache", len(pkgsToClean))
 			}
 
 		case "tab", "m":
@@ -1149,6 +1273,21 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.statusMessage = fmt.Sprintf("%d packages marked", markedCount)
 				} else {
 					m.statusMessage = fmt.Sprintf("%d updates available", len(m.updatableAll))
+				}
+			} else if m.mode == modeCacheSelective && len(m.filtered) > 0 {
+				pkg := m.filtered[m.selectedIndex]
+				if m.markedPackages[pkg.Name] {
+					delete(m.markedPackages, pkg.Name)
+					m.cacheToFree -= pkg.SizeBytes
+				} else {
+					m.markedPackages[pkg.Name] = true
+					m.cacheToFree += pkg.SizeBytes
+				}
+				markedCount := len(m.markedPackages)
+				if markedCount > 0 {
+					m.statusMessage = fmt.Sprintf("Space to be freed: %s / %s total cache", formatBytes(m.cacheToFree), m.dashboard.CleanerSize)
+				} else {
+					m.statusMessage = fmt.Sprintf("Select packages to remove... (Total Cache: %s)", m.dashboard.CleanerSize)
 				}
 			}
 
@@ -1586,7 +1725,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				opName = "System Update"
 			case confirmSelectiveUpdate:
 				opName = "Selective Update"
-			case confirmCleanCache:
+			case confirmCleanKeep3, confirmCleanKeep1, confirmCleanUninstalled, confirmCleanNuke, confirmCleanSelective:
 				opName = "Cache Cleaning"
 			case confirmRemoveOrphans:
 				opName = "Orphan Removal"
@@ -1614,7 +1753,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, checkUpdates()
 			case confirmSelectiveUpdate:
 				return m, checkUpdates()
-			case confirmCleanCache, confirmRemoveOrphans:
+			case confirmCleanKeep3, confirmCleanKeep1, confirmCleanUninstalled, confirmCleanNuke, confirmCleanSelective, confirmRemoveOrphans:
 				return m, getDashboardData()
 			}
 			return m, nil
@@ -1678,7 +1817,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.filtered = m.updatableAll // Refresh filtered list too
 
 			return m, checkUpdates()
-		case confirmCleanCache:
+		case confirmCleanKeep3, confirmCleanKeep1, confirmCleanUninstalled, confirmCleanNuke, confirmCleanSelective:
 			m.lastCompletedOp = "Cache cleaned successfully"
 			m.statusMessage = m.lastCompletedOp
 			return m, getDashboardData()
