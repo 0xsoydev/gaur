@@ -410,9 +410,27 @@ func (m *model) handleSelectionPanelKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 func (m *model) performFiltering() {
 	query := m.textInput.Value()
+	if query == m.lastQuery {
+		return
+	}
+	m.lastQuery = query
+	m.selectedIndex = 0
+
 	if m.mode == modeInstall { m.filterAllPackages(query) }
-	if m.mode == modeUninstall { m.filteredInstalled = fuzzyFilter(m.installed, query) }
-	if m.mode == modeUpdateSelective { m.filtered = fuzzyFilter(m.updatableAll, query) }
+	if m.mode == modeUninstall {
+		if query == "" {
+			m.filteredInstalled = m.installed
+		} else {
+			m.filteredInstalled = fuzzyFilter(m.installed, query)
+		}
+	}
+	if m.mode == modeUpdateSelective {
+		if query == "" {
+			m.filtered = m.updatableAll
+		} else {
+			m.filtered = fuzzyFilter(m.updatableAll, query)
+		}
+	}
 	if m.mode == modeCacheSelective {
 		// Convert AllCacheHogs to Package slice for fuzzyFilter
 		var allPkgs []Package
