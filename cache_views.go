@@ -8,8 +8,8 @@ import (
 )
 
 func (m *model) renderCacheMenu(helpText string, innerWidth, innerHeight int) string {
-	menuWidth := 60
-	menuHeight := 24
+	menuWidth := 80
+	menuHeight := 22
 
 	if menuWidth > innerWidth-4 {
 		menuWidth = innerWidth - 4
