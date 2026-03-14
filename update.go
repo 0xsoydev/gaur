@@ -342,6 +342,338 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
+		// Key mappings for navigation (shared between focused and unfocused states)
+		handleNavigation := func(m *model, key string) (tea.Model, tea.Cmd) {
+			if m.mode == modeCacheMenu {
+				switch key {
+				case "up", "k":
+					if m.cacheMenuIndex > 0 {
+						m.cacheMenuIndex--
+					}
+				case "down", "j":
+					if m.cacheMenuIndex < 4 {
+						m.cacheMenuIndex++
+					}
+				case "pgup":
+					m.cacheMenuIndex = 0
+				case "pgdown":
+					m.cacheMenuIndex = 4
+				}
+				return m, nil
+			}
+
+			if m.mode == modeUpdate {
+				switch key {
+				case "up", "k":
+					if m.updateScrollOffset > 0 {
+						m.updateScrollOffset--
+					}
+				case "down", "j":
+					if m.updateScrollOffset < len(m.pendingUpdates)-1 {
+						m.updateScrollOffset++
+					}
+				case "pgup":
+					m.updateScrollOffset -= 10
+					if m.updateScrollOffset < 0 {
+						m.updateScrollOffset = 0
+					}
+				case "pgdown":
+					m.updateScrollOffset += 10
+					if m.updateScrollOffset >= len(m.pendingUpdates) {
+						m.updateScrollOffset = len(m.pendingUpdates) - 1
+					}
+				}
+				return m, nil
+			}
+
+			// List Navigation for selection-based modes
+			maxIndex := 0
+			if m.mode == modeInstall || m.mode == modeUpdateSelective || m.mode == modeCacheSelective {
+				maxIndex = len(m.filtered) - 1
+			} else if m.mode == modeUninstall {
+				maxIndex = len(m.filteredInstalled) - 1
+			}
+
+			oldIndex := m.selectedIndex
+			switch key {
+			case "up", "k":
+				if m.selectedIndex < maxIndex {
+					m.selectedIndex++
+				}
+			case "down", "j":
+				if m.selectedIndex > 0 {
+					m.selectedIndex--
+				}
+			case "pgup":
+				m.selectedIndex += 10
+				if m.selectedIndex > maxIndex {
+					m.selectedIndex = maxIndex
+				}
+			case "pgdown":
+				m.selectedIndex -= 10
+				if m.selectedIndex < 0 {
+					m.selectedIndex = 0
+				}
+			}
+
+			if m.selectedIndex != oldIndex {
+				m.infoScrollOffset = 0
+				name := ""
+				if m.mode == modeUninstall {
+					name = m.filteredInstalled[m.selectedIndex].Name
+				} else if len(m.filtered) > 0 {
+					name = m.filtered[m.selectedIndex].Name
+				}
+
+				if name != "" && m.mode != modeCacheSelective {
+					m.loadingInfo = true
+					m.pendingInfoPackage = name
+					return m, debouncePackageInfo(m.pendingInfoPackage)
+				}
+			}
+			return m, nil
+		}
+
+		if m.showConfirmation {
+			switch msg.String() {
+			case "y", "Y", "enter":
+				m.showConfirmation = false
+				m.confirmScrollOffset = 0
+				switch m.confirmType {
+				case confirmInstall:
+					m.statusMessage = fmt.Sprintf("Installing %d package(s)...", len(m.confirmPackages))
+					return m, executeInstallInTerminal(m.confirmPackages)
+				case confirmUninstall:
+					m.statusMessage = fmt.Sprintf("Removing %d package(s)...", len(m.confirmPackages))
+					return m, executeUninstallInTerminal(m.confirmPackages)
+				case confirmUpdate:
+					m.statusMessage = "Running system update..."
+					return m, executeUpdateInTerminal()
+				case confirmSelectiveUpdate:
+					m.statusMessage = fmt.Sprintf("Updating %d package(s)...", len(m.confirmPackages))
+					return m, executeSelectiveUpdateInTerminal(m.confirmPackages)
+				case confirmCleanKeep3:
+					m.statusMessage = "Cleaning package cache (Keep 3)..."
+					return m, executePaccacheInTerminal(confirmCleanKeep3, "-r")
+				case confirmCleanKeep1:
+					m.statusMessage = "Cleaning package cache (Keep 1)..."
+					return m, executePaccacheInTerminal(confirmCleanKeep1, "-rk1")
+				case confirmCleanUninstalled:
+					m.statusMessage = "Cleaning package cache (Uninstalled)..."
+					return m, executePaccacheInTerminal(confirmCleanUninstalled, "-ruk0")
+				case confirmCleanNuke:
+					m.statusMessage = "Cleaning package cache (Nuke Everything)..."
+					return m, executePaccacheInTerminal(confirmCleanNuke, "-rk0")
+				case confirmCleanSelective:
+					m.statusMessage = "Running selective cache clean..."
+					return m, executeSelectiveClean(m.confirmPackages, m.dashboard.PacmanCachePath, m.dashboard.ParuCachePath)
+				case confirmRemoveOrphans:
+					m.statusMessage = fmt.Sprintf("Removing %d orphan package(s)...", len(m.confirmPackages))
+					orphans := m.confirmPackages
+					m.confirmPackages = nil
+					return m, executeRemoveOrphansInTerminal(orphans)
+				}
+			case "s":
+				return m, nil
+			case "down", "j":
+				maxVisible := 10
+				var total int
+				if m.confirmType == confirmUpdate {
+					total = len(m.pendingUpdates)
+				} else {
+					total = len(m.confirmPackages)
+				}
+				maxScroll := total - maxVisible
+				if maxScroll < 0 {
+					maxScroll = 0
+				}
+				if m.confirmScrollOffset < maxScroll {
+					m.confirmScrollOffset++
+				}
+				return m, nil
+			case "up", "k":
+				if m.confirmScrollOffset > 0 {
+					m.confirmScrollOffset--
+				}
+				return m, nil
+			case "pgdown":
+				maxVisible := 10
+				var total int
+				if m.confirmType == confirmUpdate {
+					total = len(m.pendingUpdates)
+				} else {
+					total = len(m.confirmPackages)
+				}
+				maxScroll := total - maxVisible
+				if maxScroll < 0 {
+					maxScroll = 0
+				}
+				m.confirmScrollOffset += 10
+				if m.confirmScrollOffset > maxScroll {
+					m.confirmScrollOffset = maxScroll
+				}
+				return m, nil
+			case "pgup":
+				m.confirmScrollOffset -= 10
+				if m.confirmScrollOffset < 0 {
+					m.confirmScrollOffset = 0
+				}
+				return m, nil
+			case "n", "esc":
+				m.showConfirmation = false
+				m.confirmScrollOffset = 0
+				if m.mode == modeUpdateSelective {
+					m.statusMessage = fmt.Sprintf("%d packages marked", len(m.markedPackages))
+				} else if m.mode == modeUpdate {
+					m.statusMessage = fmt.Sprintf("%d updates available", len(m.updatableAll))
+				}
+				return m, nil
+			}
+			return m, nil
+		}
+
+		if msg.String() == "*" {
+			if len(m.markedPackages) > 0 {
+				m.selectionPanelFocused = !m.selectionPanelFocused
+				if m.selectionPanelFocused {
+					m.textInput.Blur()
+					m.selectionPanelIndex = 0
+					m.selectionScrollOffset = 0
+					m.statusMessage = "Selection panel: [↑↓] navigate  [tab] deselect  [enter] install  [*] close"
+				} else {
+					m.statusMessage = fmt.Sprintf("%d packages marked", len(m.markedPackages))
+				}
+			}
+			return m, nil
+		}
+
+		if m.selectionPanelFocused {
+			// Get sorted package names (same order as displayed)
+			var pkgNames []string
+			for name := range m.markedPackages {
+				pkgNames = append(pkgNames, name)
+			}
+			sort.Strings(pkgNames)
+			maxIdx := len(pkgNames) - 1
+			maxVisible := 20
+
+			switch msg.String() {
+			case "esc", "*":
+				m.selectionPanelFocused = false
+				m.statusMessage = fmt.Sprintf("%d packages marked", len(m.markedPackages))
+				return m, nil
+			case "up", "k":
+				if m.selectionPanelIndex > 0 {
+					m.selectionPanelIndex--
+					if m.selectionPanelIndex < m.selectionScrollOffset {
+						m.selectionScrollOffset = m.selectionPanelIndex
+					}
+				}
+				return m, nil
+			case "down", "j":
+				if m.selectionPanelIndex < maxIdx {
+					m.selectionPanelIndex++
+					if m.selectionPanelIndex >= m.selectionScrollOffset+maxVisible {
+						m.selectionScrollOffset = m.selectionPanelIndex - maxVisible + 1
+					}
+				}
+				return m, nil
+			case "pgup":
+				m.selectionPanelIndex -= 10
+				if m.selectionPanelIndex < 0 {
+					m.selectionPanelIndex = 0
+				}
+				if m.selectionPanelIndex < m.selectionScrollOffset {
+					m.selectionScrollOffset = m.selectionPanelIndex
+				}
+				return m, nil
+			case "pgdown":
+				m.selectionPanelIndex += 10
+				if m.selectionPanelIndex > maxIdx {
+					m.selectionPanelIndex = maxIdx
+				}
+				if m.selectionPanelIndex >= m.selectionScrollOffset+maxVisible {
+					m.selectionScrollOffset = m.selectionPanelIndex - maxVisible + 1
+				}
+				return m, nil
+			case "tab", "m":
+
+				if m.selectionPanelIndex < len(pkgNames) {
+					nameToRemove := pkgNames[m.selectionPanelIndex]
+					delete(m.markedPackages, nameToRemove)
+
+					if m.selectionPanelIndex >= len(m.markedPackages) && m.selectionPanelIndex > 0 {
+						m.selectionPanelIndex--
+					}
+
+					// Adjust scroll offset if out of bounds after deletion
+					if m.selectionPanelIndex < m.selectionScrollOffset {
+						m.selectionScrollOffset = m.selectionPanelIndex
+					} else if len(m.markedPackages) <= maxVisible {
+						m.selectionScrollOffset = 0
+					}
+
+					if len(m.markedPackages) == 0 {
+						m.selectionPanelFocused = false
+						m.statusMessage = "All selections cleared"
+					} else {
+						m.statusMessage = fmt.Sprintf("%d packages marked - [tab] to deselect", len(m.markedPackages))
+					}
+				}
+				return m, nil
+			case "enter":
+
+				m.selectionPanelFocused = false
+				if len(m.markedPackages) > 0 {
+					if m.mode == modeInstall {
+						var pkgsToInstall []string
+						for name := range m.markedPackages {
+							if !m.installedSet[name] {
+								pkgsToInstall = append(pkgsToInstall, name)
+							}
+						}
+						if len(pkgsToInstall) > 0 {
+							sort.Strings(pkgsToInstall)
+							m.showConfirmation = true
+							m.confirmType = confirmInstall
+							m.confirmPackages = pkgsToInstall
+							m.confirmScrollOffset = 0
+							m.markedPackages = make(map[string]bool)
+							m.statusMessage = "Confirm installation"
+						} else {
+							m.statusMessage = "All marked packages are already installed"
+						}
+					} else if m.mode == modeUninstall {
+						var pkgsToUninstall []string
+						for name := range m.markedPackages {
+							pkgsToUninstall = append(pkgsToUninstall, name)
+						}
+						sort.Strings(pkgsToUninstall)
+						m.showConfirmation = true
+						m.confirmType = confirmUninstall
+						m.confirmPackages = pkgsToUninstall
+						m.confirmScrollOffset = 0
+						m.markedPackages = make(map[string]bool)
+						m.statusMessage = "Confirm removal"
+					} else if m.mode == modeUpdateSelective {
+						var pkgsToUpdate []string
+						for name := range m.markedPackages {
+							pkgsToUpdate = append(pkgsToUpdate, name)
+						}
+						sort.Strings(pkgsToUpdate)
+						m.showConfirmation = true
+						m.confirmType = confirmSelectiveUpdate
+						m.confirmPackages = pkgsToUpdate
+						m.confirmScrollOffset = 0
+						m.markedPackages = make(map[string]bool)
+						m.statusMessage = "Confirm partial update"
+					}
+				}
+				return m, nil
+			}
+			return m, nil
+		}
+
 		if m.textInput.Focused() {
 			switch msg.String() {
 			case "esc":
@@ -353,67 +685,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.textInput.Blur()
 				}
 				return m, nil
-			case "up", "pgup":
-				maxIndex := 0
-				if m.mode == modeInstall || m.mode == modeUpdateSelective || m.mode == modeCacheSelective {
-					maxIndex = len(m.filtered) - 1
-				} else if m.mode == modeUninstall {
-					maxIndex = len(m.filteredInstalled) - 1
-				}
-				
-				jump := 1
-				if msg.String() == "pgup" {
-					jump = 10
-				}
-
-				if m.selectedIndex < maxIndex {
-					m.selectedIndex += jump
-					if m.selectedIndex > maxIndex {
-						m.selectedIndex = maxIndex
-					}
-					m.infoScrollOffset = 0
-					name := ""
-					if m.mode == modeInstall && len(m.filtered) > 0 {
-						name = m.filtered[m.selectedIndex].Name
-					} else if m.mode == modeUninstall && len(m.filteredInstalled) > 0 {
-						name = m.filteredInstalled[m.selectedIndex].Name
-					} else if m.mode == modeUpdateSelective && len(m.filtered) > 0 {
-						name = m.filtered[m.selectedIndex].Name
-					}
-					if name != "" && m.mode != modeCacheSelective {
-						m.loadingInfo = true
-						m.pendingInfoPackage = name
-						return m, debouncePackageInfo(m.pendingInfoPackage)
-					}
-				}
-				return m, nil
-			case "down", "pgdown":
-				jump := 1
-				if msg.String() == "pgdown" {
-					jump = 10
-				}
-
-				if m.selectedIndex > 0 {
-					m.selectedIndex -= jump
-					if m.selectedIndex < 0 {
-						m.selectedIndex = 0
-					}
-					m.infoScrollOffset = 0
-					name := ""
-					if m.mode == modeInstall && len(m.filtered) > 0 {
-						name = m.filtered[m.selectedIndex].Name
-					} else if m.mode == modeUninstall && len(m.filteredInstalled) > 0 {
-						name = m.filteredInstalled[m.selectedIndex].Name
-					} else if m.mode == modeUpdateSelective && len(m.filtered) > 0 {
-						name = m.filtered[m.selectedIndex].Name
-					}
-					if name != "" && m.mode != modeCacheSelective {
-						m.loadingInfo = true
-						m.pendingInfoPackage = name
-						return m, debouncePackageInfo(m.pendingInfoPackage)
-					}
-				}
-				return m, nil
+			case "up", "down", "pgup", "pgdown":
+				return handleNavigation(m, msg.String())
 			case "enter":
 				if m.mode == modeInstall && len(m.filtered) > 0 {
 
@@ -938,147 +1211,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 
-		case "down", "j":
-			if m.mode == modeCacheMenu {
-				if m.cacheMenuIndex < 4 {
-					m.cacheMenuIndex++
-				}
-				return m, nil
-			}
-			if m.mode == modeUpdate {
-				if m.updateScrollOffset < len(m.pendingUpdates)-1 {
-					m.updateScrollOffset++
-				}
-				return m, nil
-			}
-			if m.selectedIndex > 0 {
-				m.infoScrollOffset = 0
-				m.selectedIndex--
-				name := ""
-				if m.mode == modeInstall && len(m.filtered) > 0 {
-					name = m.filtered[m.selectedIndex].Name
-				} else if m.mode == modeUninstall && len(m.filteredInstalled) > 0 {
-					name = m.filteredInstalled[m.selectedIndex].Name
-				} else if m.mode == modeUpdateSelective && len(m.filtered) > 0 {
-					name = m.filtered[m.selectedIndex].Name
-				}
-
-				if name != "" && m.mode != modeCacheSelective {
-					m.loadingInfo = true
-					m.pendingInfoPackage = name
-					return m, debouncePackageInfo(m.pendingInfoPackage)
-				}
-			}
-
-		case "pgdown":
-			if m.mode == modeCacheMenu {
-				m.cacheMenuIndex = 4
-				return m, nil
-			}
-			if m.mode == modeUpdate {
-				if len(m.pendingUpdates) > 0 {
-					m.updateScrollOffset += 10
-					if m.updateScrollOffset >= len(m.pendingUpdates) {
-						m.updateScrollOffset = len(m.pendingUpdates) - 1
-					}
-				}
-				return m, nil
-			}
-			if m.selectedIndex > 0 {
-				m.selectedIndex -= 10
-				if m.selectedIndex < 0 {
-					m.selectedIndex = 0
-				}
-				m.infoScrollOffset = 0
-				name := ""
-				if m.mode == modeUninstall {
-					name = m.filteredInstalled[m.selectedIndex].Name
-				} else if len(m.filtered) > 0 {
-					name = m.filtered[m.selectedIndex].Name
-				}
-				if name != "" && m.mode != modeCacheSelective {
-					m.loadingInfo = true
-					m.pendingInfoPackage = name
-					return m, debouncePackageInfo(m.pendingInfoPackage)
-				}
-			}
-
-		case "up", "k":
-			if m.mode == modeCacheMenu {
-				if m.cacheMenuIndex > 0 {
-					m.cacheMenuIndex--
-				}
-				return m, nil
-			}
-			if m.mode == modeUpdate {
-				if m.updateScrollOffset > 0 {
-					m.updateScrollOffset--
-				}
-				return m, nil
-			}
-			maxIndex := 0
-			if m.mode == modeInstall || m.mode == modeUpdateSelective || m.mode == modeCacheSelective {
-				maxIndex = len(m.filtered) - 1
-			} else if m.mode == modeUninstall {
-				maxIndex = len(m.filteredInstalled) - 1
-			}
-
-			if m.selectedIndex < maxIndex {
-				m.infoScrollOffset = 0
-				m.selectedIndex++
-				name := ""
-				if m.mode == modeInstall && len(m.filtered) > 0 {
-					name = m.filtered[m.selectedIndex].Name
-				} else if m.mode == modeUninstall && len(m.filteredInstalled) > 0 {
-					name = m.filteredInstalled[m.selectedIndex].Name
-				} else if m.mode == modeUpdateSelective && len(m.filtered) > 0 {
-					name = m.filtered[m.selectedIndex].Name
-				}
-
-				if name != "" && m.mode != modeCacheSelective {
-					m.loadingInfo = true
-					m.pendingInfoPackage = name
-					return m, debouncePackageInfo(m.pendingInfoPackage)
-				}
-			}
-
-		case "pgup":
-			if m.mode == modeCacheMenu {
-				m.cacheMenuIndex = 0
-				return m, nil
-			}
-			if m.mode == modeUpdate {
-				m.updateScrollOffset -= 10
-				if m.updateScrollOffset < 0 {
-					m.updateScrollOffset = 0
-				}
-				return m, nil
-			}
-			maxIndex := 0
-			if m.mode == modeInstall || m.mode == modeUpdateSelective || m.mode == modeCacheSelective {
-				maxIndex = len(m.filtered) - 1
-			} else if m.mode == modeUninstall {
-				maxIndex = len(m.filteredInstalled) - 1
-			}
-
-			if m.selectedIndex < maxIndex {
-				m.selectedIndex += 10
-				if m.selectedIndex > maxIndex {
-					m.selectedIndex = maxIndex
-				}
-				m.infoScrollOffset = 0
-				name := ""
-				if m.mode == modeUninstall {
-					name = m.filteredInstalled[m.selectedIndex].Name
-				} else if len(m.filtered) > 0 {
-					name = m.filtered[m.selectedIndex].Name
-				}
-				if name != "" && m.mode != modeCacheSelective {
-					m.loadingInfo = true
-					m.pendingInfoPackage = name
-					return m, debouncePackageInfo(m.pendingInfoPackage)
-				}
-			}
+		case "up", "down", "pgup", "pgdown", "j", "k":
+			return handleNavigation(m, msg.String())
 
 		case "enter":
 			if m.mode == modeInstall && len(m.filtered) > 0 {
