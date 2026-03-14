@@ -107,10 +107,14 @@ func (m *model) renderSelectiveCacheView(helpText string, innerWidth, innerHeigh
 
 	// Build results list
 	var results strings.Builder
-	pkgList := m.dashboard.AllCacheHogs
+	pkgList := m.filtered
 
 	if len(pkgList) == 0 {
-		results.WriteString("  No packages found in cache")
+		if m.textInput.Value() != "" {
+			results.WriteString("  No matches for '" + m.textInput.Value() + "'")
+		} else {
+			results.WriteString("  No packages found in cache")
+		}
 	} else {
 		startIdx := 0
 		if m.selectedIndex >= resultsHeight {
@@ -139,9 +143,17 @@ func (m *model) renderSelectiveCacheView(helpText string, innerWidth, innerHeigh
 				nameStyle = nameStyle.Foreground(lipgloss.Color("42"))
 			}
 
+			var namePart string
+			if indices, ok := m.matchIndices[i]; ok && m.textInput.Value() != "" {
+				highlightedName := highlightMatches(pkg.Name, indices)
+				namePart = nameStyle.Render(highlightedName)
+			} else {
+				namePart = nameStyle.Render(truncateWithAnsi(pkg.Name, contentWidth-25))
+			}
+
 			line := fmt.Sprintf("%s %s",
 				prefix,
-				lipgloss.NewStyle().Width(contentWidth-25).Render(nameStyle.Render(truncateWithAnsi(pkg.Name, contentWidth-25))),
+				lipgloss.NewStyle().Width(contentWidth-25).Render(namePart),
 			)
 
 			// Add size

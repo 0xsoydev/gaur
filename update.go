@@ -421,8 +421,10 @@ func (m *model) performFiltering() {
 		}
 		if query == "" {
 			m.filtered = allPkgs
+			m.matchIndices = nil
 		} else {
 			m.filtered = fuzzyFilter(allPkgs, query)
+			m.matchIndices = computeAllMatchIndices(m.filtered, query)
 		}
 	}
 }
