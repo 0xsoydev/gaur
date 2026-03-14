@@ -92,12 +92,20 @@ func computeMatchIndices(pkg Package, query string) []int {
 		return nil
 	}
 
-	pkgStr := pkg.Source + "/" + pkg.Name
+	// Determine the string being displayed
+	var pkgStr string
+	if pkg.Source != "" {
+		pkgStr = pkg.Source + "/" + pkg.Name
+	} else {
+		pkgStr = pkg.Name
+	}
+
 	pkgLower := strings.ToLower(pkgStr)
 	queryLower := strings.ToLower(query)
 
 	var indices []int
 
+	// Priority 1: Exact substring match
 	if idx := strings.Index(pkgLower, queryLower); idx != -1 {
 		for i := 0; i < len(queryLower); i++ {
 			indices = append(indices, idx+i)
@@ -105,23 +113,25 @@ func computeMatchIndices(pkg Package, query string) []int {
 		return indices
 	}
 
+	// Priority 2: Fuzzy match
 	pkgRunes := []rune(pkgLower)
 	queryRunes := []rune(queryLower)
-	pkgIdx := 0
+	
+	// Simple greedy forward match
+	currentPkgIdx := 0
 	for _, qr := range queryRunes {
 		found := false
-		for pkgIdx < len(pkgRunes) {
-			if pkgRunes[pkgIdx] == qr {
-				indices = append(indices, pkgIdx)
-				pkgIdx++
+		for currentPkgIdx < len(pkgRunes) {
+			if pkgRunes[currentPkgIdx] == qr {
+				indices = append(indices, currentPkgIdx)
+				currentPkgIdx++
 				found = true
 				break
 			}
-			pkgIdx++
+			currentPkgIdx++
 		}
 		if !found {
-
-			break
+			return nil
 		}
 	}
 
