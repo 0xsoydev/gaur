@@ -7,6 +7,20 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+// maintainBackground replaces ANSI reset codes with a sequence that resets but then re-applies the given background color.
+func maintainBackground(s string, bgColor lipgloss.Color) string {
+	// Get the ANSI sequence for the background color
+	// We create a style with just the background and render an empty string to get the ANSI sequence.
+	// lipgloss.Style.Render usually adds a reset at the end, so we might need to trim it or 
+	// just use the fact that we're appending it.
+	bgStyle := lipgloss.NewStyle().Background(bgColor)
+	bgSeq := bgStyle.Render(" ")
+	bgSeq = bgSeq[:strings.Index(bgSeq, " ")] // Extract just the escape sequence
+	
+	// Replace \x1b[0m with \x1b[0m + bgSeq
+	return strings.ReplaceAll(s, "\x1b[0m", "\x1b[0m"+bgSeq)
+}
+
 func (m *model) renderCacheMenu(helpText string, innerWidth, innerHeight int) string {
 	menuWidth := 80
 	menuHeight := 22
@@ -152,30 +166,56 @@ func (m *model) renderSelectiveCacheView(helpText string, innerWidth, innerHeigh
 				prefix = "> " + marker
 			}
 
-			nameStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("250"))
-			if m.markedPackages[pkg.Name] {
-				nameStyle = nameStyle.Foreground(lipgloss.Color("135"))
+			// Define consistent name width
+			// Left gutter: prefix (5) + space (1) = 6 chars
+			// Right gutter: we want 6 chars as well.
+			// Total layout: prefix (5) + space (1) + name (nameWidth) + space (1) + size (10) + right gutter (6) = contentWidth
+			// nameWidth = contentWidth - 23
+			nameWidth := contentWidth - 23
+			if nameWidth < 10 {
+				nameWidth = 10
 			}
 
-			var namePart string
+			nameStr := pkg.Name
 			if indices, ok := m.matchIndices[i]; ok && m.textInput.Value() != "" {
-				highlightedName := highlightMatches(pkg.Name, indices)
-				namePart = nameStyle.Render(highlightedName)
-			} else {
-				namePart = nameStyle.Render(truncateWithAnsi(pkg.Name, contentWidth-25))
+				nameStr = highlightMatches(pkg.Name, indices)
 			}
+			nameStr = truncateWithAnsi(nameStr, nameWidth)
+			
+			// Ensure name is padded to exact width for alignment
+			visualNameWidth := lipgloss.Width(nameStr)
+			paddedName := nameStr
+			if visualNameWidth < nameWidth {
+				paddedName += strings.Repeat(" ", nameWidth-visualNameWidth)
+			}
+			
+			sizeStr := fmt.Sprintf("%10s", pkg.Size)
 
-			line := fmt.Sprintf("%s %s",
-				prefix,
-				lipgloss.NewStyle().Width(contentWidth-25).Render(namePart),
-			)
-
-			// Add size
-			sizeStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
-			line += " " + sizeStyle.Render(fmt.Sprintf("%10s", pkg.Size))
-
-			if i == m.selectedIndex {
-				line = selectedStyle.Render(line)
+			var line string
+			if i == m.selectedIndex || m.markedPackages[pkg.Name] {
+				bgColor := lipgloss.Color("237") // Default marked grey
+				if i == m.selectedIndex {
+					bgColor = lipgloss.Color("135") // Selection purple
+				}
+				fgColor := lipgloss.Color("255")
+				
+				// Apply background maintenance to name which contains resets from highlighting/truncation
+				maintainedName := maintainBackground(paddedName, bgColor)
+				
+				// Construct line content with consistent spacing: prefix + " " + name + " " + size
+				lineContent := fmt.Sprintf("%s %s %s", prefix, maintainedName, sizeStr)
+				
+				line = lipgloss.NewStyle().
+					Background(bgColor).
+					Foreground(fgColor).
+					Bold(i == m.selectedIndex).
+					Width(contentWidth).
+					Render(lineContent)
+			} else {
+				// Normal items: Styled parts but same layout for alignment
+				namePart := lipgloss.NewStyle().Foreground(lipgloss.Color("250")).Render(paddedName)
+				sizePart := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render(sizeStr)
+				line = fmt.Sprintf("%s %s %s", prefix, namePart, sizePart)
 			}
 
 			lines = append(lines, line)
