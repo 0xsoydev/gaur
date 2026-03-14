@@ -905,14 +905,21 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 			// Show breakdown for all cleaning modes except Nuke (which uses the totals above)
 			if m.confirmType == confirmCleanKeep3 || m.confirmType == confirmCleanKeep1 || m.confirmType == confirmCleanUninstalled {
 				content.WriteString("\n")
-				content.WriteString(packageNameStyle.Render("Breakdown:\n"))
+				breakdownHeaderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Bold(true)
+				content.WriteString(breakdownHeaderStyle.Render("Breakdown:") + "\n")
+				
 				pacmanEstimate := m.dashboard.CacheFreedPacman[m.confirmType]
 				paruEstimate := m.dashboard.CacheFreedParu[m.confirmType]
 				if pacmanEstimate == "" { pacmanEstimate = "calculating..." }
 				if paruEstimate == "" { paruEstimate = "calculating..." }
 
-				content.WriteString(fmt.Sprintf("  %s %s\n", labelStyle.Render("pacman:"), countStyle.Render(pacmanEstimate)))
-				content.WriteString(fmt.Sprintf("  %s %s\n\n", labelStyle.Render("paru:"), countStyle.Render(paruEstimate)))
+				valStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
+				
+				pacmanLabel := sourceStyle("core").Render("  pacman:")
+				paruLabel := sourceStyle("aur").Render("  paru:  ") // Added space for alignment
+
+				content.WriteString(fmt.Sprintf("%s %s\n", pacmanLabel, valStyle.Render(pacmanEstimate)))
+				content.WriteString(fmt.Sprintf("%s %s\n\n", paruLabel, valStyle.Render(paruEstimate)))
 			}
 
 			estimate := m.dashboard.CacheFreedEstimates[m.confirmType]
