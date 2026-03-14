@@ -18,6 +18,20 @@ func (m *model) renderCacheMenu(helpText string, innerWidth, innerHeight int) st
 		menuHeight = innerHeight - 4
 	}
 
+	selectedColor := lipgloss.Color("42") // default green
+	switch m.cacheMenuIndex {
+	case 0:
+		selectedColor = lipgloss.Color("39") // Blue
+	case 1:
+		selectedColor = lipgloss.Color("208") // Orange
+	case 2:
+		selectedColor = lipgloss.Color("42") // Green
+	case 3:
+		selectedColor = lipgloss.Color("196") // Red
+	case 4:
+		selectedColor = lipgloss.Color("135") // Purple
+	}
+
 	titleStyle := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(lipgloss.Color("229")).
@@ -34,7 +48,7 @@ func (m *model) renderCacheMenu(helpText string, innerWidth, innerHeight int) st
 
 	selectedItemStyle := lipgloss.NewStyle().
 		PaddingLeft(2).
-		Foreground(lipgloss.Color("42")).
+		Foreground(selectedColor).
 		Bold(true)
 
 	options := []struct {
@@ -49,7 +63,7 @@ func (m *model) renderCacheMenu(helpText string, innerWidth, innerHeight int) st
 	}
 
 	var menuContent strings.Builder
-	menuContent.WriteString(titleStyle.Width(menuWidth - 4).Render("🧹 Cache Management Menu"))
+	menuContent.WriteString(titleStyle.Width(menuWidth - 4).Render(" \uf12a Cache Management Menu"))
 	menuContent.WriteString("\n\n")
 
 	for i, opt := range options {
@@ -63,7 +77,7 @@ func (m *model) renderCacheMenu(helpText string, innerWidth, innerHeight int) st
 		
 		descPadding := 4
 		if i == m.cacheMenuIndex {
-			menuContent.WriteString(descStyle.PaddingLeft(descPadding).Foreground(lipgloss.Color("42")).Render(opt.desc) + "\n\n")
+			menuContent.WriteString(descStyle.PaddingLeft(descPadding).Foreground(selectedColor).Render(opt.desc) + "\n\n")
 		} else {
 			menuContent.WriteString(descStyle.PaddingLeft(descPadding).Render(opt.desc) + "\n\n")
 		}
@@ -73,7 +87,7 @@ func (m *model) renderCacheMenu(helpText string, innerWidth, innerHeight int) st
 		Width(menuWidth).
 		Height(menuHeight).
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("42")).
+		BorderForeground(selectedColor).
 		Padding(1, 2).
 		Render(menuContent.String())
 
