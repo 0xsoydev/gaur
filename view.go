@@ -797,10 +797,26 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 		for _, name := range m.confirmPackages {
 			packages = append(packages, Package{Name: name})
 		}
-	case confirmCleanKeep3, confirmCleanKeep1, confirmCleanUninstalled, confirmCleanNuke:
+	case confirmCleanKeep3, confirmCleanKeep1, confirmCleanNuke:
 		title = "🧹 Confirm Cache Cleaning"
 		actionDesc = "clean"
 		simpleConfirm = true
+	case confirmCleanUninstalled:
+		title = "🧹 Confirm Orphaned Cache Clean"
+		actionDesc = "clean orphaned packages from cache"
+		simpleConfirm = false
+		if len(m.dashboard.UninstalledPacmanCache) > 0 {
+			packages = append(packages, Package{Name: "pacman:", Version: "HEADER"})
+			for _, p := range m.dashboard.UninstalledPacmanCache {
+				packages = append(packages, Package{Name: p.Name, Size: p.Size})
+			}
+		}
+		if len(m.dashboard.UninstalledParuCache) > 0 {
+			packages = append(packages, Package{Name: "paru:", Version: "HEADER"})
+			for _, p := range m.dashboard.UninstalledParuCache {
+				packages = append(packages, Package{Name: p.Name, Size: p.Size})
+			}
+		}
 	case confirmCleanSelective:
 		title = "🧹 Confirm Selective Clean"
 		actionDesc = "clean selected packages from cache"
@@ -860,17 +876,18 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 	content.WriteString(titleStyle.Render(title))
 	content.WriteString("\n\n")
 
-	if simpleConfirm {
-		if m.confirmType == confirmCleanKeep3 {
-			content.WriteString("This will remove all but the 3 most recent cached versions of packages.\n\n")
-		} else if m.confirmType == confirmCleanKeep1 {
-			content.WriteString("This will aggressively remove all but the currently installed cached versions.\n\n")
-		} else if m.confirmType == confirmCleanUninstalled {
-			content.WriteString("This will remove cached packages that are no longer installed.\n\n")
-		} else if m.confirmType == confirmCleanNuke {
-			content.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Bold(true).Render("WARNING: This will completely empty the package cache.\n\n"))
-		}
+	// Shared descriptive text
+	if m.confirmType == confirmCleanKeep3 {
+		content.WriteString("This will remove all but the 3 most recent cached versions of packages.\n\n")
+	} else if m.confirmType == confirmCleanKeep1 {
+		content.WriteString("This will aggressively remove all but the currently installed cached versions.\n\n")
+	} else if m.confirmType == confirmCleanUninstalled {
+		content.WriteString("This will remove cached packages that are no longer installed.\n\n")
+	} else if m.confirmType == confirmCleanNuke {
+		content.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Bold(true).Render("WARNING: This will completely empty the package cache.\n\n"))
+	}
 
+	if simpleConfirm {
 		if m.confirmType == confirmCleanKeep3 || m.confirmType == confirmCleanKeep1 || m.confirmType == confirmCleanUninstalled || m.confirmType == confirmCleanNuke {
 			labelStyle := lipgloss.NewStyle().Width(8).Foreground(lipgloss.Color("241"))
 
@@ -960,6 +977,16 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 						sourceBadge,
 						packageNameStyle.Render(pkg.Name),
 						packageVersionStyle.Render(pkg.Version))
+				} else if pkg.Version == "HEADER" {
+					line = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("229")).Render(pkg.Name)
+				} else if m.confirmType == confirmCleanUninstalled || m.confirmType == confirmCleanSelective {
+					namePart := "  • " + packageNameStyle.Render(pkg.Name)
+					sizePart := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render(pkg.Size)
+					
+					// Calculate spacing to align size to the right
+					spacing := innerWidth - lipgloss.Width(namePart) - lipgloss.Width(sizePart) - 2
+					if spacing < 1 { spacing = 1 }
+					line = namePart + strings.Repeat(" ", spacing) + sizePart
 				} else {
 					line = fmt.Sprintf("  • %s", packageNameStyle.Render(pkg.Name))
 				}
@@ -983,6 +1010,16 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 						sourceBadge,
 						packageNameStyle.Render(pkg.Name),
 						packageVersionStyle.Render(pkg.Version))
+				} else if pkg.Version == "HEADER" {
+					line = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("229")).Render(pkg.Name)
+				} else if m.confirmType == confirmCleanUninstalled || m.confirmType == confirmCleanSelective {
+					namePart := "  • " + packageNameStyle.Render(pkg.Name)
+					sizePart := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render(pkg.Size)
+					
+					// Calculate spacing to align size to the right
+					spacing := innerWidth - lipgloss.Width(namePart) - lipgloss.Width(sizePart) - 2
+					if spacing < 1 { spacing = 1 }
+					line = namePart + strings.Repeat(" ", spacing) + sizePart
 				} else {
 					line = fmt.Sprintf("  • %s", packageNameStyle.Render(pkg.Name))
 				}
@@ -1042,7 +1079,24 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 			if lipgloss.Width(hint) > innerWidth {
 				hint = lipgloss.NewStyle().Width(innerWidth).Render(hint)
 			}
-			content.WriteString(hint)
+			content.WriteString(hint + "\n")
+		}
+
+		if m.confirmType == confirmCleanUninstalled || m.confirmType == confirmCleanSelective {
+			content.WriteString("\n")
+			estimate := ""
+			if m.confirmType == confirmCleanUninstalled {
+				estimate = m.dashboard.CacheFreedEstimates[m.confirmType]
+			} else {
+				// For selective clean, we have m.cacheToFree
+				estimate = formatBytes(m.cacheToFree)
+			}
+
+			if estimate == "" {
+				estimate = "calculating..."
+			}
+			content.WriteString(fmt.Sprintf("Estimated space to be freed: %s\n",
+				lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("214")).Render(estimate)))
 		}
 	}
 

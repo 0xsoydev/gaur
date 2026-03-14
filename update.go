@@ -353,27 +353,26 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.textInput.Blur()
 				}
 				return m, nil
-			case "down":
-
+			case "down", "j":
 				if m.selectedIndex > 0 {
 					m.selectedIndex--
+					m.infoScrollOffset = 0
+					name := ""
 					if m.mode == modeInstall && len(m.filtered) > 0 {
-						m.loadingInfo = true
-						m.pendingInfoPackage = m.filtered[m.selectedIndex].Name
-						return m, debouncePackageInfo(m.pendingInfoPackage)
+						name = m.filtered[m.selectedIndex].Name
 					} else if m.mode == modeUninstall && len(m.filteredInstalled) > 0 {
-						m.loadingInfo = true
-						m.pendingInfoPackage = m.filteredInstalled[m.selectedIndex].Name
-						return m, debouncePackageInfo(m.pendingInfoPackage)
+						name = m.filteredInstalled[m.selectedIndex].Name
 					} else if m.mode == modeUpdateSelective && len(m.filtered) > 0 {
+						name = m.filtered[m.selectedIndex].Name
+					}
+					if name != "" {
 						m.loadingInfo = true
-						m.pendingInfoPackage = m.filtered[m.selectedIndex].Name
+						m.pendingInfoPackage = name
 						return m, debouncePackageInfo(m.pendingInfoPackage)
 					}
 				}
 				return m, nil
-			case "up":
-
+			case "up", "k":
 				maxIndex := 0
 				if m.mode == modeInstall || m.mode == modeUpdateSelective {
 					maxIndex = len(m.filtered) - 1
@@ -382,17 +381,68 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				if m.selectedIndex < maxIndex {
 					m.selectedIndex++
+					m.infoScrollOffset = 0
+					name := ""
 					if m.mode == modeInstall && len(m.filtered) > 0 {
-						m.loadingInfo = true
-						m.pendingInfoPackage = m.filtered[m.selectedIndex].Name
-						return m, debouncePackageInfo(m.pendingInfoPackage)
+						name = m.filtered[m.selectedIndex].Name
 					} else if m.mode == modeUninstall && len(m.filteredInstalled) > 0 {
-						m.loadingInfo = true
-						m.pendingInfoPackage = m.filteredInstalled[m.selectedIndex].Name
-						return m, debouncePackageInfo(m.pendingInfoPackage)
+						name = m.filteredInstalled[m.selectedIndex].Name
 					} else if m.mode == modeUpdateSelective && len(m.filtered) > 0 {
+						name = m.filtered[m.selectedIndex].Name
+					}
+					if name != "" {
 						m.loadingInfo = true
-						m.pendingInfoPackage = m.filtered[m.selectedIndex].Name
+						m.pendingInfoPackage = name
+						return m, debouncePackageInfo(m.pendingInfoPackage)
+					}
+				}
+				return m, nil
+			case "pgdown":
+				if m.selectedIndex > 0 {
+					m.selectedIndex -= 10
+					if m.selectedIndex < 0 {
+						m.selectedIndex = 0
+					}
+					m.infoScrollOffset = 0
+					name := ""
+					if m.mode == modeInstall && len(m.filtered) > 0 {
+						name = m.filtered[m.selectedIndex].Name
+					} else if m.mode == modeUninstall && len(m.filteredInstalled) > 0 {
+						name = m.filteredInstalled[m.selectedIndex].Name
+					} else if m.mode == modeUpdateSelective && len(m.filtered) > 0 {
+						name = m.filtered[m.selectedIndex].Name
+					}
+					if name != "" {
+						m.loadingInfo = true
+						m.pendingInfoPackage = name
+						return m, debouncePackageInfo(m.pendingInfoPackage)
+					}
+				}
+				return m, nil
+			case "pgup":
+				maxIndex := 0
+				if m.mode == modeInstall || m.mode == modeUpdateSelective {
+					maxIndex = len(m.filtered) - 1
+				} else if m.mode == modeUninstall {
+					maxIndex = len(m.filteredInstalled) - 1
+				}
+				if m.selectedIndex < maxIndex {
+					m.selectedIndex += 10
+					if m.selectedIndex > maxIndex {
+						m.selectedIndex = maxIndex
+					}
+					m.infoScrollOffset = 0
+					name := ""
+					if m.mode == modeInstall && len(m.filtered) > 0 {
+						name = m.filtered[m.selectedIndex].Name
+					} else if m.mode == modeUninstall && len(m.filteredInstalled) > 0 {
+						name = m.filteredInstalled[m.selectedIndex].Name
+					} else if m.mode == modeUpdateSelective && len(m.filtered) > 0 {
+						name = m.filtered[m.selectedIndex].Name
+					}
+					if name != "" {
+						m.loadingInfo = true
+						m.pendingInfoPackage = name
 						return m, debouncePackageInfo(m.pendingInfoPackage)
 					}
 				}
@@ -937,34 +987,19 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.selectedIndex > 0 {
 				m.infoScrollOffset = 0
 				m.selectedIndex--
+				name := ""
 				if m.mode == modeInstall && len(m.filtered) > 0 {
-					m.loadingInfo = true
-					m.pendingInfoPackage = m.filtered[m.selectedIndex].Name
-					return m, debouncePackageInfo(m.pendingInfoPackage)
+					name = m.filtered[m.selectedIndex].Name
 				} else if m.mode == modeUninstall && len(m.filteredInstalled) > 0 {
-					m.loadingInfo = true
-					m.pendingInfoPackage = m.filteredInstalled[m.selectedIndex].Name
-					return m, debouncePackageInfo(m.pendingInfoPackage)
+					name = m.filteredInstalled[m.selectedIndex].Name
 				} else if m.mode == modeUpdateSelective && len(m.filtered) > 0 {
+					name = m.filtered[m.selectedIndex].Name
+				}
+
+				if name != "" && m.mode != modeCacheSelective {
 					m.loadingInfo = true
-					m.pendingInfoPackage = m.filtered[m.selectedIndex].Name
+					m.pendingInfoPackage = name
 					return m, debouncePackageInfo(m.pendingInfoPackage)
-				} else if m.mode == modeUpdateSelective && len(m.filtered) > 0 {
-				pkg := m.filtered[m.selectedIndex]
-				if m.markedPackages[pkg.Name] {
-					delete(m.markedPackages, pkg.Name)
-				} else {
-					m.markedPackages[pkg.Name] = true
-				}
-				markedCount := len(m.markedPackages)
-				if markedCount > 0 {
-					m.statusMessage = fmt.Sprintf("%d packages marked", markedCount)
-				} else {
-					m.statusMessage = fmt.Sprintf("%d updates available", len(m.updatableAll))
-				}
-			} else if m.mode == modeCacheSelective && len(m.filtered) > 0 {
-					// No info to load for cache hogs
-					return m, nil
 				}
 			}
 
@@ -1020,36 +1055,23 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else if m.mode == modeUninstall {
 				maxIndex = len(m.filteredInstalled) - 1
 			}
+
 			if m.selectedIndex < maxIndex {
 				m.infoScrollOffset = 0
 				m.selectedIndex++
+				name := ""
 				if m.mode == modeInstall && len(m.filtered) > 0 {
-					m.loadingInfo = true
-					m.pendingInfoPackage = m.filtered[m.selectedIndex].Name
-					return m, debouncePackageInfo(m.pendingInfoPackage)
+					name = m.filtered[m.selectedIndex].Name
 				} else if m.mode == modeUninstall && len(m.filteredInstalled) > 0 {
-					m.loadingInfo = true
-					m.pendingInfoPackage = m.filteredInstalled[m.selectedIndex].Name
-					return m, debouncePackageInfo(m.pendingInfoPackage)
+					name = m.filteredInstalled[m.selectedIndex].Name
 				} else if m.mode == modeUpdateSelective && len(m.filtered) > 0 {
+					name = m.filtered[m.selectedIndex].Name
+				}
+
+				if name != "" && m.mode != modeCacheSelective {
 					m.loadingInfo = true
-					m.pendingInfoPackage = m.filtered[m.selectedIndex].Name
+					m.pendingInfoPackage = name
 					return m, debouncePackageInfo(m.pendingInfoPackage)
-				} else if m.mode == modeUpdateSelective && len(m.filtered) > 0 {
-				pkg := m.filtered[m.selectedIndex]
-				if m.markedPackages[pkg.Name] {
-					delete(m.markedPackages, pkg.Name)
-				} else {
-					m.markedPackages[pkg.Name] = true
-				}
-				markedCount := len(m.markedPackages)
-				if markedCount > 0 {
-					m.statusMessage = fmt.Sprintf("%d packages marked", markedCount)
-				} else {
-					m.statusMessage = fmt.Sprintf("%d updates available", len(m.updatableAll))
-				}
-			} else if m.mode == modeCacheSelective && len(m.filtered) > 0 {
-					return m, nil
 				}
 			}
 
@@ -1071,6 +1093,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else if m.mode == modeUninstall {
 				maxIndex = len(m.filteredInstalled) - 1
 			}
+
 			if m.selectedIndex < maxIndex {
 				m.selectedIndex += 10
 				if m.selectedIndex > maxIndex {

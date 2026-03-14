@@ -124,7 +124,7 @@ func TestGetDashboardDataWithMock(t *testing.T) {
 		RunFunc: func(name string, args ...string) ([]byte, error) {
 			switch name {
 			case "paru":
-				if args[0] == "-Q" {
+				if args[0] == "-Qq" {
 					return []byte("pkg1\npkg2\n"), nil
 				}
 				if args[0] == "-Ps" {

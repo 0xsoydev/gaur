@@ -28,16 +28,27 @@ func getDashboardData() tea.Cmd {
 
 		var wg sync.WaitGroup
 
+		var installedNamesMu sync.Mutex
+		installedNames := make(map[string]bool)
+
 		// Total Packages
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			out, err := runner.Run("paru", "-Q")
+			out, err := runner.Run("paru", "-Qq")
 			if err == nil {
-				val := countLines(string(out))
+				lines := strings.Split(strings.TrimSpace(string(out)), "\n")
 				dataMu.Lock()
-				data.TotalPackages = val
+				data.TotalPackages = len(lines)
 				dataMu.Unlock()
+
+				installedNamesMu.Lock()
+				for _, line := range lines {
+					if name := strings.TrimSpace(line); name != "" {
+						installedNames[name] = true
+					}
+				}
+				installedNamesMu.Unlock()
 			} else {
 				addErr("total packages", err)
 			}
@@ -177,8 +188,17 @@ func getDashboardData() tea.Cmd {
 			paruBase := filepath.Join(homeDir, ".cache", "paru")
 			paruClonePath := filepath.Join(paruBase, "clone")
 
-			cacheHogs := make(map[string]int64)
+			// Fetch installed list locally for this goroutine to avoid complex sync
+			installed := make(map[string]bool)
+			if out, err := runner.Run("paru", "-Qq"); err == nil {
+				for _, name := range strings.Split(string(out), "\n") {
+					if n := strings.TrimSpace(name); n != "" {
+						installed[n] = true
+					}
+				}
+			}
 
+			pacmanHogs := make(map[string]int64)
 			if entries, err := os.ReadDir(pacmanCachePath); err == nil {
 				for _, entry := range entries {
 					if entry.IsDir() {
@@ -193,12 +213,13 @@ func getDashboardData() tea.Cmd {
 						baseName := strings.Join(parts[:len(parts)-3], "-")
 						info, err := entry.Info()
 						if err == nil {
-							cacheHogs[baseName] += info.Size()
+							pacmanHogs[baseName] += info.Size()
 						}
 					}
 				}
 			}
 
+			paruHogs := make(map[string]int64)
 			filepath.WalkDir(paruClonePath, func(path string, d os.DirEntry, err error) error {
 				if err != nil || d.IsDir() {
 					return nil
@@ -211,35 +232,63 @@ func getDashboardData() tea.Cmd {
 					parts := strings.Split(name, "-")
 					if len(parts) > 3 {
 						baseName := strings.Join(parts[:len(parts)-3], "-")
-						cacheHogs[baseName] += info.Size()
+						paruHogs[baseName] += info.Size()
 					}
 				}
 				return nil
 			})
 
+			// Combine for AllCacheHogs
+			combinedHogs := make(map[string]int64)
+			for k, v := range pacmanHogs { combinedHogs[k] += v }
+			for k, v := range paruHogs { combinedHogs[k] += v }
+
 			type cacheEntry struct {
 				name string
 				size int64
 			}
-			var sortedHogs []cacheEntry
-			for k, v := range cacheHogs {
-				sortedHogs = append(sortedHogs, cacheEntry{k, v})
-			}
-			sort.Slice(sortedHogs, func(i, j int) bool {
-				return sortedHogs[i].size > sortedHogs[j].size
-			})
-			var allHogs []PackageSize
-			for i := 0; i < len(sortedHogs); i++ {
-				allHogs = append(allHogs, PackageSize{
-					Name:      sortedHogs[i].name,
-					Size:      formatBytes(sortedHogs[i].size),
-					SizeBytes: sortedHogs[i].size,
+			sortEntries := func(m map[string]int64) []cacheEntry {
+				var entries []cacheEntry
+				for k, v := range m {
+					entries = append(entries, cacheEntry{k, v})
+				}
+				sort.Slice(entries, func(i, j int) bool {
+					return entries[i].size > entries[j].size
 				})
+				return entries
+			}
+
+			toPkgSize := func(entries []cacheEntry) []PackageSize {
+				var res []PackageSize
+				for _, e := range entries {
+					res = append(res, PackageSize{
+						Name:      e.name,
+						Size:      formatBytes(e.size),
+						SizeBytes: e.size,
+					})
+				}
+				return res
+			}
+
+			allSorted := sortEntries(combinedHogs)
+			
+			// Filter uninstalled
+			uninstalledPacman := make(map[string]int64)
+			for k, v := range pacmanHogs {
+				if !installed[k] { uninstalledPacman[k] = v }
+			}
+			uninstalledParu := make(map[string]int64)
+			for k, v := range paruHogs {
+				if !installed[k] { uninstalledParu[k] = v }
 			}
 
 			var topHogs []PackageSize
-			for i := 0; i < 5 && i < len(allHogs); i++ {
-				topHogs = append(topHogs, allHogs[i])
+			for i := 0; i < 5 && i < len(allSorted); i++ {
+				topHogs = append(topHogs, PackageSize{
+					Name:      allSorted[i].name,
+					Size:      formatBytes(allSorted[i].size),
+					SizeBytes: allSorted[i].size,
+				})
 			}
 
 			paruSize := calculateDirSize(paruBase)
@@ -259,11 +308,13 @@ func getDashboardData() tea.Cmd {
 			fetchEstimate(confirmCleanKeep3, "-k3")
 			fetchEstimate(confirmCleanKeep1, "-k1")
 			fetchEstimate(confirmCleanUninstalled, "-uk0")
-			estimates[confirmCleanNuke] = formatBytes(pacmanSize) // Nuke is everything
+			estimates[confirmCleanNuke] = formatBytes(pacmanSize)
 
 			dataMu.Lock()
 			data.TopCacheHogs = topHogs
-			data.AllCacheHogs = allHogs
+			data.AllCacheHogs = toPkgSize(allSorted)
+			data.UninstalledPacmanCache = toPkgSize(sortEntries(uninstalledPacman))
+			data.UninstalledParuCache = toPkgSize(sortEntries(uninstalledParu))
 			data.CacheFreedEstimates = estimates
 			data.PacmanCachePath = pacmanCachePath
 			data.PacmanCacheSizeBytes = pacmanSize
