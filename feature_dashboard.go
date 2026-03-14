@@ -294,10 +294,11 @@ func getDashboardData() tea.Cmd {
 			paruSize := calculateDirSize(paruBase)
 			totalCache := pacmanSize + paruSize
 
-			// Estimates for paccache (only for system cache)
+			// Estimates for paccache (summing system and paru caches)
 			estimates := make(map[confirmationType]string)
-			fetchEstimate := func(ct confirmationType, args ...string) {
-				out, err := runner.Run("paccache", append([]string{"-d"}, args...)...)
+			fetchCombinedEstimate := func(ct confirmationType, args ...string) {
+				// We can pass both directories to a single paccache call
+				out, err := runner.Run("paccache", append([]string{"-d", "-c", pacmanCachePath, "-c", paruClonePath}, args...)...)
 				if err == nil {
 					estimates[ct] = parsePaccacheDryRun(string(out))
 				} else {
@@ -305,10 +306,11 @@ func getDashboardData() tea.Cmd {
 				}
 			}
 
-			fetchEstimate(confirmCleanKeep3, "-k3")
-			fetchEstimate(confirmCleanKeep1, "-k1")
-			fetchEstimate(confirmCleanUninstalled, "-uk0")
-			estimates[confirmCleanNuke] = formatBytes(pacmanSize)
+			fetchCombinedEstimate(confirmCleanKeep3, "-k3")
+			fetchCombinedEstimate(confirmCleanKeep1, "-k1")
+			fetchCombinedEstimate(confirmCleanUninstalled, "-uk0")
+			estimates[confirmCleanNuke] = formatBytes(pacmanSize + paruSize)
+
 
 			dataMu.Lock()
 			data.TopCacheHogs = topHogs
