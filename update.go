@@ -344,6 +344,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Key mappings for navigation (shared between focused and unfocused states)
 		handleNavigation := func(m *model, key string) (tea.Model, tea.Cmd) {
+			key = strings.ToLower(key)
 			if m.mode == modeCacheMenu {
 				switch key {
 				case "up", "k":
@@ -685,8 +686,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.textInput.Blur()
 				}
 				return m, nil
-			case "up", "down", "pgup", "pgdown":
-				return handleNavigation(m, msg.String())
+			case "up", "down", "pgup", "pgdown", "j", "k", "PgUp", "PgDown":
+				return handleNavigation(m, strings.ToLower(msg.String()))
 			case "enter":
 				if m.mode == modeInstall && len(m.filtered) > 0 {
 
@@ -1211,7 +1212,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 
-		case "up", "down", "pgup", "pgdown", "j", "k":
+		case "up", "down", "pgup", "pgdown", "j", "k", "PgUp", "PgDown":
 			return handleNavigation(m, msg.String())
 
 		case "enter":
