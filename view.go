@@ -902,20 +902,17 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 				content.WriteString(fmt.Sprintf("  %s %s\n", labelStyle.Render("Size:"), countStyle.Render(m.dashboard.ParuCacheSize)))
 			}
 
-			// Show breakdown only for Orphaned clean (Standard maintenance like Keep 3/1 is kept clean)
-			if m.confirmType == confirmCleanUninstalled {
+			// Show breakdown for all cleaning modes except Nuke (which uses the totals above)
+			if m.confirmType == confirmCleanKeep3 || m.confirmType == confirmCleanKeep1 || m.confirmType == confirmCleanUninstalled {
+				content.WriteString("\n")
 				content.WriteString(packageNameStyle.Render("Breakdown:\n"))
 				pacmanEstimate := m.dashboard.CacheFreedPacman[m.confirmType]
 				paruEstimate := m.dashboard.CacheFreedParu[m.confirmType]
-				if pacmanEstimate == "" {
-					pacmanEstimate = "calculating..."
-				}
-				if paruEstimate == "" {
-					paruEstimate = "calculating..."
-				}
+				if pacmanEstimate == "" { pacmanEstimate = "calculating..." }
+				if paruEstimate == "" { paruEstimate = "calculating..." }
 
 				content.WriteString(fmt.Sprintf("  %s %s\n", labelStyle.Render("pacman:"), countStyle.Render(pacmanEstimate)))
-				content.WriteString(fmt.Sprintf("  %s %s\n", labelStyle.Render("paru:"), countStyle.Render(paruEstimate)))
+				content.WriteString(fmt.Sprintf("  %s %s\n\n", labelStyle.Render("paru:"), countStyle.Render(paruEstimate)))
 			}
 
 			estimate := m.dashboard.CacheFreedEstimates[m.confirmType]
