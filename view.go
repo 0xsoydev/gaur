@@ -889,38 +889,39 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 
 	if simpleConfirm {
 		if m.confirmType == confirmCleanKeep3 || m.confirmType == confirmCleanKeep1 || m.confirmType == confirmCleanUninstalled || m.confirmType == confirmCleanNuke {
-			labelStyle := lipgloss.NewStyle().Width(8).Foreground(lipgloss.Color("241"))
-
-			// Show total directory stats only for Nuke and Orphans
-			if m.confirmType == confirmCleanNuke || m.confirmType == confirmCleanUninstalled {
-				content.WriteString(packageNameStyle.Render("Pacman Cache (system):\n"))
+			
+			// Show directory paths only for Orphans/Nuke (High severity actions)
+			if m.confirmType == confirmCleanUninstalled || m.confirmType == confirmCleanNuke {
+				labelStyle := lipgloss.NewStyle().Width(8).Foreground(lipgloss.Color("241"))
+				content.WriteString(packageNameStyle.Render("System Cache:\n"))
 				content.WriteString(fmt.Sprintf("  %s %s\n", labelStyle.Render("Path:"), scrollHintStyle.Render(m.dashboard.PacmanCachePath)))
-				content.WriteString(fmt.Sprintf("  %s %s\n", labelStyle.Render("Size:"), countStyle.Render(m.dashboard.PacmanCacheSize)))
-
-				content.WriteString(packageNameStyle.Render("Paru Cache (user):\n"))
-				content.WriteString(fmt.Sprintf("  %s %s\n", labelStyle.Render("Path:"), scrollHintStyle.Render(m.dashboard.ParuCachePath)))
-				content.WriteString(fmt.Sprintf("  %s %s\n", labelStyle.Render("Size:"), countStyle.Render(m.dashboard.ParuCacheSize)))
+				content.WriteString(packageNameStyle.Render("User Cache:\n"))
+				content.WriteString(fmt.Sprintf("  %s %s\n\n", labelStyle.Render("Path:"), scrollHintStyle.Render(m.dashboard.ParuCachePath)))
 			}
 
-			// Show breakdown for all cleaning modes except Nuke (which uses the totals above)
-			if m.confirmType == confirmCleanKeep3 || m.confirmType == confirmCleanKeep1 || m.confirmType == confirmCleanUninstalled {
-				content.WriteString("\n")
-				breakdownHeaderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Bold(true)
-				content.WriteString(breakdownHeaderStyle.Render("Breakdown:") + "\n")
-				
-				pacmanEstimate := m.dashboard.CacheFreedPacman[m.confirmType]
-				paruEstimate := m.dashboard.CacheFreedParu[m.confirmType]
-				if pacmanEstimate == "" { pacmanEstimate = "calculating..." }
-				if paruEstimate == "" { paruEstimate = "calculating..." }
-
-				valStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
-				
-				pacmanLabel := sourceStyle("core").Render("  pacman:")
-				paruLabel := sourceStyle("aur").Render("  paru:  ") // Added space for alignment
-
-				content.WriteString(fmt.Sprintf("%s %s\n", pacmanLabel, valStyle.Render(pacmanEstimate)))
-				content.WriteString(fmt.Sprintf("%s %s\n\n", paruLabel, valStyle.Render(paruEstimate)))
+			// Show breakdown for all cleaning modes
+			breakdownHeaderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Bold(true)
+			content.WriteString(breakdownHeaderStyle.Render("Breakdown:") + "\n")
+			
+			pacmanEstimate := m.dashboard.CacheFreedPacman[m.confirmType]
+			paruEstimate := m.dashboard.CacheFreedParu[m.confirmType]
+			
+			// Special handling for Nuke since it clears everything
+			if m.confirmType == confirmCleanNuke {
+				pacmanEstimate = m.dashboard.PacmanCacheSize
+				paruEstimate = m.dashboard.ParuCacheSize
 			}
+
+			if pacmanEstimate == "" { pacmanEstimate = "calculating..." }
+			if paruEstimate == "" { paruEstimate = "calculating..." }
+
+			valStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
+			
+			pacmanLabel := sourceStyle("core").Render("  pacman:")
+			paruLabel := sourceStyle("aur").Render("  paru:  ") // Added space for alignment
+
+			content.WriteString(fmt.Sprintf("%s %s\n", pacmanLabel, valStyle.Render(pacmanEstimate)))
+			content.WriteString(fmt.Sprintf("%s %s\n\n", paruLabel, valStyle.Render(paruEstimate)))
 
 			estimate := m.dashboard.CacheFreedEstimates[m.confirmType]
 			if estimate == "" {
