@@ -891,21 +891,28 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 		if m.confirmType == confirmCleanKeep3 || m.confirmType == confirmCleanKeep1 || m.confirmType == confirmCleanUninstalled || m.confirmType == confirmCleanNuke {
 			labelStyle := lipgloss.NewStyle().Width(8).Foreground(lipgloss.Color("241"))
 
-			content.WriteString(packageNameStyle.Render("Pacman Cache (system):\n"))
-			content.WriteString(fmt.Sprintf("  %s %s\n", labelStyle.Render("Path:"), scrollHintStyle.Render(m.dashboard.PacmanCachePath)))
-			content.WriteString(fmt.Sprintf("  %s %s\n", labelStyle.Render("Size:"), countStyle.Render(m.dashboard.PacmanCacheSize)))
+			// Show total directory stats only for Nuke and Orphans
+			if m.confirmType == confirmCleanNuke || m.confirmType == confirmCleanUninstalled {
+				content.WriteString(packageNameStyle.Render("Pacman Cache (system):\n"))
+				content.WriteString(fmt.Sprintf("  %s %s\n", labelStyle.Render("Path:"), scrollHintStyle.Render(m.dashboard.PacmanCachePath)))
+				content.WriteString(fmt.Sprintf("  %s %s\n", labelStyle.Render("Size:"), countStyle.Render(m.dashboard.PacmanCacheSize)))
 
-			content.WriteString(packageNameStyle.Render("Paru Cache (user):\n"))
-			content.WriteString(fmt.Sprintf("  %s %s\n", labelStyle.Render("Path:"), scrollHintStyle.Render(m.dashboard.ParuCachePath)))
-			content.WriteString(fmt.Sprintf("  %s %s\n", labelStyle.Render("Size:"), countStyle.Render(m.dashboard.ParuCacheSize)))
+				content.WriteString(packageNameStyle.Render("Paru Cache (user):\n"))
+				content.WriteString(fmt.Sprintf("  %s %s\n", labelStyle.Render("Path:"), scrollHintStyle.Render(m.dashboard.ParuCachePath)))
+				content.WriteString(fmt.Sprintf("  %s %s\n", labelStyle.Render("Size:"), countStyle.Render(m.dashboard.ParuCacheSize)))
+			}
 
-			// Breakdown for cleaning operations
-			if m.confirmType != confirmCleanNuke {
+			// Show breakdown only for Orphaned clean (Standard maintenance like Keep 3/1 is kept clean)
+			if m.confirmType == confirmCleanUninstalled {
 				content.WriteString(packageNameStyle.Render("Breakdown:\n"))
 				pacmanEstimate := m.dashboard.CacheFreedPacman[m.confirmType]
 				paruEstimate := m.dashboard.CacheFreedParu[m.confirmType]
-				if pacmanEstimate == "" { pacmanEstimate = "calculating..." }
-				if paruEstimate == "" { paruEstimate = "calculating..." }
+				if pacmanEstimate == "" {
+					pacmanEstimate = "calculating..."
+				}
+				if paruEstimate == "" {
+					paruEstimate = "calculating..."
+				}
 
 				content.WriteString(fmt.Sprintf("  %s %s\n", labelStyle.Render("pacman:"), countStyle.Render(pacmanEstimate)))
 				content.WriteString(fmt.Sprintf("  %s %s\n", labelStyle.Render("paru:"), countStyle.Render(paruEstimate)))
