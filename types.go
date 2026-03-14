@@ -166,6 +166,7 @@ type DashboardData struct {
 	RecentlyInstalled    []RecentPackage // Details of 5 recently installed packages
 	TopCacheHogs         []PackageSize // Top 5 packages taking up cache space
 	AllCacheHogs         []PackageSize // All packages taking up cache space
+	CacheFreedEstimates  map[confirmationType]string // Estimated savings for different clean modes
 	// Disk usage info
 	DiskTotal      string
 	DiskUsed       string

@@ -818,7 +818,8 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 	dialogBorderStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(activeColor).
-		Padding(1, 2)
+		Padding(1, 2).
+		Align(lipgloss.Left)
 
 	titleStyle := lipgloss.NewStyle().
 		Bold(true).
@@ -871,13 +872,15 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 		}
 
 		if m.confirmType == confirmCleanKeep3 || m.confirmType == confirmCleanKeep1 || m.confirmType == confirmCleanUninstalled || m.confirmType == confirmCleanNuke {
+			labelStyle := lipgloss.NewStyle().Width(8).Foreground(lipgloss.Color("241"))
+
 			content.WriteString(packageNameStyle.Render("Pacman Cache (system):\n"))
-			content.WriteString(fmt.Sprintf("  Path: %s\n", scrollHintStyle.Render(m.dashboard.PacmanCachePath)))
-			content.WriteString(fmt.Sprintf("  Size: %s\n\n", countStyle.Render(m.dashboard.PacmanCacheSize)))
+			content.WriteString(fmt.Sprintf("  %s %s\n", labelStyle.Render("Path:"), scrollHintStyle.Render(m.dashboard.PacmanCachePath)))
+			content.WriteString(fmt.Sprintf("  %s %s\n\n", labelStyle.Render("Size:"), countStyle.Render(m.dashboard.PacmanCacheSize)))
 
 			content.WriteString(packageNameStyle.Render("Paru Cache (user):\n"))
-			content.WriteString(fmt.Sprintf("  Path: %s\n", scrollHintStyle.Render(m.dashboard.ParuCachePath)))
-			content.WriteString(fmt.Sprintf("  Size: %s\n\n", countStyle.Render(m.dashboard.ParuCacheSize)))
+			content.WriteString(fmt.Sprintf("  %s %s\n", labelStyle.Render("Path:"), scrollHintStyle.Render(m.dashboard.ParuCachePath)))
+			content.WriteString(fmt.Sprintf("  %s %s\n\n", labelStyle.Render("Size:"), countStyle.Render(m.dashboard.ParuCacheSize)))
 
 			content.WriteString(fmt.Sprintf("Total cache size: %s\n",
 				lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("214")).Render(m.dashboard.CleanerSize)))

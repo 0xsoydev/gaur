@@ -236,7 +236,7 @@ func getDashboardData() tea.Cmd {
 					SizeBytes: sortedHogs[i].size,
 				})
 			}
-			
+
 			var topHogs []PackageSize
 			for i := 0; i < 5 && i < len(allHogs); i++ {
 				topHogs = append(topHogs, allHogs[i])
@@ -245,9 +245,26 @@ func getDashboardData() tea.Cmd {
 			paruSize := calculateDirSize(paruBase)
 			totalCache := pacmanSize + paruSize
 
+			// Estimates for paccache (only for system cache)
+			estimates := make(map[confirmationType]string)
+			fetchEstimate := func(ct confirmationType, args ...string) {
+				out, err := runner.Run("paccache", append([]string{"-d"}, args...)...)
+				if err == nil {
+					estimates[ct] = parsePaccacheDryRun(string(out))
+				} else {
+					estimates[ct] = "0 B"
+				}
+			}
+
+			fetchEstimate(confirmCleanKeep3, "-k3")
+			fetchEstimate(confirmCleanKeep1, "-k1")
+			fetchEstimate(confirmCleanUninstalled, "-uk0")
+			estimates[confirmCleanNuke] = formatBytes(pacmanSize) // Nuke is everything
+
 			dataMu.Lock()
 			data.TopCacheHogs = topHogs
 			data.AllCacheHogs = allHogs
+			data.CacheFreedEstimates = estimates
 			data.PacmanCachePath = pacmanCachePath
 			data.PacmanCacheSizeBytes = pacmanSize
 			data.PacmanCacheSize = formatBytes(pacmanSize)
@@ -258,7 +275,6 @@ func getDashboardData() tea.Cmd {
 			data.CleanerSize = formatBytes(totalCache)
 			dataMu.Unlock()
 		}()
-
 		// Disk Usage
 		wg.Add(1)
 		go func() {
@@ -349,6 +365,20 @@ func parseParuStats(output string) (totalSize string, totalSizeBytes int64, miss
 		}
 	}
 	return
+}
+
+// parsePaccacheDryRun extracts the "disk space saved" string from paccache -d output
+func parsePaccacheDryRun(output string) string {
+	if strings.Contains(output, "no candidate packages found") {
+		return "0 B"
+	}
+	// Format: ==> finished dry run: 78 candidates (disk space saved: 782.43 MiB)
+	parts := strings.Split(output, "disk space saved: ")
+	if len(parts) > 1 {
+		res := strings.TrimSuffix(parts[1], ")")
+		return strings.TrimSpace(res)
+	}
+	return "0 B"
 }
 
 // renderCenteredLabels returns a string with labels centered under segments of given widths
