@@ -80,6 +80,25 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "q":
 			return m, tea.Quit
+		case "esc":
+			if m.mode == modeCacheSelective {
+				m.mode = modeCacheMenu
+				m.markedPackages = make(map[string]bool)
+				m.cacheToFree = 0
+				m.statusMessage = "Selective cache cleaning cancelled"
+				return m, nil
+			}
+			if m.mode == modeCacheMenu {
+				m.mode = modeInstalled
+				m.statusMessage = "Cache menu cancelled"
+				return m, nil
+			}
+			if len(m.markedPackages) > 0 {
+				m.markedPackages = make(map[string]bool)
+				m.statusMessage = "Selections cleared"
+				return m, nil
+			}
+			return m, nil
 		case "/":
 			m.textInput.Focus()
 			return m, nil
