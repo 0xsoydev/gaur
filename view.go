@@ -852,11 +852,21 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 	if dialogWidth > 90 { dialogWidth = 90 }
 
 	activeBorderColor := activeColor
-	if m.confirmType == confirmCleanNuke {
+	switch m.confirmType {
+	case confirmCleanKeep3:
+		activeBorderColor = lipgloss.Color("39")
+	case confirmCleanKeep1:
+		activeBorderColor = lipgloss.Color("208")
+	case confirmCleanUninstalled:
+		activeBorderColor = lipgloss.Color("42")
+	case confirmCleanNuke:
 		activeBorderColor = lipgloss.Color("196")
+	case confirmCleanSelective:
+		activeBorderColor = lipgloss.Color("135")
 	}
 
 	dialogBorderStyle := lipgloss.NewStyle().
+
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(activeBorderColor).
 		Padding(1, 2).

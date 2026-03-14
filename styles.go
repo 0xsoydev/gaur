@@ -421,6 +421,7 @@ func getModeColors() map[viewMode]lipgloss.Color {
 		modeUninstall:       currentTheme.UninstallColor,
 		modeUpdate:          currentTheme.UpdateColor,
 		modeUpdateSelective: currentTheme.UpdateColor,
+		modeCacheSelective:  lipgloss.Color("135"),
 	}
 }
 

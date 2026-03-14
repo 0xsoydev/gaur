@@ -154,7 +154,7 @@ func (m *model) renderSelectiveCacheView(helpText string, innerWidth, innerHeigh
 
 			nameStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("250"))
 			if m.markedPackages[pkg.Name] {
-				nameStyle = nameStyle.Foreground(lipgloss.Color("42"))
+				nameStyle = nameStyle.Foreground(lipgloss.Color("135"))
 			}
 
 			var namePart string
