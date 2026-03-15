@@ -17,37 +17,40 @@ func (m *model) renderHelpText(activeColor lipgloss.Color) string {
 
 	var parts []string
 
-	parts = append(parts, dimStyle.Render("[/] search  [tab] mark  "))
+	parts = append(parts, renderKeyHint("search", m.keys.Search, dimStyle))
+	parts = append(parts, dimStyle.Render("  "))
+	parts = append(parts, renderKeyHint("mark", m.keys.Mark, dimStyle))
+	parts = append(parts, dimStyle.Render("  "))
 
+	installStyle := dimStyle
 	if m.mode == modeInstall {
-		parts = append(parts, activeStyle.Render("[i]nstall"))
-	} else {
-		parts = append(parts, dimStyle.Render("[i]nstall"))
+		installStyle = activeStyle
 	}
+	parts = append(parts, renderKeyHint("install", m.keys.InstallMode, installStyle))
 	parts = append(parts, dimStyle.Render("  "))
 
+	infoStyle := dimStyle
 	if m.mode == modeInstalled {
-		parts = append(parts, activeStyle.Render("i[n]fo"))
-	} else {
-		parts = append(parts, dimStyle.Render("i[n]fo"))
+		infoStyle = activeStyle
 	}
+	parts = append(parts, renderKeyHint("info", m.keys.DashboardMode, infoStyle))
 	parts = append(parts, dimStyle.Render("  "))
 
+	removeStyle := dimStyle
 	if m.mode == modeUninstall {
-		parts = append(parts, activeStyle.Render("[r]emove"))
-	} else {
-		parts = append(parts, dimStyle.Render("[r]emove"))
+		removeStyle = activeStyle
 	}
+	parts = append(parts, renderKeyHint("remove", m.keys.UninstallMode, removeStyle))
 	parts = append(parts, dimStyle.Render("  "))
 
+	updateStyle := dimStyle
 	if m.mode == modeUpdate || m.mode == modeUpdateSelective {
-		parts = append(parts, activeStyle.Render("[u]pdate"))
-	} else {
-		parts = append(parts, dimStyle.Render("[u]pdate"))
+		updateStyle = activeStyle
 	}
+	parts = append(parts, renderKeyHint("update", m.keys.UpdateMode, updateStyle))
 	parts = append(parts, dimStyle.Render("  "))
 
-	parts = append(parts, dimStyle.Render("[q]uit"))
+	parts = append(parts, renderKeyHint("quit", m.keys.Quit, dimStyle))
 
 	return strings.Join(parts, "")
 }
@@ -998,7 +1001,9 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 	}
 
 	lines = append(lines, "")
-	lines = append(lines, promptStyle.Render(fmt.Sprintf("Proceed? %ses  %so", keyStyle.Render("[y]"), keyStyle.Render("[n]"))))
+	lines = append(lines, promptStyle.Render(fmt.Sprintf("Proceed? %s  %s", 
+		renderKeyHint("yes", m.keys.Confirm, keyStyle),
+		renderKeyHint("no", m.keys.Cancel, keyStyle))))
 
 	dialog := dialogBorderStyle.Width(dialogWidth).Render(strings.Join(lines, "\n"))
 	return lipgloss.Place(innerWidth, innerHeight, lipgloss.Center, lipgloss.Center, dialog)
@@ -1057,7 +1062,10 @@ func (m *model) renderErrorOverlay(innerWidth, innerHeight int) string {
 		content.WriteString("\n")
 	}
 
-	content.WriteString(hintStyle.Render("Press [esc], [enter], or [q] to dismiss"))
+	content.WriteString(hintStyle.Render(fmt.Sprintf("Press %s, %s, or %s to dismiss",
+		renderKeyHint("esc", m.keys.Cancel, hintStyle),
+		renderKeyHint("enter", m.keys.Confirm, hintStyle),
+		renderKeyHint("quit", m.keys.Quit, hintStyle))))
 
 	dialogContent := content.String()
 	dialog := dialogBorderStyle.Width(dialogWidth).Render(dialogContent)
@@ -1192,8 +1200,8 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 			Padding(0, 1).
 			Bold(true)
 
-		btnUpdate := buttonStyle.Render("[enter] update all")
-		btnSelective := buttonStyleRed.Render("[s]elective")
+		btnUpdate := buttonStyle.Render(renderKeyHint("update all", m.keys.Confirm, buttonStyle))
+		btnSelective := buttonStyleRed.Render(renderKeyHint("selective", m.keys.Selective, buttonStyleRed))
 
 		buttons := btnUpdate + "   " + btnSelective
 		

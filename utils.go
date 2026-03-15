@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -556,4 +557,55 @@ func substringAnsi(s string, skipWidth int) string {
 	}
 
 	return result.String()
+}
+
+// getKeyDisplay returns a string representing the primary key for a binding
+func getKeyDisplay(b key.Binding) string {
+	keys := b.Keys()
+	if len(keys) == 0 {
+		return ""
+	}
+	k := keys[0]
+	// Special cases for display
+	switch k {
+	case "ctrl+c":
+		return "^c"
+	case "enter":
+		return "enter"
+	case "esc":
+		return "esc"
+	case "tab":
+		return "tab"
+	case " ":
+		return "space"
+	}
+	return k
+}
+
+// renderKeyHint formats a label with a keybinding hint.
+// If the key exists in the label, it highlights it in [].
+// Otherwise, it prepends the key in [].
+func renderKeyHint(label string, b key.Binding, style lipgloss.Style) string {
+	k := getKeyDisplay(b)
+	if k == "" {
+		return style.Render(label)
+	}
+
+	// Only try to embed if it's a single character
+	if len(k) == 1 {
+		idx := strings.Index(strings.ToLower(label), strings.ToLower(k))
+		if idx != -1 {
+			// Found the letter in the word
+			before := label[:idx]
+			letter := label[idx : idx+1]
+			after := label[idx+1:]
+			return fmt.Sprintf("%s%s%s",
+				style.Render(before),
+				style.Render("["+letter+"]"),
+				style.Render(after))
+		}
+	}
+
+	// Not found or not single char, prepend
+	return fmt.Sprintf("%s:%s", style.Render("["+k+"]"), style.Render(label))
 }
