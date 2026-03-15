@@ -50,6 +50,13 @@ func (m *model) renderHelpText(activeColor lipgloss.Color) string {
 	parts = append(parts, renderKeyHint("update", m.keys.UpdateMode, updateStyle))
 	parts = append(parts, dimStyle.Render("  "))
 
+	settingsStyle := dimStyle
+	if m.mode == modeSettings {
+		settingsStyle = activeStyle
+	}
+	parts = append(parts, renderKeyHint("settings", m.keys.Settings, settingsStyle))
+	parts = append(parts, dimStyle.Render("  "))
+
 	parts = append(parts, renderKeyHint("quit", m.keys.Quit, dimStyle))
 
 	return strings.Join(parts, "")
@@ -63,7 +70,16 @@ func (m *model) View() string {
 	innerWidth := m.width
 	innerHeight := m.height // Use full terminal height for base calculations
 
-	activeColor := modeColors[m.mode]
+	// Determine effective mode for rendering background elements
+	effectiveMode := m.mode
+	if m.mode == modeSettings {
+		effectiveMode = m.previousMode
+	}
+
+	// Apply configured border style
+	baseBorderStyle = baseBorderStyle.Border(m.getBorderStyle())
+
+	activeColor := modeColors[effectiveMode]
 	if activeColor == "" {
 		activeColor = defaultBorderColor
 	}
@@ -71,20 +87,20 @@ func (m *model) View() string {
 	helpText := m.renderHelpText(activeColor)
 
 	var content string
-
+	
 	if m.showConfirmation {
 		content = m.renderConfirmationDialog(innerWidth, innerHeight, activeColor)
 	} else if m.showErrorOverlay {
 		content = m.renderErrorOverlay(innerWidth, innerHeight)
-	} else if m.mode == modeCacheMenu {
+	} else if effectiveMode == modeCacheMenu {
 		content = m.renderCacheMenu(helpText, innerWidth, innerHeight)
-	} else if m.mode == modeCacheSelective {
+	} else if effectiveMode == modeCacheSelective {
 		content = m.renderSelectiveCacheView(helpText, innerWidth, innerHeight, activeColor)
-	} else if m.mode == modeInstalled {
+	} else if effectiveMode == modeInstalled {
 		content = m.renderDashboard(helpText, innerWidth, innerHeight)
-	} else if m.mode == modeUpdate {
+	} else if effectiveMode == modeUpdate {
 		content = m.renderSimpleUpdateView(helpText, innerWidth, innerHeight, activeColor)
-	} else if m.mode == modeUpdateSelective {
+	} else if effectiveMode == modeUpdateSelective {
 		content = m.renderUpdateSelectiveView(helpText, innerWidth, innerHeight, activeColor)
 	} else {
 		// Handle modeInstall and modeUninstall
@@ -100,6 +116,15 @@ func (m *model) View() string {
 		content = m.renderPackageListLayout(innerWidth, innerHeight, activeColor, "", footer)
 	}
 
+	// If settings are active, overlay them on top of the rendered content
+	if m.mode == modeSettings {
+		settingsOverlay := m.renderSettings(innerWidth, innerHeight)
+		// Since true terminal layering is complex, we use lipgloss.Place 
+		// but let it handle the background by NOT filling with whitespace if we want transparency.
+		// However, most TUI overlays just clear their area.
+		content = m.overlaySettings(content, settingsOverlay, innerWidth, innerHeight)
+	}
+
 	return lipgloss.Place(
 		m.width,
 		m.height,
@@ -107,6 +132,52 @@ func (m *model) View() string {
 		lipgloss.Top,
 		content,
 	)
+}
+
+// overlaySettings manually layers the settings menu on top of base content
+func (m *model) overlaySettings(base, overlay string, width, height int) string {
+	baseLines := strings.Split(base, "\n")
+	overlayLines := strings.Split(overlay, "\n")
+	
+	overlayHeight := len(overlayLines)
+	if overlayHeight == 0 {
+		return base
+	}
+	
+	overlayWidth := lipgloss.Width(overlayLines[0])
+
+	// Ensure base has enough lines to match terminal height
+	for len(baseLines) < height {
+		baseLines = append(baseLines, strings.Repeat(" ", width))
+	}
+
+	startY := (height - overlayHeight) / 2
+	startX := (width - overlayWidth) / 2
+
+	result := make([]string, len(baseLines))
+	copy(result, baseLines)
+
+	for y := 0; y < overlayHeight; y++ {
+		targetY := startY + y
+		if targetY >= 0 && targetY < len(result) {
+			bgLine := result[targetY]
+			
+			// Reconstruct the line using precise slicing
+			left := truncateWithAnsi(bgLine, startX)
+			// Ensure left part is exactly startX wide by padding if needed
+			leftWidth := lipgloss.Width(left)
+			if leftWidth < startX {
+				left += strings.Repeat(" ", startX - leftWidth)
+			}
+			
+			right := substringAnsi(bgLine, startX + overlayWidth)
+			
+			// Composite the line: [Base Left] [Overlay Content] [Base Right]
+			result[targetY] = left + overlayLines[y] + right
+		}
+	}
+
+	return strings.Join(result, "\n")
 }
 
 // renderUpdateSelectiveView renders the selective update overlay on top of the simple update view
@@ -133,7 +204,7 @@ func (m *model) renderUpdateSelectiveView(helpText string, innerWidth, innerHeig
 	warningSymbol := lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Render("⚠")
 	warningText := lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Render(" Selective updates can break system dependencies")
 	warningBox := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
+		Border(m.getBorderStyle()).
 		BorderForeground(lipgloss.Color("196")).
 		Padding(0, 1).
 		Render(warningSymbol + warningText)
@@ -388,7 +459,7 @@ func (m *model) renderSelectionBox(maxWidth int) string {
 		borderColor = lipgloss.Color("213")
 	}
 	panelStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
+		Border(m.getBorderStyle()).
 		BorderForeground(borderColor).
 		Padding(0, 1)
 
@@ -673,19 +744,23 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 		Render(results.String())
 
 	inputLine := ""
-	if m.mode == modeInstall || m.mode == modeUninstall || m.mode == modeUpdateSelective {
+	
+	// Determine what mode's input line to show
+	displayMode := m.mode
+	if m.mode == modeSettings {
+		displayMode = m.previousMode
+	}
+
+	if displayMode == modeInstall || displayMode == modeUninstall || displayMode == modeUpdateSelective {
 		inputLine = m.textInput.View()
 	} else {
 		inputLine = statusStyle.Render(m.statusMessage)
 	}
 
-	statusLine := statusStyle.Render(m.statusMessage)
-
 	bottomContent := lipgloss.JoinVertical(
 		lipgloss.Left,
 		resultsBox,
 		"",
-		statusLine,
 		inputLine,
 	)
 
@@ -870,7 +945,7 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 
 	dialogBorderStyle := lipgloss.NewStyle().
 
-		Border(lipgloss.RoundedBorder()).
+		Border(m.getBorderStyle()).
 		BorderForeground(activeBorderColor).
 		Padding(1, 2).
 		Align(lipgloss.Left)
@@ -1044,7 +1119,7 @@ func (m *model) renderErrorOverlay(innerWidth, innerHeight int) string {
 		Align(lipgloss.Center)
 
 	dialogBorderStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
+		Border(m.getBorderStyle()).
 		BorderForeground(errorColor).
 		Padding(1, 2)
 
