@@ -28,6 +28,37 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		// 2. Overlays & Panel Intercepts
+		if m.mode == modeSettings {
+			switch {
+			case key.Matches(msg, m.keys.Cancel) || key.Matches(msg, m.keys.Quit) || key.Matches(msg, m.keys.Settings):
+				m.mode = m.previousMode
+				return m, nil
+			case msg.String() == "up" || msg.String() == "k":
+				if m.settingsIndex > 0 {
+					m.settingsIndex--
+				}
+			case msg.String() == "down" || msg.String() == "j":
+				if m.settingsIndex < len(m.settingsItems)-1 {
+					m.settingsIndex++
+				}
+			case msg.String() == "left" || msg.String() == "h":
+				item := &m.settingsItems[m.settingsIndex]
+				item.ActiveIndex--
+				if item.ActiveIndex < 0 {
+					item.ActiveIndex = len(item.Options) - 1
+				}
+				m.updateConfigFromSettings()
+			case msg.String() == "right" || msg.String() == "l":
+				item := &m.settingsItems[m.settingsIndex]
+				item.ActiveIndex++
+				if item.ActiveIndex >= len(item.Options) {
+					item.ActiveIndex = 0
+				}
+				m.updateConfigFromSettings()
+			}
+			return m, nil
+		}
+
 		if m.showErrorOverlay {
 			if key.Matches(msg, m.keys.Cancel) || key.Matches(msg, m.keys.Confirm) || key.Matches(msg, m.keys.Quit) {
 				m.showErrorOverlay = false
@@ -100,6 +131,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.statusMessage = "Selections cleared"
 				return m, nil
 			}
+			return m, nil
+		case key.Matches(msg, m.keys.Settings):
+			m.previousMode = m.mode
+			m.mode = modeSettings
 			return m, nil
 		case key.Matches(msg, m.keys.Search):
 			m.textInput.Focus()
@@ -192,6 +227,28 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.loading = true
 			return m, checkUpdates()
 		}
+		m.loading = false
+		m.statusMessage = "Sync failed"
+		m.showErrorOverlay = true
+		m.errorTitle = "Repository Sync Failed"
+		m.errorMessage = msg.err.Error()
+
+	case updateCheckMsg:
+		m.loading = false
+		if msg.err == nil {
+			m.pendingUpdates = msg.packages
+			m.updatableAll = msg.packages
+			if len(msg.packages) == 0 {
+				m.statusMessage = "System is up to date"
+			} else {
+				m.statusMessage = fmt.Sprintf("%d updates available", len(msg.packages))
+			}
+		} else {
+			m.statusMessage = "Failed to check for updates"
+			m.showErrorOverlay = true
+			m.errorTitle = "Update Check Error"
+			m.errorMessage = msg.err.Error()
+		}
 
 	case aurSearchMsg:
 		m.searchingAUR = false
@@ -227,6 +284,30 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case dashboardMsg:
 		m.loading = false
 		if msg.err == nil { m.dashboard = msg.data }
+
+	case actionCompleteMsg:
+		m.loading = false
+		m.statusMessage = msg.message
+		if msg.err != nil {
+			m.showErrorOverlay = true
+			m.errorTitle = "Action Failed"
+			m.errorMessage = msg.err.Error()
+		}
+		if m.mode == modeInstall { cmds = append(cmds, loadRepoPackages()) }
+		if m.mode == modeUninstall { cmds = append(cmds, getInstalledPackages()) }
+
+	case updateOutputMsg:
+		if msg.done {
+			m.loading = false
+			if msg.err != nil {
+				m.showErrorOverlay = true
+				m.errorTitle = "Update Failed"
+				m.errorMessage = msg.err.Error()
+			} else {
+				m.statusMessage = "Update completed successfully"
+			}
+			return m, checkUpdates()
+		}
 
 	case execCompleteMsg:
 		return m.handleExecComplete(msg)
@@ -501,5 +582,10 @@ func (m *model) handleExecComplete(msg execCompleteMsg) (tea.Model, tea.Cmd) {
 	}
 	if m.mode == modeInstall { return m, loadRepoPackages() }
 	if m.mode == modeUninstall { return m, getInstalledPackages() }
+	if m.mode == modeUpdate || m.mode == modeUpdateSelective {
+		m.loading = true
+		m.statusMessage = "Refreshing update list..."
+		return m, checkUpdates()
+	}
 	return m, getDashboardData()
 }
