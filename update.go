@@ -17,8 +17,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.handleMouse(msg)
 
 	case tea.KeyMsg:
-		// 1. Global Intercepts
+		// 1. Global Intercepts (Highest Priority)
 		if key.Matches(msg, m.keys.Quit) {
+			m.saveSettingsToDisk()
 			return m, tea.Quit
 		}
 		if msg.String() == "ctrl+r" && m.mode == modeInstalled {
@@ -30,7 +31,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// 2. Overlays & Panel Intercepts
 		if m.mode == modeSettings {
 			switch {
-			case key.Matches(msg, m.keys.Cancel) || key.Matches(msg, m.keys.Quit) || key.Matches(msg, m.keys.Settings):
+			case key.Matches(msg, m.keys.Cancel) || key.Matches(msg, m.keys.Settings):
+				m.saveSettingsToDisk()
 				m.mode = m.previousMode
 				return m, nil
 			case msg.String() == "up" || msg.String() == "k":
@@ -111,8 +113,6 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// 5. General Mode Keys (Unfocused)
 		switch {
-		case key.Matches(msg, m.keys.Quit):
-			return m, tea.Quit
 		case key.Matches(msg, m.keys.Cancel):
 			if m.mode == modeCacheSelective {
 				m.mode = modeCacheMenu
@@ -219,7 +219,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.loading = false
 		if msg.err == nil {
 			m.repoPackages = msg.packages
+			m.statusMessage = fmt.Sprintf("Loaded %d packages", len(msg.packages))
 			m.performFiltering()
+		} else {
+			m.statusMessage = "Failed to load packages"
 		}
 
 	case syncRepositoriesMsg:
@@ -278,7 +281,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.loading = false
 		if msg.err == nil {
 			m.installed = msg.packages
+			m.statusMessage = fmt.Sprintf("Loaded %d installed packages", len(msg.packages))
 			m.performFiltering()
+		} else {
+			m.statusMessage = "Failed to load installed packages"
 		}
 
 	case dashboardMsg:
