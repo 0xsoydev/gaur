@@ -359,12 +359,20 @@ func (m *model) renderVerticalSplitLayout(innerWidth, innerHeight int, activeCol
 		}
 	}
 
+	resultsStr := results.String()
+	if !m.loading && len(pkgList) > resultsHeight {
+		scrollbar := renderScrollbar(len(pkgList), m.selectedIndex, resultsHeight, activeColor)
+		resultsStr = lipgloss.JoinHorizontal(lipgloss.Top,
+			lipgloss.NewStyle().Width(listWidth-4).Render(resultsStr),
+			lipgloss.NewStyle().MarginLeft(1).Render(scrollbar))
+	}
+
 	listPanel := borderStyle.
 		Width(listWidth - 2).
 		Height(innerHeight - 2).
 		Render(lipgloss.JoinVertical(lipgloss.Left,
-			results.String(),
-			lipgloss.NewStyle().Height(resultsHeight - lipgloss.Height(results.String())).Render(""), // filler
+			resultsStr,
+			lipgloss.NewStyle().Height(resultsHeight - lipgloss.Height(resultsStr)).Render(""), // filler
 			m.textInput.View(),
 		))
 
@@ -514,11 +522,7 @@ func (m *model) renderSelectionBox(maxWidth int) string {
 	}
 	panelWidth := desiredPanelWidth
 
-	if startIdx > 0 {
-		selectionsList.WriteString("\n")
-		selectionsList.WriteString(itemStyle.Render(fmt.Sprintf("... %d above", startIdx)))
-	}
-
+	var listBuilder strings.Builder
 	for i := startIdx; i < endIdx; i++ {
 		name := pkgNames[i]
 		innerWidth := panelWidth - 4
@@ -530,20 +534,26 @@ func (m *model) renderSelectionBox(maxWidth int) string {
 			displayName = truncateWithAnsi(displayName, nameMaxWidth-3) + "..."
 		}
 
-		selectionsList.WriteString("\n")
+		if i > startIdx {
+			listBuilder.WriteString("\n")
+		}
 		if m.selectionPanelFocused && i == m.selectionPanelIndex {
-			selectionsList.WriteString(selectedItemStyle.Render("> " + displayName))
+			listBuilder.WriteString(selectedItemStyle.Render("> " + displayName))
 		} else {
-			selectionsList.WriteString(itemStyle.Render("  " + displayName))
+			listBuilder.WriteString(itemStyle.Render("  " + displayName))
 		}
 	}
 
-	if endIdx < len(pkgNames) {
-		selectionsList.WriteString("\n")
-		selectionsList.WriteString(itemStyle.Render(fmt.Sprintf("... %d more below", len(pkgNames)-endIdx)))
+	listStr := listBuilder.String()
+	if len(pkgNames) > (endIdx - startIdx) {
+		// Add scrollbar for selection box
+		scrollbar := renderScrollbar(len(pkgNames), startIdx, (endIdx - startIdx), lipgloss.Color("205"))
+		listStr = lipgloss.JoinHorizontal(lipgloss.Top,
+			lipgloss.NewStyle().Width(panelWidth - 4).Render(listStr),
+			lipgloss.NewStyle().MarginLeft(1).Render(scrollbar))
 	}
 
-	return panelStyle.Width(panelWidth).Render(selectionsList.String())
+	return panelStyle.Width(panelWidth).Render(titleText + "\n" + listStr)
 }
 
 // renderPackageListLayout renders the standard split-pane list view for install, uninstall, and selective update
@@ -738,10 +748,18 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 		}
 	}
 
+	resultsStr := results.String()
+	if !m.loading && len(pkgList) > resultsHeight {
+		scrollbar := renderScrollbar(len(pkgList), m.selectedIndex, resultsHeight, activeColor)
+		resultsStr = lipgloss.JoinHorizontal(lipgloss.Top,
+			lipgloss.NewStyle().Width(contentWidth-2).Render(resultsStr),
+			lipgloss.NewStyle().MarginLeft(1).Render(scrollbar))
+	}
+
 	resultsBox := lipgloss.NewStyle().
 		Width(contentWidth).
 		Height(resultsHeight).
-		Render(results.String())
+		Render(resultsStr)
 
 	inputLine := ""
 	
@@ -1210,31 +1228,21 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 		}
 
 		displayCount := availableLinesForList
-
-		if m.updateScrollOffset > 0 {
-			displayCount -= 2
-		}
-		if m.updateScrollOffset+displayCount < len(m.pendingUpdates) {
-			displayCount -= 2
-		}
-		if displayCount < 1 {
-			displayCount = 1
+		if displayCount > len(m.pendingUpdates) {
+			displayCount = len(m.pendingUpdates)
 		}
 
-		if displayCount > len(m.pendingUpdates)-m.updateScrollOffset {
-			displayCount = len(m.pendingUpdates) - m.updateScrollOffset
-		}
-
-		m.maxUpdateScroll = len(m.pendingUpdates) - 1
+		m.maxUpdateScroll = len(m.pendingUpdates) - displayCount
 		if m.maxUpdateScroll < 0 {
 			m.maxUpdateScroll = 0
 		}
 
-		if m.updateScrollOffset > 0 {
-			content.WriteString(fmt.Sprintf("    ... and %d more above.\n\n", m.updateScrollOffset))
-			innerContentHeight += 2
+		// Clamp current offset
+		if m.updateScrollOffset > m.maxUpdateScroll {
+			m.updateScrollOffset = m.maxUpdateScroll
 		}
 
+		var listBuilder strings.Builder
 		for i := 0; i < displayCount; i++ {
 			pkgIndex := i + m.updateScrollOffset
 			if pkgIndex >= len(m.pendingUpdates) {
@@ -1247,14 +1255,19 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 			} else {
 				sourceBadge = fmt.Sprintf("[%s]", pkg.Source)
 			}
-			content.WriteString(fmt.Sprintf("    • %s %s %s\n", sourceBadge, lipgloss.NewStyle().Foreground(lipgloss.Color("39")).Render(pkg.Name), lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render(pkg.Version)))
-			innerContentHeight++
+			listBuilder.WriteString(fmt.Sprintf("    • %s %s %s\n", sourceBadge, lipgloss.NewStyle().Foreground(lipgloss.Color("39")).Render(pkg.Name), lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render(pkg.Version)))
 		}
 
-		if m.updateScrollOffset+displayCount < len(m.pendingUpdates) {
-			content.WriteString(fmt.Sprintf("\n    ... and %d more below.", len(m.pendingUpdates)-(m.updateScrollOffset+displayCount)))
-			innerContentHeight += 2
+		listStr := listBuilder.String()
+		if len(m.pendingUpdates) > displayCount {
+			// Add scrollbar
+			scrollbar := renderScrollbar(len(m.pendingUpdates), m.updateScrollOffset, displayCount, activeColor)
+			// Join list and scrollbar
+			listStr = lipgloss.JoinHorizontal(lipgloss.Top, 
+				lipgloss.NewStyle().Width(innerWidth - 6).Render(listStr),
+				lipgloss.NewStyle().MarginLeft(1).Render(scrollbar))
 		}
+		content.WriteString(listStr)
 	}
 
 	// Build main list content

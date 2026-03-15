@@ -628,3 +628,37 @@ func maintainBackground(s string, bgColor lipgloss.Color) string {
 	// Replace \x1b[0m with \x1b[0m + bgSeq
 	return strings.ReplaceAll(s, "\x1b[0m", "\x1b[0m"+bgSeq)
 }
+
+// renderScrollbar generates a vertical scrollbar indicator
+func renderScrollbar(total, offset, visibleHeight int, activeColor lipgloss.Color) string {
+	if total <= visibleHeight || visibleHeight <= 0 {
+		return ""
+	}
+
+	scrollbarHeight := visibleHeight
+	trackStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("236"))
+	thumbStyle := lipgloss.NewStyle().Foreground(activeColor)
+
+	// Calculate thumb size and position
+	thumbHeight := int(float64(visibleHeight) * (float64(visibleHeight) / float64(total)))
+	if thumbHeight < 1 {
+		thumbHeight = 1
+	}
+
+	maxOffset := total - visibleHeight
+	thumbStart := int(float64(offset) / float64(maxOffset) * float64(visibleHeight-thumbHeight))
+
+	var scrollbar strings.Builder
+	for i := 0; i < scrollbarHeight; i++ {
+		if i >= thumbStart && i < thumbStart+thumbHeight {
+			scrollbar.WriteString(thumbStyle.Render("┃"))
+		} else {
+			scrollbar.WriteString(trackStyle.Render("│"))
+		}
+		if i < scrollbarHeight-1 {
+			scrollbar.WriteString("\n")
+		}
+	}
+
+	return scrollbar.String()
+}
