@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -17,7 +18,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		// 1. Global Intercepts
-		if msg.String() == "ctrl+c" {
+		if key.Matches(msg, m.keys.Quit) {
 			return m, tea.Quit
 		}
 		if msg.String() == "ctrl+r" && m.mode == modeInstalled {
@@ -28,7 +29,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// 2. Overlays & Panel Intercepts
 		if m.showErrorOverlay {
-			if msg.String() == "esc" || msg.String() == "enter" || msg.String() == "q" {
+			if key.Matches(msg, m.keys.Cancel) || key.Matches(msg, m.keys.Confirm) || key.Matches(msg, m.keys.Quit) {
 				m.showErrorOverlay = false
 			}
 			return m, nil
@@ -56,17 +57,18 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// 4. Input Focus Mode
 		if m.textInput.Focused() {
-			switch msg.String() {
-			case "esc":
+			if key.Matches(msg, m.keys.Cancel) {
 				if m.mode == modeUpdateSelective {
 					m.mode = modeUpdate
 					m.markedPackages = make(map[string]bool)
 				}
 				m.textInput.Blur()
 				return m, nil
-			case "enter":
+			}
+			if key.Matches(msg, m.keys.Confirm) {
 				return m.handleActionTrigger()
-			case "tab", "m":
+			}
+			if key.Matches(msg, m.keys.Mark) || msg.String() == "m" {
 				return m.handleMarking()
 			}
 
@@ -77,10 +79,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		// 5. General Mode Keys (Unfocused)
-		switch msg.String() {
-		case "q":
+		switch {
+		case key.Matches(msg, m.keys.Quit):
 			return m, tea.Quit
-		case "esc":
+		case key.Matches(msg, m.keys.Cancel):
 			if m.mode == modeCacheSelective {
 				m.mode = modeCacheMenu
 				m.markedPackages = make(map[string]bool)
@@ -99,22 +101,22 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			return m, nil
-		case "/":
+		case key.Matches(msg, m.keys.Search):
 			m.textInput.Focus()
 			return m, nil
-		case "c":
+		case msg.String() == "c":
 			if m.mode == modeInstalled && !m.loading {
 				m.mode = modeCacheMenu
 				m.cacheMenuIndex = 0
 			}
-		case "R":
+		case msg.String() == "R":
 			if m.mode == modeInstalled && !m.loading && m.dashboard.Orphans > 0 {
-				orphanList, _ := runner.Run("paru", "-Qdtq")
+				orphanList, _ := runner.Run(m.config.Commands.AurHelper, "-Qdtq")
 				m.confirmPackages = strings.Fields(string(orphanList))
 				m.showConfirmation = true
 				m.confirmType = confirmRemoveOrphans
 			}
-		case "t", "e", "f", "o":
+		case msg.String() == "t", msg.String() == "e", msg.String() == "f", msg.String() == "o":
 			if m.mode == modeInstalled && !m.loading {
 				m.mode = modeUninstall
 				m.loading = true
@@ -122,11 +124,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.textInput.SetValue(msg.String() + ":")
 				return m, getInstalledPackages()
 			}
-		case "n":
+		case key.Matches(msg, m.keys.DashboardMode):
 			m.mode = modeInstalled
 			m.loading = true
 			return m, getDashboardData()
-		case "r":
+		case key.Matches(msg, m.keys.UninstallMode):
 			if m.mode != modeUninstall {
 				m.mode = modeUninstall
 				m.loading = true
@@ -134,10 +136,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.textInput.SetValue("")
 				return m, getInstalledPackages()
 			}
-		case "u":
+		case key.Matches(msg, m.keys.UpdateMode):
 			m.mode = modeUpdate
-			return m, syncRepositoriesInTerminal()
-		case "s":
+			return m, syncRepositoriesInTerminal(m)
+		case key.Matches(msg, m.keys.Selective):
 			if m.mode == modeUpdate {
 				m.mode = modeUpdateSelective
 				m.selectedIndex = 0
@@ -146,15 +148,17 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.filtered = m.pendingUpdates
 					m.loadingInfo = true
 					m.infoForPackage = m.filtered[0].Name
-					return m, getPackageInfo(m.filtered[0])
+					return m, getPackageInfo(m, m.filtered[0])
 				}
 			}
-		case "a", "y", "Y":
+		case key.Matches(msg, m.keys.Confirm):
+			return m.handleActionTrigger()
+		case msg.String() == "y" || msg.String() == "Y" || msg.String() == "a":
 			if m.mode == modeUpdate && !m.loading && len(m.pendingUpdates) > 0 {
 				m.statusMessage = "Running system update..."
-				return m, executeUpdateInTerminal()
+				return m, executeUpdateInTerminal(m)
 			}
-		case "i":
+		case key.Matches(msg, m.keys.InstallMode):
 			if m.mode != modeInstall {
 				m.mode = modeInstall
 				m.selectedIndex = 0
@@ -162,11 +166,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.textInput.SetValue("")
 				m.textInput.Focus()
 			}
-		case "tab", "m":
+		case key.Matches(msg, m.keys.Mark) || msg.String() == "m":
 			return m.handleMarking()
-		case "enter":
-			return m.handleActionTrigger()
-		case "*":
+		case msg.String() == "*":
 			if len(m.markedPackages) > 0 {
 				m.selectionPanelFocused = true
 				m.selectionPanelIndex = 0
@@ -211,7 +213,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			pkg := m.getPackageByName(msg.packageName)
 			if pkg != nil {
 				m.infoScrollOffset = 0
-				return m, getPackageInfo(*pkg)
+				return m, getPackageInfo(m, *pkg)
 			}
 		}
 
@@ -288,7 +290,7 @@ func (m *model) handleNavigation(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if pkg != nil && m.mode != modeCacheSelective {
 			m.loadingInfo = true
 			m.pendingInfoPackage = pkg.Name
-			return m, debouncePackageInfo(m.pendingInfoPackage)
+			return m, debouncePackageInfo(m, m.pendingInfoPackage)
 		}
 	}
 	return m, nil
@@ -360,22 +362,22 @@ func (m *model) handleActionTrigger() (tea.Model, tea.Cmd) {
 }
 
 func (m *model) handleConfirmationKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch msg.String() {
-	case "y", "Y", "enter":
+	if key.Matches(msg, m.keys.Confirm) || msg.String() == "y" || msg.String() == "Y" {
 		m.showConfirmation = false
 		switch m.confirmType {
-		case confirmInstall: return m, executeInstallInTerminal(m.confirmPackages)
-		case confirmUninstall: return m, executeUninstallInTerminal(m.confirmPackages)
-		case confirmUpdate: return m, executeUpdateInTerminal()
-		case confirmSelectiveUpdate: return m, executeSelectiveUpdateInTerminal(m.confirmPackages)
-		case confirmCleanKeep3: return m, executeCleanCache(confirmCleanKeep3, 3, false)
-		case confirmCleanKeep1: return m, executeCleanCache(confirmCleanKeep1, 1, false)
-		case confirmCleanUninstalled: return m, executeCleanCache(confirmCleanUninstalled, 0, true)
-		case confirmCleanNuke: return m, executeCleanCache(confirmCleanNuke, 0, false)
+		case confirmInstall: return m, executeInstallInTerminal(m, m.confirmPackages)
+		case confirmUninstall: return m, executeUninstallInTerminal(m, m.confirmPackages)
+		case confirmUpdate: return m, executeUpdateInTerminal(m)
+		case confirmSelectiveUpdate: return m, executeSelectiveUpdateInTerminal(m, m.confirmPackages)
+		case confirmCleanKeep3: return m, executeCleanCache(m, confirmCleanKeep3, 3, false)
+		case confirmCleanKeep1: return m, executeCleanCache(m, confirmCleanKeep1, 1, false)
+		case confirmCleanUninstalled: return m, executeCleanCache(m, confirmCleanUninstalled, 0, true)
+		case confirmCleanNuke: return m, executeCleanCache(m, confirmCleanNuke, 0, false)
 		case confirmCleanSelective: return m, executeSelectiveClean(m.confirmPackages, m.dashboard.PacmanCachePath, m.dashboard.ParuCachePath)
-		case confirmRemoveOrphans: return m, executeRemoveOrphansInTerminal(m.confirmPackages)
+		case confirmRemoveOrphans: return m, executeRemoveOrphansInTerminal(m, m.confirmPackages)
 		}
-	case "n", "esc": m.showConfirmation = false
+	} else if key.Matches(msg, m.keys.Cancel) || msg.String() == "n" || msg.String() == "N" {
+		m.showConfirmation = false
 	}
 	
 	// Scrolling in confirmation
@@ -393,17 +395,21 @@ func (m *model) handleSelectionPanelKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	for n := range m.markedPackages { names = append(names, n) }
 	sort.Strings(names)
 	
-	key := strings.ToLower(msg.String())
-	switch key {
-	case "esc": m.selectionPanelFocused = false
-	case "up", "k": if m.selectionPanelIndex > 0 { m.selectionPanelIndex-- }
-	case "down", "j": if m.selectionPanelIndex < len(names)-1 { m.selectionPanelIndex++ }
-	case "tab", "m":
+	switch {
+	case key.Matches(msg, m.keys.Cancel):
+		m.selectionPanelFocused = false
+	case msg.String() == "up", msg.String() == "k":
+		if m.selectionPanelIndex > 0 { m.selectionPanelIndex-- }
+	case msg.String() == "down", msg.String() == "j":
+		if m.selectionPanelIndex < len(names)-1 { m.selectionPanelIndex++ }
+	case key.Matches(msg, m.keys.Mark) || msg.String() == "m":
 		if m.selectionPanelIndex < len(names) {
 			delete(m.markedPackages, names[m.selectionPanelIndex])
 			if len(m.markedPackages) == 0 { m.selectionPanelFocused = false }
 		}
-	case "enter": m.selectionPanelFocused = false; return m.handleActionTrigger()
+	case key.Matches(msg, m.keys.Confirm):
+		m.selectionPanelFocused = false
+		return m.handleActionTrigger()
 	}
 	return m, nil
 }
