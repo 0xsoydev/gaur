@@ -591,6 +591,10 @@ func renderKeyHint(label string, b key.Binding, style lipgloss.Style) string {
 		return style.Render(label)
 	}
 
+	// Create a segment style that preserves colors/bolding but strips layout (width/align)
+	// to prevent each segment from being padded to the full width.
+	segStyle := style.Copy().UnsetWidth().UnsetAlign()
+
 	// Only try to embed if it's a single character
 	if len(k) == 1 {
 		idx := strings.Index(strings.ToLower(label), strings.ToLower(k))
@@ -599,13 +603,28 @@ func renderKeyHint(label string, b key.Binding, style lipgloss.Style) string {
 			before := label[:idx]
 			letter := label[idx : idx+1]
 			after := label[idx+1:]
-			return fmt.Sprintf("%s%s%s",
-				style.Render(before),
-				style.Render("["+letter+"]"),
-				style.Render(after))
+			return segStyle.Render(before) +
+				segStyle.Render("["+letter+"]") +
+				segStyle.Render(after)
 		}
 	}
 
-	// Not found or not single char, prepend
-	return fmt.Sprintf("%s:%s", style.Render("["+k+"]"), style.Render(label))
+	// Not found or not single char, prepend with colon
+	return segStyle.Render("["+k+"]") + ":" + segStyle.Render(label)
+}
+
+// maintainBackground replaces ANSI reset codes with a sequence that resets but then re-applies the given background color.
+func maintainBackground(s string, bgColor lipgloss.Color) string {
+	// Get the ANSI sequence for the background color
+	bgStyle := lipgloss.NewStyle().Background(bgColor)
+	bgSeq := bgStyle.Render(" ")
+	// Extract just the escape sequence (everything before the space)
+	idx := strings.Index(bgSeq, " ")
+	if idx == -1 {
+		return s
+	}
+	bgSeq = bgSeq[:idx]
+
+	// Replace \x1b[0m with \x1b[0m + bgSeq
+	return strings.ReplaceAll(s, "\x1b[0m", "\x1b[0m"+bgSeq)
 }

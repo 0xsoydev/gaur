@@ -7,20 +7,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// maintainBackground replaces ANSI reset codes with a sequence that resets but then re-applies the given background color.
-func maintainBackground(s string, bgColor lipgloss.Color) string {
-	// Get the ANSI sequence for the background color
-	// We create a style with just the background and render an empty string to get the ANSI sequence.
-	// lipgloss.Style.Render usually adds a reset at the end, so we might need to trim it or 
-	// just use the fact that we're appending it.
-	bgStyle := lipgloss.NewStyle().Background(bgColor)
-	bgSeq := bgStyle.Render(" ")
-	bgSeq = bgSeq[:strings.Index(bgSeq, " ")] // Extract just the escape sequence
-	
-	// Replace \x1b[0m with \x1b[0m + bgSeq
-	return strings.ReplaceAll(s, "\x1b[0m", "\x1b[0m"+bgSeq)
-}
-
 func (m *model) renderCacheMenu(helpText string, innerWidth, innerHeight int) string {
 	menuWidth := 80
 	menuHeight := 22
@@ -100,7 +86,7 @@ func (m *model) renderCacheMenu(helpText string, innerWidth, innerHeight int) st
 	menuBox := lipgloss.NewStyle().
 		Width(menuWidth).
 		Height(menuHeight).
-		Border(lipgloss.RoundedBorder()).
+		Border(m.getBorderStyle()).
 		BorderForeground(selectedColor).
 		Padding(1, 2).
 		Render(menuContent.String())
