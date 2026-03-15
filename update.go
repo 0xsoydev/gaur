@@ -157,11 +157,20 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.loading = true
 				m.selectedIndex = 0
 				m.textInput.SetValue(msg.String() + ":")
+				m.lastQuery = ""
+				m.packageInfo = ""
+				m.infoForPackage = ""
+				m.infoScrollOffset = 0
 				return m, getInstalledPackages()
 			}
 		case key.Matches(msg, m.keys.DashboardMode):
 			m.mode = modeInstalled
 			m.loading = true
+			m.textInput.SetValue("")
+			m.lastQuery = ""
+			m.packageInfo = ""
+			m.infoForPackage = ""
+			m.infoScrollOffset = 0
 			return m, getDashboardData()
 		case key.Matches(msg, m.keys.UninstallMode):
 			if m.mode != modeUninstall {
@@ -169,15 +178,26 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.loading = true
 				m.selectedIndex = 0
 				m.textInput.SetValue("")
+				m.lastQuery = ""
+				m.packageInfo = ""
+				m.infoForPackage = ""
+				m.infoScrollOffset = 0
 				return m, getInstalledPackages()
 			}
 		case key.Matches(msg, m.keys.UpdateMode):
 			m.mode = modeUpdate
+			m.textInput.SetValue("")
+			m.lastQuery = ""
+			m.packageInfo = ""
+			m.infoForPackage = ""
+			m.infoScrollOffset = 0
 			return m, syncRepositoriesInTerminal(m)
 		case key.Matches(msg, m.keys.Selective):
 			if m.mode == modeUpdate {
 				m.mode = modeUpdateSelective
 				m.selectedIndex = 0
+				m.textInput.SetValue("")
+				m.lastQuery = ""
 				m.textInput.Focus()
 				if len(m.pendingUpdates) > 0 {
 					m.filtered = m.pendingUpdates
@@ -199,6 +219,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.selectedIndex = 0
 				m.filtered = []Package{}
 				m.textInput.SetValue("")
+				m.lastQuery = ""
+				m.packageInfo = ""
+				m.infoForPackage = ""
+				m.infoScrollOffset = 0
 				m.textInput.Focus()
 			}
 		case key.Matches(msg, m.keys.Mark) || msg.String() == "m":
