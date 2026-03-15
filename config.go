@@ -47,6 +47,7 @@ func DefaultConfig() Config {
 			Search:         "/",
 			Mark:           "tab",
 			Selective:      "s",
+			Settings:       ",",
 			Confirm:        "enter",
 			Cancel:         "esc",
 		},
@@ -120,6 +121,7 @@ func NewKeyMap(k KeyConfig) KeyMap {
 		Search:         newBinding("search", k.Search),
 		Mark:           newBinding("mark", k.Mark),
 		Selective:      newBinding("selective", k.Selective),
+		Settings:       newBinding("settings", k.Settings),
 		Confirm:        newBinding("confirm", k.Confirm),
 		Cancel:         newBinding("cancel", k.Cancel),
 	}

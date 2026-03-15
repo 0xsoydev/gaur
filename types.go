@@ -48,6 +48,7 @@ type KeyConfig struct {
 	Search         string   `toml:"search"`
 	Mark           string   `toml:"mark"`
 	Selective      string   `toml:"selective"`
+	Settings       string   `toml:"settings"`
 	Confirm        string   `toml:"confirm"`
 	Cancel         string   `toml:"cancel"`
 }
@@ -62,6 +63,7 @@ type KeyMap struct {
 	Search         key.Binding
 	Mark           key.Binding
 	Selective      key.Binding
+	Settings       key.Binding
 	Confirm        key.Binding
 	Cancel         key.Binding
 }
@@ -103,7 +105,16 @@ const (
 	modeUpdateSelective // Selecting specific updates
 	modeCacheMenu       // Menu for selecting cache clearing strategy
 	modeCacheSelective  // Selecting specific packages to clear from cache
+	modeSettings        // In-app settings overlay
 )
+
+// SettingItem represents a single configurable setting in the carousel
+type SettingItem struct {
+	Label       string
+	ConfigKey   string // Path to config like "ui.theme"
+	Options     []string
+	ActiveIndex int
+}
 
 // Confirmation operation types
 type confirmationType int
