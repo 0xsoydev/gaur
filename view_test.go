@@ -6,7 +6,7 @@ import (
 )
 
 func TestViewNoCrash(t *testing.T) {
-	m := initialModel(modeInstall)
+	m := initialModel(modeInstall, DefaultConfig())
 	m.width = 100
 	m.height = 40
 	m.loading = false

@@ -9,7 +9,7 @@ import (
 )
 
 func TestDashboardLoadingDimensions(t *testing.T) {
-	m_init := initialModel(modeInstalled)
+	m_init := initialModel(modeInstalled, DefaultConfig())
 	m_init.width = 80
 	m_init.height = 24
 	m_init.loading = true
@@ -33,7 +33,7 @@ func TestDashboardLoadingDimensions(t *testing.T) {
 }
 
 func TestDashboardRendering(t *testing.T) {
-	m_init := initialModel(modeInstalled)
+	m_init := initialModel(modeInstalled, DefaultConfig())
 	
 	// Crucial: Initialize layout constants via Update and use the result
 	new_m, _ := m_init.Update(tea.WindowSizeMsg{Width: 100, Height: 30})
@@ -121,7 +121,7 @@ func TestDashboardRendering(t *testing.T) {
 }
 
 func TestDashboardRefreshLogic(t *testing.T) {
-	m := initialModel(modeInstalled)
+	m := initialModel(modeInstalled, DefaultConfig())
 	m.textInput.Blur()
 
 	// Test 'n' key
@@ -144,7 +144,7 @@ func TestDashboardRefreshLogic(t *testing.T) {
 func TestSizeColorCodingLogic(t *testing.T) {
 	// This tests the logic used inside renderDashboard indirectly
 	// by checking if the expected color sequences are present
-	m := initialModel(modeInstalled)
+	m := initialModel(modeInstalled, DefaultConfig())
 	m.width = 100
 	m.height = 30
 	m.loading = false

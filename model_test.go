@@ -39,18 +39,18 @@ func TestInitialModel(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := initialModel(tt.mode)
+			m := initialModel(tt.mode, DefaultConfig())
 			if m.mode != tt.mode {
-				t.Errorf("initialModel(%v).mode = %v, want %v", tt.mode, m.mode, tt.mode)
+				t.Errorf("initialModel(%v, DefaultConfig()).mode = %v, want %v", tt.mode, m.mode, tt.mode)
 			}
 			if m.textInput.Placeholder != tt.placeholder {
-				t.Errorf("initialModel(%v).textInput.Placeholder = %q, want %q", tt.mode, m.textInput.Placeholder, tt.placeholder)
+				t.Errorf("initialModel(%v, DefaultConfig()).textInput.Placeholder = %q, want %q", tt.mode, m.textInput.Placeholder, tt.placeholder)
 			}
 			if m.statusMessage != tt.status {
-				t.Errorf("initialModel(%v).statusMessage = %q, want %q", tt.mode, m.statusMessage, tt.status)
+				t.Errorf("initialModel(%v, DefaultConfig()).statusMessage = %q, want %q", tt.mode, m.statusMessage, tt.status)
 			}
 			if !m.loading {
-				t.Errorf("initialModel(%v).loading = %v, want true", tt.mode, m.loading)
+				t.Errorf("initialModel(%v, DefaultConfig()).loading = %v, want true", tt.mode, m.loading)
 			}
 		})
 	}

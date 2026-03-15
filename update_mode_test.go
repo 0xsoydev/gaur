@@ -7,7 +7,7 @@ import (
 )
 
 func TestUpdateNavigation(t *testing.T) {
-	m := initialModel(modeInstall)
+	m := initialModel(modeInstall, DefaultConfig())
 	m.filtered = []Package{{Name: "pkg1"}, {Name: "pkg2"}, {Name: "pkg3"}}
 	m.loading = false
 	m.selectedIndex = 0
@@ -43,7 +43,7 @@ func TestUpdateNavigation(t *testing.T) {
 }
 
 func TestUpdateModeSwitching(t *testing.T) {
-	m := initialModel(modeInstall)
+	m := initialModel(modeInstall, DefaultConfig())
 	m.loading = false
 
 	// Switch to Uninstall mode ('r')
@@ -69,7 +69,7 @@ func TestUpdateModeSwitching(t *testing.T) {
 }
 
 func TestUpdateWindowResize(t *testing.T) {
-	m := initialModel(modeInstall)
+	m := initialModel(modeInstall, DefaultConfig())
 	newModel, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
 	m = newModel.(*model)
 	if m.width != 80 || m.height != 24 {

@@ -593,7 +593,7 @@ func keyMsg(key string) tea.KeyMsg {
 
 // newTestModelUpdate creates a model in modeUpdate state with the given packages loaded
 func newTestModelUpdate(packages []Package) *model {
-	m := initialModel(modeUpdate)
+	m := initialModel(modeUpdate, DefaultConfig())
 	m.loading = false
 	m.width = 120
 	m.height = 40
