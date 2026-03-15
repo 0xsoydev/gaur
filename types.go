@@ -4,10 +4,67 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
-	"time"
 
+	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 )
+
+// Config represents the TOML configuration structure
+type Config struct {
+	Startup  StartupConfig  `toml:"startup"`
+	UI       UIConfig       `toml:"ui"`
+	Commands CommandConfig  `toml:"commands"`
+	Advanced AdvancedConfig `toml:"advanced"`
+	Keys     KeyConfig      `toml:"keys"`
+}
+
+type StartupConfig struct {
+	DefaultMode string `toml:"default_mode"`
+}
+
+type UIConfig struct {
+	Theme      string `toml:"theme"`
+	BorderType string `toml:"border_type"`
+}
+
+type CommandConfig struct {
+	AurHelper      string `toml:"aur_helper"`
+	InstallFlags   string `toml:"install_flags"`
+	UninstallFlags string `toml:"uninstall_flags"`
+	CacheTool      string `toml:"cache_tool"`
+}
+
+type AdvancedConfig struct {
+	DebounceMs int    `toml:"debounce_ms"`
+	CacheDir   string `toml:"cache_dir"`
+}
+
+type KeyConfig struct {
+	Quit           []string `toml:"quit"`
+	InstallMode    string   `toml:"install_mode"`
+	UninstallMode  string   `toml:"uninstall_mode"`
+	UpdateMode     string   `toml:"update_mode"`
+	DashboardMode  string   `toml:"dashboard_mode"`
+	Search         string   `toml:"search"`
+	Mark           string   `toml:"mark"`
+	Selective      string   `toml:"selective"`
+	Confirm        string   `toml:"confirm"`
+	Cancel         string   `toml:"cancel"`
+}
+
+// KeyMap defines the application's keybindings using charmbracelet/bubbles/key
+type KeyMap struct {
+	Quit           key.Binding
+	InstallMode    key.Binding
+	UninstallMode  key.Binding
+	UpdateMode     key.Binding
+	DashboardMode  key.Binding
+	Search         key.Binding
+	Mark           key.Binding
+	Selective      key.Binding
+	Confirm        key.Binding
+	Cancel         key.Binding
+}
 
 // CommandRunner defines an interface for executing shell commands.
 type CommandRunner interface {
@@ -66,10 +123,7 @@ const (
 
 // UI configuration constants
 const (
-	minSearchQueryLen       = 2
-	textInputCharLimit      = 100
-	textInputDefaultWidth   = 50
-	packageInfoDebounceTime = 150 * time.Millisecond
+	minSearchQueryLen = 2
 )
 
 // Package represents a package with its source and name
