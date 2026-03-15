@@ -63,6 +63,10 @@ type model struct {
 	// Cache cleaning state
 	cacheMenuIndex int
 	cacheToFree    int64
+	// Settings state
+	settingsItems []SettingItem
+	settingsIndex int
+	previousMode  viewMode
 }
 
 func initialModel(initialMode viewMode, cfg Config) *model {
@@ -85,7 +89,7 @@ func initialModel(initialMode viewMode, cfg Config) *model {
 	}
 	ti.Placeholder = placeholder
 
-	return &model{
+	m := &model{
 		config:         cfg,
 		keys:           NewKeyMap(cfg.Keys),
 		textInput:      ti,
@@ -101,6 +105,8 @@ func initialModel(initialMode viewMode, cfg Config) *model {
 		loading:        true,
 		statusMessage:  statusMsg,
 	}
+	m.initSettings()
+	return m
 }
 
 func (m *model) Init() tea.Cmd {
