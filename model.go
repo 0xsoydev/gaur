@@ -7,6 +7,8 @@ import (
 
 // Model
 type model struct {
+	config                Config
+	keys                  KeyMap
 	textInput             textinput.Model
 	repoPackages          []Package       // All repo packages from local cache
 	aurPackages           []Package       // AUR packages from last search
@@ -63,7 +65,7 @@ type model struct {
 	cacheToFree    int64
 }
 
-func initialModel(initialMode viewMode) *model {
+func initialModel(initialMode viewMode, cfg Config) *model {
 	ti := textinput.New()
 	ti.CharLimit = textInputCharLimit
 	ti.Width = textInputDefaultWidth
@@ -84,6 +86,8 @@ func initialModel(initialMode viewMode) *model {
 	ti.Placeholder = placeholder
 
 	return &model{
+		config:         cfg,
+		keys:           NewKeyMap(cfg.Keys),
 		textInput:      ti,
 		repoPackages:   []Package{},
 		installedSet:   make(map[string]bool),

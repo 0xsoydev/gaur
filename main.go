@@ -15,6 +15,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	cfg, err := LoadConfig()
+	if err != nil {
+		// Log error but proceed with default config
+		fmt.Fprintf(os.Stderr, "Warning: could not load config: %v\n", err)
+	}
+
 	themeFlag := flag.String("theme", "", "Color theme (use --list-themes to see options)")
 	listThemesFlag := flag.Bool("list-themes", false, "List available themes and exit")
 	installFlag := flag.Bool("install", false, "Start in install mode (search and install packages)")
@@ -35,7 +41,21 @@ func main() {
 		return
 	}
 
-	initialMode := modeInstall
+	// Determine initial mode: Flags take precedence, then config, then default
+	var initialMode viewMode
+	modeFromConfig := modeInstall
+	switch cfg.Startup.DefaultMode {
+	case "dashboard", "installed", "info":
+		modeFromConfig = modeInstalled
+	case "uninstall", "remove":
+		modeFromConfig = modeUninstall
+	case "update":
+		modeFromConfig = modeUpdate
+	case "install":
+		modeFromConfig = modeInstall
+	}
+
+	initialMode = modeFromConfig
 	switch {
 	case *installFlag || *installFlagShort:
 		initialMode = modeInstall
@@ -47,10 +67,16 @@ func main() {
 		initialMode = modeInstalled
 	}
 
+	// Theme resolution: Flag takes precedence, then config
+	activeTheme := cfg.UI.Theme
 	if *themeFlag != "" {
-		if t, ok := getThemeByName(*themeFlag); ok {
+		activeTheme = *themeFlag
+	}
+
+	if activeTheme != "" {
+		if t, ok := getThemeByName(activeTheme); ok {
 			setTheme(t)
-		} else {
+		} else if *themeFlag != "" {
 			fmt.Printf("Unknown theme: %s\nAvailable themes:\n", *themeFlag)
 			for _, name := range listThemes() {
 				fmt.Printf("  - %s\n", name)
@@ -59,7 +85,7 @@ func main() {
 		}
 	}
 
-	m := initialModel(initialMode)
+	m := initialModel(initialMode, cfg)
 	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseAllMotion())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Error running program: %v\n", err)
