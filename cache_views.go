@@ -217,7 +217,7 @@ func (m *model) renderSelectiveCacheView(helpText string, innerWidth, innerHeigh
 
 	resultsStr := results.String()
 	if len(pkgList) > resultsHeight {
-		scrollbar := renderScrollbar(len(pkgList), m.selectedIndex, resultsHeight, activeColor)
+		scrollbar := renderScrollbar(len(pkgList), m.selectedIndex, resultsHeight, activeColor, true)
 		resultsStr = lipgloss.JoinHorizontal(lipgloss.Top,
 			lipgloss.NewStyle().Width(contentWidth-2).Render(resultsStr),
 			lipgloss.NewStyle().MarginLeft(1).Render(scrollbar))

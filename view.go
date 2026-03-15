@@ -361,7 +361,7 @@ func (m *model) renderVerticalSplitLayout(innerWidth, innerHeight int, activeCol
 
 	resultsStr := results.String()
 	if !m.loading && len(pkgList) > resultsHeight {
-		scrollbar := renderScrollbar(len(pkgList), m.selectedIndex, resultsHeight, activeColor)
+		scrollbar := renderScrollbar(len(pkgList), m.selectedIndex, resultsHeight, activeColor, true)
 		resultsStr = lipgloss.JoinHorizontal(lipgloss.Top,
 			lipgloss.NewStyle().Width(listWidth-4).Render(resultsStr),
 			lipgloss.NewStyle().MarginLeft(1).Render(scrollbar))
@@ -546,8 +546,8 @@ func (m *model) renderSelectionBox(maxWidth int) string {
 
 	listStr := listBuilder.String()
 	if len(pkgNames) > (endIdx - startIdx) {
-		// Add scrollbar for selection box
-		scrollbar := renderScrollbar(len(pkgNames), startIdx, (endIdx - startIdx), lipgloss.Color("205"))
+		// Add scrollbar for selection box (Top-down)
+		scrollbar := renderScrollbar(len(pkgNames), startIdx, (endIdx - startIdx), lipgloss.Color("205"), false)
 		listStr = lipgloss.JoinHorizontal(lipgloss.Top,
 			lipgloss.NewStyle().Width(panelWidth - 4).Render(listStr),
 			lipgloss.NewStyle().MarginLeft(1).Render(scrollbar))
@@ -750,7 +750,7 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 
 	resultsStr := results.String()
 	if !m.loading && len(pkgList) > resultsHeight {
-		scrollbar := renderScrollbar(len(pkgList), m.selectedIndex, resultsHeight, activeColor)
+		scrollbar := renderScrollbar(len(pkgList), m.selectedIndex, resultsHeight, activeColor, true)
 		resultsStr = lipgloss.JoinHorizontal(lipgloss.Top,
 			lipgloss.NewStyle().Width(contentWidth-2).Render(resultsStr),
 			lipgloss.NewStyle().MarginLeft(1).Render(scrollbar))
@@ -1260,8 +1260,8 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 
 		listStr := listBuilder.String()
 		if len(m.pendingUpdates) > displayCount {
-			// Add scrollbar
-			scrollbar := renderScrollbar(len(m.pendingUpdates), m.updateScrollOffset, displayCount, activeColor)
+			// Add scrollbar (Top-down)
+			scrollbar := renderScrollbar(len(m.pendingUpdates), m.updateScrollOffset, displayCount, activeColor, false)
 			// Join list and scrollbar
 			listStr = lipgloss.JoinHorizontal(lipgloss.Top, 
 				lipgloss.NewStyle().Width(innerWidth - 6).Render(listStr),

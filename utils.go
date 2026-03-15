@@ -630,7 +630,7 @@ func maintainBackground(s string, bgColor lipgloss.Color) string {
 }
 
 // renderScrollbar generates a vertical scrollbar indicator
-func renderScrollbar(total, offset, visibleHeight int, activeColor lipgloss.Color) string {
+func renderScrollbar(total, offset, visibleHeight int, activeColor lipgloss.Color, reversed bool) string {
 	if total <= visibleHeight || visibleHeight <= 0 {
 		return ""
 	}
@@ -646,7 +646,16 @@ func renderScrollbar(total, offset, visibleHeight int, activeColor lipgloss.Colo
 	}
 
 	maxOffset := total - visibleHeight
+	if maxOffset <= 0 {
+		return ""
+	}
+	
 	thumbStart := int(float64(offset) / float64(maxOffset) * float64(visibleHeight-thumbHeight))
+
+	// Invert for bottom-to-top menus
+	if reversed {
+		thumbStart = visibleHeight - thumbHeight - thumbStart
+	}
 
 	var scrollbar strings.Builder
 	for i := 0; i < scrollbarHeight; i++ {
