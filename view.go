@@ -291,6 +291,7 @@ func (m *model) renderVerticalSplitLayout(innerWidth, innerHeight int, activeCol
 
 	// 1. Render List Side (Left)
 	var results strings.Builder
+	var resultsStr string
 	pkgList := m.filtered
 
 	// Calculate results height for the list
@@ -357,14 +358,14 @@ func (m *model) renderVerticalSplitLayout(innerWidth, innerHeight int, activeCol
 				results.WriteString("\n")
 			}
 		}
-	}
 
-	resultsStr := results.String()
-	if !m.loading && len(pkgList) > resultsHeight {
-		scrollbar := renderScrollbar(len(pkgList), m.selectedIndex, resultsHeight, activeColor, true)
-		resultsStr = lipgloss.JoinHorizontal(lipgloss.Top,
-			lipgloss.NewStyle().Width(listWidth-4).Render(resultsStr),
-			lipgloss.NewStyle().MarginLeft(1).Render(scrollbar))
+		resultsStr = results.String()
+		if !m.loading && len(pkgList) > resultsHeight {
+			scrollbar := renderScrollbar(len(pkgList), startIdx, resultsHeight, activeColor, true)
+			resultsStr = lipgloss.JoinHorizontal(lipgloss.Top,
+				lipgloss.NewStyle().Width(listWidth-4).Render(resultsStr),
+				lipgloss.NewStyle().MarginLeft(1).Render(scrollbar))
+		}
 	}
 
 	resultsContainer := lipgloss.NewStyle().
@@ -656,6 +657,7 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 
 	// Build results list
 	var results strings.Builder
+	var resultsStr string
 	var pkgList []Package
 	if m.mode == modeInstall {
 		pkgList = m.filtered
@@ -751,14 +753,14 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 				results.WriteString("\n")
 			}
 		}
-	}
 
-	resultsStr := results.String()
-	if !m.loading && len(pkgList) > resultsHeight {
-		scrollbar := renderScrollbar(len(pkgList), m.selectedIndex, resultsHeight, activeColor, true)
-		resultsStr = lipgloss.JoinHorizontal(lipgloss.Top,
-			lipgloss.NewStyle().Width(contentWidth-2).Render(resultsStr),
-			lipgloss.NewStyle().MarginLeft(1).Render(scrollbar))
+		resultsStr = results.String()
+		if !m.loading && len(pkgList) > resultsHeight {
+			scrollbar := renderScrollbar(len(pkgList), startIdx, resultsHeight, activeColor, true)
+			resultsStr = lipgloss.JoinHorizontal(lipgloss.Top,
+				lipgloss.NewStyle().Width(contentWidth-2).Render(resultsStr),
+				lipgloss.NewStyle().MarginLeft(1).Render(scrollbar))
+		}
 	}
 
 	resultsBox := lipgloss.NewStyle().

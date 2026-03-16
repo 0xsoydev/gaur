@@ -658,7 +658,15 @@ func renderScrollbar(total, offset, visibleHeight int, activeColor lipgloss.Colo
 	if maxOffset <= 0 {
 		return ""
 	}
-	
+
+	// Clamp offset to ensure it stays within valid bounds [0, maxOffset]
+	if offset > maxOffset {
+		offset = maxOffset
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
 	thumbStart := int(float64(offset) / float64(maxOffset) * float64(visibleHeight-thumbHeight))
 
 	// Invert for bottom-to-top menus
