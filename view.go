@@ -369,7 +369,7 @@ func (m *model) renderVerticalSplitLayout(innerWidth, innerHeight int, activeCol
 
 	resultsContainer := lipgloss.NewStyle().
 		Height(resultsHeight).
-		Align(lipgloss.Bottom).
+		Align(lipgloss.Left, lipgloss.Bottom).
 		Render(resultsStr)
 
 	listPanel := borderStyle.
@@ -764,7 +764,7 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 	resultsBox := lipgloss.NewStyle().
 		Width(contentWidth).
 		Height(resultsHeight).
-		Align(lipgloss.Bottom).
+		Align(lipgloss.Left, lipgloss.Bottom).
 		Render(resultsStr)
 
 	inputLine := ""

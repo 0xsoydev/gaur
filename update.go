@@ -586,6 +586,7 @@ func (m *model) performFiltering() tea.Cmd {
 		m.pendingInfoPackage = pkg.Name
 		return debouncePackageInfo(m, m.pendingInfoPackage)
 	} else {
+		m.loadingInfo = false
 		m.packageInfo = ""
 		m.infoForPackage = ""
 	}

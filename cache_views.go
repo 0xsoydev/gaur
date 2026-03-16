@@ -226,7 +226,7 @@ func (m *model) renderSelectiveCacheView(helpText string, innerWidth, innerHeigh
 	resultsBox := lipgloss.NewStyle().
 		Width(contentWidth).
 		Height(resultsHeight).
-		Align(lipgloss.Bottom).
+		Align(lipgloss.Left, lipgloss.Bottom).
 		Render(resultsStr)
 
 	// Footer status text
