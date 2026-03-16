@@ -367,12 +367,17 @@ func (m *model) renderVerticalSplitLayout(innerWidth, innerHeight int, activeCol
 			lipgloss.NewStyle().MarginLeft(1).Render(scrollbar))
 	}
 
+	resultsContainer := lipgloss.NewStyle().
+		Height(resultsHeight).
+		Align(lipgloss.Bottom).
+		Render(resultsStr)
+
 	listPanel := borderStyle.
 		Width(listWidth - 2).
 		Height(innerHeight - 2).
 		Render(lipgloss.JoinVertical(lipgloss.Left,
-			resultsStr,
-			lipgloss.NewStyle().Height(resultsHeight - lipgloss.Height(resultsStr)).Render(""), // filler
+			resultsContainer,
+			"", // spacing
 			m.textInput.View(),
 		))
 
@@ -759,6 +764,7 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 	resultsBox := lipgloss.NewStyle().
 		Width(contentWidth).
 		Height(resultsHeight).
+		Align(lipgloss.Bottom).
 		Render(resultsStr)
 
 	inputLine := ""
