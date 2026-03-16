@@ -1294,8 +1294,8 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 			Padding(0, 1).
 			Bold(true)
 
-		btnUpdate := buttonStyle.Render(renderKeyHint("update all", m.keys.Confirm, buttonStyle))
-		btnSelective := buttonStyleRed.Render(renderKeyHint("selective", m.keys.Selective, buttonStyleRed))
+		btnUpdate := buttonStyle.Render(renderKeyHint("update", m.keys.Confirm, buttonStyle))
+		btnSelective := buttonStyleRed.Render(renderKeyHint("select", m.keys.Selective, buttonStyleRed))
 
 		buttons := btnUpdate + "   " + btnSelective
 		
