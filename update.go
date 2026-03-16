@@ -329,6 +329,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.loading = false
 		if msg.err == nil {
 			m.installed = msg.packages
+			// Always initialize the filtered list so it's ready even if we aren't in uninstall mode yet
+			m.filteredInstalled = m.installed
 			m.statusMessage = fmt.Sprintf("Loaded %d installed packages", len(msg.packages))
 			return m, m.performFiltering()
 		} else {
@@ -554,9 +556,6 @@ func (m *model) handleSelectionPanelKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 func (m *model) performFiltering() tea.Cmd {
 	query := m.textInput.Value()
-	if query == m.lastQuery {
-		return nil
-	}
 	m.lastQuery = query
 	m.selectedIndex = 0
 
