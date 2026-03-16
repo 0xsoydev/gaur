@@ -167,13 +167,18 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case msg.String() == "t", msg.String() == "e", msg.String() == "f", msg.String() == "o":
 			if m.mode == modeInstalled && !m.loading {
 				m.mode = modeUninstall
-				m.loading = true
 				m.selectedIndex = 0
 				m.textInput.SetValue(msg.String() + ":")
 				m.lastQuery = ""
 				m.packageInfo = ""
 				m.infoForPackage = ""
 				m.infoScrollOffset = 0
+				
+				if len(m.installed) > 0 {
+					m.loading = false
+					return m, m.performFiltering()
+				}
+				m.loading = true
 				return m, getInstalledPackages()
 			}
 		case key.Matches(msg, m.keys.DashboardMode):
@@ -188,13 +193,19 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.keys.UninstallMode):
 			if m.mode != modeUninstall {
 				m.mode = modeUninstall
-				m.loading = true
 				m.selectedIndex = 0
 				m.textInput.SetValue("")
 				m.lastQuery = ""
 				m.packageInfo = ""
 				m.infoForPackage = ""
 				m.infoScrollOffset = 0
+				
+				if len(m.installed) > 0 {
+					m.loading = false
+					return m, m.performFiltering()
+				}
+				m.loading = true
+				m.statusMessage = "Loading installed packages..."
 				return m, getInstalledPackages()
 			}
 		case key.Matches(msg, m.keys.UpdateMode):

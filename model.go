@@ -110,23 +110,20 @@ func initialModel(initialMode viewMode, cfg Config) *model {
 }
 
 func (m *model) Init() tea.Cmd {
-	cmds := []tea.Cmd{textinput.Blink, loadRepoPackages()}
-
-	switch m.mode {
-	case modeInstalled:
-
-		cmds = append(cmds, getDashboardData())
-	case modeUninstall:
-
-		cmds = append(cmds, getInstalledPackages())
-	case modeUpdate:
-
-		cmds = append(cmds, checkUpdates())
-	case modeInstall:
-
-	}
-
-	return tea.Batch(cmds...)
+	return tea.Batch(
+		textinput.Blink,
+		loadRepoPackages(),
+		getInstalledPackages(),
+		func() tea.Msg {
+			switch m.mode {
+			case modeInstalled:
+				return getDashboardData()()
+			case modeUpdate:
+				return checkUpdates()()
+			}
+			return nil
+		},
+	)
 }
 
 // currentPackageList returns the appropriate package list based on current mode.
