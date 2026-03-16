@@ -106,7 +106,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if key.Matches(msg, m.keys.Confirm) {
 				return m.handleActionTrigger()
 			}
-			if key.Matches(msg, m.keys.Mark) || msg.String() == "m" {
+			if key.Matches(msg, m.keys.Mark) {
 				return m.handleMarking()
 			}
 
@@ -238,7 +238,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.infoScrollOffset = 0
 				m.textInput.Focus()
 			}
-		case key.Matches(msg, m.keys.Mark) || msg.String() == "m":
+		case key.Matches(msg, m.keys.Mark):
 			return m.handleMarking()
 		case msg.String() == "*":
 			if len(m.markedPackages) > 0 {
@@ -529,7 +529,7 @@ func (m *model) handleSelectionPanelKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if m.selectionPanelIndex > 0 { m.selectionPanelIndex-- }
 	case msg.String() == "down", msg.String() == "j":
 		if m.selectionPanelIndex < len(names)-1 { m.selectionPanelIndex++ }
-	case key.Matches(msg, m.keys.Mark) || msg.String() == "m":
+	case key.Matches(msg, m.keys.Mark):
 		if m.selectionPanelIndex < len(names) {
 			delete(m.markedPackages, names[m.selectionPanelIndex])
 			if len(m.markedPackages) == 0 { m.selectionPanelFocused = false }

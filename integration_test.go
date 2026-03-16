@@ -201,12 +201,12 @@ func TestMarkingPackages(t *testing.T) {
 		t.Errorf("pkg1 should be marked after tab")
 	}
 
-	// Test 'm' on pkg2
+	// Test 'tab' on pkg2
 	m.selectedIndex = 1
-	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("m")})
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyTab})
 	m = newModel.(*model)
 	if !m.markedPackages["pkg2"] {
-		t.Errorf("pkg2 should be marked after 'm'. Marked: %v", m.markedPackages)
+		t.Errorf("pkg2 should be marked after tab")
 	}
 
 	// Test 'tab' unmarks pkg1
