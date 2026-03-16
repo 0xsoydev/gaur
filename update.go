@@ -94,6 +94,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.mode == modeUpdateSelective {
 					m.mode = modeUpdate
 					m.markedPackages = make(map[string]bool)
+					m.textInput.SetValue("")
+					m.lastQuery = ""
+					m.packageInfo = ""
+					m.infoForPackage = ""
+					m.infoScrollOffset = 0
 				}
 				m.textInput.Blur()
 				return m, nil
@@ -107,8 +112,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			var cmd tea.Cmd
 			m.textInput, cmd = m.textInput.Update(msg)
-			m.performFiltering()
-			return m, cmd
+			filterCmd := m.performFiltering()
+			return m, tea.Batch(cmd, filterCmd)
 		}
 
 		// 5. General Mode Keys (Unfocused)
@@ -118,12 +123,20 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.mode = modeCacheMenu
 				m.markedPackages = make(map[string]bool)
 				m.cacheToFree = 0
+				m.textInput.SetValue("")
+				m.lastQuery = ""
+				m.packageInfo = ""
+				m.infoForPackage = ""
+				m.infoScrollOffset = 0
 				m.statusMessage = "Selective cache cleaning cancelled"
 				return m, nil
 			}
 			if m.mode == modeCacheMenu {
 				m.mode = modeInstalled
 				m.statusMessage = "Cache menu cancelled"
+				m.packageInfo = ""
+				m.infoForPackage = ""
+				m.infoScrollOffset = 0
 				return m, nil
 			}
 			if len(m.markedPackages) > 0 {
@@ -244,7 +257,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.err == nil {
 			m.repoPackages = msg.packages
 			m.statusMessage = fmt.Sprintf("Loaded %d packages", len(msg.packages))
-			m.performFiltering()
+			return m, m.performFiltering()
 		} else {
 			m.statusMessage = "Failed to load packages"
 		}
@@ -281,7 +294,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.searchingAUR = false
 		if msg.err == nil {
 			m.aurPackages = msg.packages
-			m.performFiltering()
+			return m, m.performFiltering()
 		}
 
 	case packageInfoMsg:
@@ -306,7 +319,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.err == nil {
 			m.installed = msg.packages
 			m.statusMessage = fmt.Sprintf("Loaded %d installed packages", len(msg.packages))
-			m.performFiltering()
+			return m, m.performFiltering()
 		} else {
 			m.statusMessage = "Failed to load installed packages"
 		}
@@ -448,6 +461,9 @@ func (m *model) handleActionTrigger() (tea.Model, tea.Cmd) {
 		case 4:
 			m.mode = modeCacheSelective; m.selectedIndex = 0; m.markedPackages = make(map[string]bool); m.cacheToFree = 0
 			m.textInput.SetValue(""); m.lastQuery = ""
+			m.packageInfo = ""
+			m.infoForPackage = ""
+			m.infoScrollOffset = 0
 			m.filtered = make([]Package, len(m.dashboard.AllCacheHogs))
 			for i, h := range m.dashboard.AllCacheHogs { m.filtered[i] = Package{Name: h.Name, Size: h.Size, SizeBytes: h.SizeBytes} }
 		default:
@@ -525,10 +541,10 @@ func (m *model) handleSelectionPanelKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m *model) performFiltering() {
+func (m *model) performFiltering() tea.Cmd {
 	query := m.textInput.Value()
 	if query == m.lastQuery {
-		return
+		return nil
 	}
 	m.lastQuery = query
 	m.selectedIndex = 0
@@ -562,6 +578,18 @@ func (m *model) performFiltering() {
 			m.matchIndices = computeAllMatchIndices(m.filtered, query)
 		}
 	}
+
+	// Fetch info for the first item automatically if list is not empty
+	pkg := m.getSelectedPkg()
+	if pkg != nil && m.mode != modeCacheSelective {
+		m.loadingInfo = true
+		m.pendingInfoPackage = pkg.Name
+		return debouncePackageInfo(m, m.pendingInfoPackage)
+	} else {
+		m.packageInfo = ""
+		m.infoForPackage = ""
+	}
+	return nil
 }
 
 func (m *model) getSelectedPkg() *Package {
