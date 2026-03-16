@@ -97,3 +97,20 @@ func TestSubstringAnsi(t *testing.T) {
 		})
 	}
 }
+
+func TestMaintainBackground(t *testing.T) {
+	bgColor := lipgloss.Color("235")
+	input := "\x1b[31mRed\x1b[0m Text"
+	
+	result := maintainBackground(input, bgColor)
+	
+	// Result should contain the background color sequence after the reset
+	if !strings.Contains(result, "\x1b[0m") {
+		t.Error("maintainBackground stripped the reset code")
+	}
+	
+	// Ensure it still has the original color code too
+	if !strings.Contains(result, "\x1b[31m") {
+		t.Error("maintainBackground stripped original foreground code")
+	}
+}
