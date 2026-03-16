@@ -105,6 +105,12 @@ func initialModel(initialMode viewMode, cfg Config) *model {
 		loading:        true,
 		statusMessage:  statusMsg,
 	}
+
+	if initialMode == modeUninstall {
+		m.loadingInfo = true
+		m.infoForPackage = "..."
+	}
+
 	m.initSettings()
 	return m
 }
