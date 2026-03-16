@@ -591,9 +591,9 @@ func renderKeyHint(label string, b key.Binding, style lipgloss.Style) string {
 		return style.Render(label)
 	}
 
-	// Create a segment style that preserves colors/bolding but strips layout (width/align)
-	// to prevent each segment from being padded to the full width.
-	segStyle := style.Copy().UnsetWidth().UnsetAlign()
+	// Create a segment style that preserves colors/bolding but strips layout AND padding
+	// to prevent each segment from adding its own internal gaps.
+	segStyle := style.Copy().UnsetWidth().UnsetAlign().Padding(0, 0)
 
 	// Only try to embed if it's a single character
 	if len(k) == 1 {
@@ -603,14 +603,23 @@ func renderKeyHint(label string, b key.Binding, style lipgloss.Style) string {
 			before := label[:idx]
 			letter := label[idx : idx+1]
 			after := label[idx+1:]
-			return segStyle.Render(before) +
-				segStyle.Render("["+letter+"]") +
-				segStyle.Render(after)
+			
+			// We only render non-empty parts to avoid any potential zero-width rendering artifacts
+			var result string
+			if before != "" {
+				result += segStyle.Render(before)
+			}
+			result += segStyle.Render("["+letter+"]")
+			if after != "" {
+				result += segStyle.Render(after)
+			}
+			return result
 		}
 	}
 
-	// Not found or not single char, prepend with colon
-	return segStyle.Render("["+k+"]") + ":" + segStyle.Render(label)
+	// Not found or not single char, prepend with colon.
+	// The colon must be styled to match the background of the segments.
+	return segStyle.Render("["+k+"]") + segStyle.Render(":") + segStyle.Render(label)
 }
 
 // maintainBackground replaces ANSI reset codes with a sequence that resets but then re-applies the given background color.
