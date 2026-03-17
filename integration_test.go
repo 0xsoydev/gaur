@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -74,6 +75,37 @@ func TestSearchAURWithMock(t *testing.T) {
 
 	if aurMsg.packages[0].Name != "pkg-aur" {
 		t.Errorf("expected pkg-aur, got %s", aurMsg.packages[0].Name)
+	}
+}
+
+func TestSearchAURFailure(t *testing.T) {
+	oldRunner := runner
+	defer func() { runner = oldRunner }()
+
+	expectedError := "network timeout: could not connect to AUR"
+	mock := &MockCommandRunner{
+		RunFunc: func(name string, args ...string) ([]byte, error) {
+			// Simulate a command failure with output (stderr)
+			return []byte(expectedError), fmt.Errorf("exit status 1")
+		},
+	}
+	runner = mock
+
+	cfg := DefaultConfig()
+	cmd := searchAUR(&cfg, "pkg")
+	msg := cmd()
+
+	aurMsg, ok := msg.(aurSearchMsg)
+	if !ok {
+		t.Fatalf("expected aurSearchMsg, got %T", msg)
+	}
+
+	if aurMsg.err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	if !strings.Contains(aurMsg.err.Error(), expectedError) {
+		t.Errorf("expected error to contain %q, got %q", expectedError, aurMsg.err.Error())
 	}
 }
 
