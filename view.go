@@ -984,39 +984,40 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 	keyStyle := lipgloss.NewStyle().Foreground(activeBorderColor).Bold(true)
 	scrollHintStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
 
-	var lines []string
+	var dialogContent []string
+	contentWidth := dialogWidth - 4
 	
-	// Center Title
-	lines = append(lines, lipgloss.PlaceHorizontal(dialogWidth-4, lipgloss.Center, titleStyle.Render(title)))
-	lines = append(lines, "")
+	// Title
+	dialogContent = append(dialogContent, lipgloss.PlaceHorizontal(contentWidth, lipgloss.Center, titleStyle.Render(title)))
+	dialogContent = append(dialogContent, "")
 
 	// Warning/Description
-	descStyle := lipgloss.NewStyle().Width(dialogWidth - 4)
+	descStyle := lipgloss.NewStyle().Width(contentWidth).Align(lipgloss.Center)
 	if m.confirmType == confirmCleanNuke {
-		warningStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Bold(true).Width(dialogWidth - 4).Align(lipgloss.Center)
-		lines = append(lines, warningStyle.Render("WARNING: This will completely empty the package cache."))
-		lines = append(lines, "")
+		warningStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Bold(true).Width(contentWidth).Align(lipgloss.Center)
+		dialogContent = append(dialogContent, warningStyle.Render("WARNING: This will completely empty the package cache."))
+		dialogContent = append(dialogContent, "")
 	} else if simpleConfirm {
 		if m.confirmType == confirmCleanKeep3 {
-			lines = append(lines, descStyle.Render("This will remove all but the 3 most recent cached versions of packages."))
+			dialogContent = append(dialogContent, descStyle.Render("This will remove all but the 3 most recent cached versions of packages."))
 		} else if m.confirmType == confirmCleanKeep1 {
-			lines = append(lines, descStyle.Render("This will aggressively remove all but the currently installed cached versions."))
+			dialogContent = append(dialogContent, descStyle.Render("This will aggressively remove all but the currently installed cached versions."))
 		}
-		lines = append(lines, "")
+		dialogContent = append(dialogContent, "")
 	}
 
 	if simpleConfirm {
 		if m.confirmType == confirmCleanNuke {
 			labelStyle := lipgloss.NewStyle().Width(8).Foreground(lipgloss.Color("241"))
-			lines = append(lines, packageNameStyle.Render("System Cache:"))
-			lines = append(lines, fmt.Sprintf("  %s %s", labelStyle.Render("Path:"), scrollHintStyle.Render(m.dashboard.PacmanCachePath)))
-			lines = append(lines, packageNameStyle.Render("User Cache:"))
-			lines = append(lines, fmt.Sprintf("  %s %s", labelStyle.Render("Path:"), scrollHintStyle.Render(m.dashboard.ParuCachePath)))
-			lines = append(lines, "")
+			dialogContent = append(dialogContent, packageNameStyle.Render("System Cache:"))
+			dialogContent = append(dialogContent, fmt.Sprintf("  %s %s", labelStyle.Render("Path:"), scrollHintStyle.Render(m.dashboard.PacmanCachePath)))
+			dialogContent = append(dialogContent, packageNameStyle.Render("User Cache:"))
+			dialogContent = append(dialogContent, fmt.Sprintf("  %s %s", labelStyle.Render("Path:"), scrollHintStyle.Render(m.dashboard.ParuCachePath)))
+			dialogContent = append(dialogContent, "")
 		}
 
-		breakdownHeaderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Bold(true)
-		lines = append(lines, breakdownHeaderStyle.Render("Breakdown:"))
+		breakdownHeaderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Bold(true).Width(contentWidth).Align(lipgloss.Center)
+		dialogContent = append(dialogContent, breakdownHeaderStyle.Render("Breakdown:"))
 		
 		pacmanEstimate := m.dashboard.CacheFreedPacman[m.confirmType]
 		paruEstimate := m.dashboard.CacheFreedParu[m.confirmType]
@@ -1035,23 +1036,25 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 		}
 		paruLabel := sourceStyle("aur").Render("  " + helperLabel)
 
-		lines = append(lines, fmt.Sprintf("%s %s", pacmanLabel, valStyle.Render(pacmanEstimate)))
-		lines = append(lines, fmt.Sprintf("%s %s", paruLabel, valStyle.Render(paruEstimate)))
-		lines = append(lines, "")
+		dialogContent = append(dialogContent, lipgloss.PlaceHorizontal(contentWidth, lipgloss.Center, fmt.Sprintf("%s %s", pacmanLabel, valStyle.Render(pacmanEstimate))))
+		dialogContent = append(dialogContent, lipgloss.PlaceHorizontal(contentWidth, lipgloss.Center, fmt.Sprintf("%s %s", paruLabel, valStyle.Render(paruEstimate))))
+		dialogContent = append(dialogContent, "")
 
+		estStyle := lipgloss.NewStyle().Width(contentWidth).Align(lipgloss.Center)
 		estimate := m.dashboard.CacheFreedEstimates[m.confirmType]
 		if estimate == "" { estimate = "calculating..." }
-		lines = append(lines, fmt.Sprintf("Estimated space to be freed: %s", lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("214")).Render(estimate)))
+		dialogContent = append(dialogContent, estStyle.Render(fmt.Sprintf("Estimated space to be freed: %s", lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("214")).Render(estimate))))
 	} else {
 		// List-based Confirmations
+		listTitleStyle := lipgloss.NewStyle().Width(contentWidth).Align(lipgloss.Center)
 		if m.confirmType == confirmUpdate {
-			lines = append(lines, fmt.Sprintf("The following %s updates are available:", countStyle.Render(fmt.Sprintf("%d", len(packages)))))
+			dialogContent = append(dialogContent, listTitleStyle.Render(fmt.Sprintf("The following %s updates are available:", countStyle.Render(fmt.Sprintf("%d", len(packages))))))
 		} else if m.confirmType == confirmCleanUninstalled {
-			lines = append(lines, "This will remove cached packages that are no longer installed.")
+			dialogContent = append(dialogContent, listTitleStyle.Render("This will remove cached packages that are no longer installed."))
 		} else {
-			lines = append(lines, fmt.Sprintf("The following %s packages will be %sd:", countStyle.Render(fmt.Sprintf("%d", len(packages))), actionDesc))
+			dialogContent = append(dialogContent, listTitleStyle.Render(fmt.Sprintf("The following %s packages will be %sd:", countStyle.Render(fmt.Sprintf("%d", len(packages))), actionDesc)))
 		}
-		lines = append(lines, "")
+		dialogContent = append(dialogContent, "")
 
 		maxVisible := 10
 		startIdx := m.confirmScrollOffset
@@ -1076,18 +1079,18 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 			} else {
 				line = fmt.Sprintf("  • %s", packageNameStyle.Render(pkg.Name))
 			}
-			lines = append(lines, line)
+			dialogContent = append(dialogContent, line)
 		}
 
 		if len(packages) > maxVisible {
-			lines = append(lines, "")
-			lines = append(lines, scrollHintStyle.Render("  Use [↑/↓] or [j/k] to scroll"))
+			dialogContent = append(dialogContent, "")
+			dialogContent = append(dialogContent, lipgloss.PlaceHorizontal(contentWidth, lipgloss.Center, scrollHintStyle.Render("  Use [↑/↓] or [j/k] to scroll")))
 		}
 
 		if m.confirmType == confirmCleanUninstalled {
-			lines = append(lines, "")
-			breakdownHeaderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Bold(true)
-			lines = append(lines, breakdownHeaderStyle.Render("Breakdown:"))
+			dialogContent = append(dialogContent, "")
+			breakdownHeaderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Bold(true).Width(contentWidth).Align(lipgloss.Center)
+			dialogContent = append(dialogContent, breakdownHeaderStyle.Render("Breakdown:"))
 			pacmanEst := m.dashboard.CacheFreedPacman[m.confirmType]
 			paruEst := m.dashboard.CacheFreedParu[m.confirmType]
 			if pacmanEst == "" { pacmanEst = "calculating..." }
@@ -1096,25 +1099,25 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 			if len(helperLabel) < 7 {
 				helperLabel += strings.Repeat(" ", 7-len(helperLabel))
 			}
-			lines = append(lines, fmt.Sprintf("%s %s", sourceStyle("core").Render("  pacman:"), lipgloss.NewStyle().Foreground(lipgloss.Color("252")).Render(pacmanEst)))
-			lines = append(lines, fmt.Sprintf("%s %s", sourceStyle("aur").Render("  "+helperLabel), lipgloss.NewStyle().Foreground(lipgloss.Color("252")).Render(paruEst)))
+			dialogContent = append(dialogContent, lipgloss.PlaceHorizontal(contentWidth, lipgloss.Center, fmt.Sprintf("%s %s", sourceStyle("core").Render("  pacman:"), lipgloss.NewStyle().Foreground(lipgloss.Color("252")).Render(pacmanEst))))
+			dialogContent = append(dialogContent, lipgloss.PlaceHorizontal(contentWidth, lipgloss.Center, fmt.Sprintf("%s %s", sourceStyle("aur").Render("  "+helperLabel), lipgloss.NewStyle().Foreground(lipgloss.Color("252")).Render(paruEst))))
 		}
 
 		if m.confirmType == confirmCleanUninstalled || m.confirmType == confirmCleanSelective {
-			lines = append(lines, "")
+			dialogContent = append(dialogContent, "")
 			est := m.dashboard.CacheFreedEstimates[m.confirmType]
 			if m.confirmType == confirmCleanSelective { est = formatBytes(m.cacheToFree) }
 			if est == "" { est = "calculating..." }
-			lines = append(lines, fmt.Sprintf("Estimated space to be freed: %s", lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("214")).Render(est)))
+			dialogContent = append(dialogContent, lipgloss.PlaceHorizontal(contentWidth, lipgloss.Center, fmt.Sprintf("Estimated space to be freed: %s", lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("214")).Render(est))))
 		}
 	}
 
-	lines = append(lines, "")
-	lines = append(lines, promptStyle.Render(fmt.Sprintf("Proceed? %s  %s", 
+	dialogContent = append(dialogContent, "")
+	dialogContent = append(dialogContent, lipgloss.PlaceHorizontal(contentWidth, lipgloss.Center, promptStyle.Render(fmt.Sprintf("Proceed? %s  %s", 
 		renderKeyHint("yes", m.keys.Confirm, keyStyle),
-		renderKeyHint("no", m.keys.Cancel, keyStyle))))
+		renderKeyHint("no", m.keys.Cancel, keyStyle)))))
 
-	dialog := dialogBorderStyle.Width(dialogWidth).Render(strings.Join(lines, "\n"))
+	dialog := dialogBorderStyle.Width(dialogWidth).Render(strings.Join(dialogContent, "\n"))
 	return lipgloss.Place(innerWidth, innerHeight, lipgloss.Center, lipgloss.Center, dialog)
 }
 
@@ -1152,19 +1155,26 @@ func (m *model) renderErrorOverlay(innerWidth, innerHeight int) string {
 	
 	// Ensure each line of the error message is individually centered
 	// We wrap the text manually then center each resulting line
-	wrappedMessage := lipgloss.NewStyle().Width(dialogWidth - 4).Render(m.errorMessage)
+	msgWidth := dialogWidth - 4
+	wrappedMessage := lipgloss.NewStyle().Width(msgWidth).Render(m.errorMessage)
 	var messageLines []string
 	for _, line := range strings.Split(wrappedMessage, "\n") {
-		messageLines = append(messageLines, lipgloss.NewStyle().Width(dialogWidth - 4).Align(lipgloss.Center).Render(strings.TrimSpace(line)))
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "" {
+			messageLines = append(messageLines, lipgloss.NewStyle().Width(msgWidth).Align(lipgloss.Center).Render(trimmed))
+		}
 	}
 	message := lipgloss.JoinVertical(lipgloss.Center, messageLines...)
 	
 	var details string
 	if m.errorDetails != "" {
-		wrappedDetails := lipgloss.NewStyle().Width(dialogWidth - 4).Render(m.errorDetails)
+		wrappedDetails := lipgloss.NewStyle().Width(msgWidth).Render(m.errorDetails)
 		var detailsLines []string
 		for _, line := range strings.Split(wrappedDetails, "\n") {
-			detailsLines = append(detailsLines, lipgloss.NewStyle().Width(dialogWidth - 4).Align(lipgloss.Center).Render(strings.TrimSpace(line)))
+			trimmed := strings.TrimSpace(line)
+			if trimmed != "" {
+				detailsLines = append(detailsLines, lipgloss.NewStyle().Width(msgWidth).Align(lipgloss.Center).Render(trimmed))
+			}
 		}
 		details = "\n" + lipgloss.JoinVertical(lipgloss.Center, detailsLines...)
 	}
@@ -1177,31 +1187,7 @@ func (m *model) renderErrorOverlay(innerWidth, innerHeight int) string {
 	dialogContent := lipgloss.JoinVertical(lipgloss.Center, title, "", message, details, hint)
 	dialog := dialogBorderStyle.Width(dialogWidth).Render(dialogContent)
 
-	dialogHeight := strings.Count(dialog, "\n") + 1
-
-	vertPadding := (innerHeight - dialogHeight) / 2
-	if vertPadding < 0 {
-		vertPadding = 0
-	}
-	horizPadding := (innerWidth - lipgloss.Width(dialog)) / 2
-	if horizPadding < 0 {
-		horizPadding = 0
-	}
-
-	// Build final output with centering
-	var output strings.Builder
-
-	for i := 0; i < vertPadding; i++ {
-		output.WriteString("\n")
-	}
-
-	for _, line := range strings.Split(dialog, "\n") {
-		output.WriteString(strings.Repeat(" ", horizPadding))
-		output.WriteString(line)
-		output.WriteString("\n")
-	}
-
-	return output.String()
+	return lipgloss.Place(innerWidth, innerHeight, lipgloss.Center, lipgloss.Center, dialog)
 }
 
 // renderSimpleUpdateView renders the simple overview page for pending updates
