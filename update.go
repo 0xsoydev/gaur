@@ -588,11 +588,20 @@ func (m *model) performFiltering() tea.Cmd {
 		
 		// Trigger AUR search if query is long enough and different from last AUR search
 		_, searchQuery := parseRepoFilter(query)
+
+		// Always update the status display if the user is typing a new query
+		if len(searchQuery) >= minSearchQueryLen {
+			if m.searchingAUR || searchQuery != m.lastAURQuery {
+				m.searchTerm = searchQuery
+				m.searchStatus = fmt.Sprintf("Searching \"%s\"...", searchQuery)
+			}
+		} else if searchQuery == "" {
+			m.searchStatus = ""
+		}
+
 		if len(searchQuery) >= minSearchQueryLen && searchQuery != m.lastAURQuery && !m.searchingAUR {
 			m.searchingAUR = true
 			m.lastAURQuery = searchQuery
-			m.searchTerm = searchQuery
-			m.searchStatus = fmt.Sprintf("Searching \"%s\"...", searchQuery)
 			cmds = append(cmds, m.spinner.Tick, searchAUR(&m.config, searchQuery))
 		}
 	}
