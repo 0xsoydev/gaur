@@ -203,12 +203,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.infoForPackage = ""
 				m.infoScrollOffset = 0
 				
-				if len(m.installed) > 0 {
-					m.loading = false
-					return m, m.performFiltering()
-				}
 				m.loading = true
-				m.statusMessage = "Loading installed packages..."
+				m.statusMessage = "Refreshing installed packages..."
 				return m, getInstalledPackages()
 			}
 		case key.Matches(msg, m.keys.UpdateMode):

@@ -45,12 +45,17 @@ func TestUpdateNavigation(t *testing.T) {
 func TestUpdateModeSwitching(t *testing.T) {
 	m := initialModel(modeInstall, DefaultConfig())
 	m.loading = false
+	m.installed = []Package{{Name: "already-loaded"}}
 
 	// Switch to Uninstall mode ('r')
-	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("r")})
+	// It should return a command even if m.installed is NOT empty
+	newModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("r")})
 	m = newModel.(*model)
 	if m.mode != modeUninstall {
 		t.Errorf("mode = %v, want modeUninstall after 'r'", m.mode)
+	}
+	if cmd == nil {
+		t.Errorf("Expected command (refreshing packages) when entering Uninstall mode, got nil")
 	}
 
 	// Switch to Dashboard/Installed mode ('n')
