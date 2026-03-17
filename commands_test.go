@@ -20,14 +20,14 @@ func TestBuildAURCommand(t *testing.T) {
 			helper:   "paru",
 			action:   "install",
 			packages: []string{"vim"},
-			expected: []string{"paru", "-S", "--noconfirm", "vim"},
+			expected: []string{"paru", "-S", "vim"},
 		},
 		{
 			name:     "yay install multiple",
 			helper:   "yay",
 			action:   "install",
 			packages: []string{"vim", "neovim"},
-			expected: []string{"yay", "-S", "--noconfirm", "vim", "neovim"},
+			expected: []string{"yay", "-S", "vim", "neovim"},
 		},
 		{
 			name:     "paru remove",

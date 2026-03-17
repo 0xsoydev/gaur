@@ -30,7 +30,7 @@ func DefaultConfig() Config {
 		},
 		Commands: CommandConfig{
 			AurHelper:      "paru",
-			InstallFlags:   "--noconfirm",
+			InstallFlags:   "",
 			UninstallFlags: "-Rns",
 			CacheTool:      "paccache",
 		},

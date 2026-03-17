@@ -33,8 +33,6 @@ func BuildAURCommand(c *Config, action string, args ...string) []string {
 		cmd = []string{helper, "-S"}
 		if c.Commands.InstallFlags != "" {
 			cmd = append(cmd, TokenizeFlags(c.Commands.InstallFlags)...)
-		} else {
-			cmd = append(cmd, "--noconfirm")
 		}
 	case "remove":
 		cmd = []string{helper}
