@@ -208,10 +208,13 @@ func executeSelectiveClean(packages []string, pacmanCachePath string, paruCacheP
 			toDelete[p] = true
 		}
 
-		deleteMatches := func(dirPath string) error {
+		var errs []string
+
+		deleteMatches := func(dirPath string) {
 			entries, err := os.ReadDir(dirPath)
 			if err != nil {
-				return err
+				errs = append(errs, fmt.Sprintf("failed to read %s: %v", dirPath, err))
+				return
 			}
 			for _, entry := range entries {
 				if entry.IsDir() {
@@ -227,19 +230,23 @@ func executeSelectiveClean(packages []string, pacmanCachePath string, paruCacheP
 					if toDelete[baseName] {
 						// Found a match, delete it
 						filePath := filepath.Join(dirPath, name)
-						_ = os.Remove(filePath)
+						if err := os.Remove(filePath); err != nil {
+							errs = append(errs, fmt.Sprintf("failed to remove %s: %v", name, err))
+						}
 					}
 				}
 			}
-			return nil
 		}
 
 		// Delete from pacman cache
-		_ = deleteMatches(pacmanCachePath)
+		deleteMatches(pacmanCachePath)
 
-		// Delete from paru clone cache (nested)
+		// Delete from AUR helper cache (nested)
 		_ = filepath.WalkDir(paruCachePath, func(path string, d os.DirEntry, err error) error {
-			if err != nil || d.IsDir() {
+			if err != nil {
+				return nil
+			}
+			if d.IsDir() {
 				return nil
 			}
 			name := d.Name()
@@ -250,11 +257,22 @@ func executeSelectiveClean(packages []string, pacmanCachePath string, paruCacheP
 			if len(parts) > 3 {
 				baseName := strings.Join(parts[:len(parts)-3], "-")
 				if toDelete[baseName] {
-					_ = os.Remove(path)
+					if err := os.Remove(path); err != nil {
+						errs = append(errs, fmt.Sprintf("failed to remove %s: %v", name, err))
+					}
 				}
 			}
 			return nil
 		})
+
+		if len(errs) > 0 {
+			// If many errors, just show a few
+			msg := strings.Join(errs, "; ")
+			if len(errs) > 3 {
+				msg = fmt.Sprintf("%d errors occurred; first few: %s", len(errs), strings.Join(errs[:3], "; "))
+			}
+			return execCompleteMsg{operation: confirmCleanSelective, err: fmt.Errorf("%s", msg)}
+		}
 
 		return execCompleteMsg{operation: confirmCleanSelective, err: nil}
 	}

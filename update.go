@@ -648,6 +648,12 @@ func (m *model) handleExecComplete(msg execCompleteMsg) (tea.Model, tea.Cmd) {
 		m.errorMessage = msg.err.Error()
 		return m, nil
 	}
+
+	if msg.operation == confirmCleanSelective {
+		m.markedPackages = make(map[string]bool)
+		m.cacheToFree = 0
+	}
+
 	if m.mode == modeInstall { return m, loadRepoPackages() }
 	if m.mode == modeUninstall { return m, getInstalledPackages() }
 	if m.mode == modeUpdate || m.mode == modeUpdateSelective {
