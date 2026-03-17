@@ -274,8 +274,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case syncRepositoriesMsg:
 		if msg.err == nil {
-			m.loading = true
-			return m, checkUpdates(&m.config)
+			m.statusMessage = "Sync completed successfully"
+			return m, m.refreshAll()
 		}
 		m.loading = false
 		m.statusMessage = "Sync failed"
@@ -361,9 +361,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.showErrorOverlay = true
 			m.errorTitle = "Action Failed"
 			m.errorMessage = msg.err.Error()
+			return m, nil
 		}
-		if m.mode == modeInstall { cmds = append(cmds, loadRepoPackages()) }
-		if m.mode == modeUninstall { cmds = append(cmds, getInstalledPackages()) }
+		return m, m.refreshAll()
 
 	case updateOutputMsg:
 		if msg.done {
@@ -663,17 +663,11 @@ func (m *model) handleExecComplete(msg execCompleteMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-	if msg.operation == confirmCleanSelective {
-		m.markedPackages = make(map[string]bool)
-		m.cacheToFree = 0
-	}
+	// Clear selection state on success
+	m.markedPackages = make(map[string]bool)
+	m.cacheToFree = 0
+	m.confirmPackages = nil
 
-	if m.mode == modeInstall { return m, loadRepoPackages() }
-	if m.mode == modeUninstall { return m, getInstalledPackages() }
-	if m.mode == modeUpdate || m.mode == modeUpdateSelective {
-		m.loading = true
-		m.statusMessage = "Refreshing update list..."
-		return m, checkUpdates(&m.config)
-	}
-	return m, getDashboardData(&m.config)
+	m.statusMessage = "Operation completed successfully"
+	return m, m.refreshAll()
 }

@@ -161,3 +161,14 @@ func (m *model) selectedPackage() *Package {
 	}
 	return nil
 }
+
+// refreshAll triggers a full refresh of all system data
+func (m *model) refreshAll() tea.Cmd {
+	m.loading = true
+	return tea.Batch(
+		getDashboardData(&m.config),
+		loadRepoPackages(),
+		getInstalledPackages(),
+		checkUpdates(&m.config),
+	)
+}

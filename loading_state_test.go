@@ -50,7 +50,13 @@ func TestLoadingStateTransitions(t *testing.T) {
 			name:           "Action complete (background install/uninstall)",
 			initialMode:    modeInstall,
 			triggerMsg:     actionCompleteMsg{message: "done"},
-			expectedLoaded: false,
+			expectedLoaded: true, // triggers refreshAll
+		},
+		{
+			name:           "Sync success triggers refresh",
+			initialMode:    modeUpdate,
+			triggerMsg:     syncRepositoriesMsg{err: nil},
+			expectedLoaded: true, // triggers refreshAll
 		},
 		{
 			name:           "Sync failed clears loading",
