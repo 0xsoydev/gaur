@@ -306,7 +306,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.err == nil {
 			m.searchError = false
 			m.aurPackages = msg.packages
-			m.searchStatus = fmt.Sprintf("Search complete. Took %.2f seconds.", msg.timeTaken.Seconds())
+			if len(msg.packages) == 0 {
+				m.searchStatus = fmt.Sprintf("No packages found. Took %.2f seconds.", msg.timeTaken.Seconds())
+			} else {
+				m.searchStatus = fmt.Sprintf("Search complete. Took %.2f seconds.", msg.timeTaken.Seconds())
+			}
 			return m, m.performFiltering()
 		} else {
 			m.searchError = true

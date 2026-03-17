@@ -122,6 +122,12 @@ func searchAUR(c *Config, query string) tea.Cmd {
 		stdout, err := runner.Run(args[0], args[1:]...)
 		duration := time.Since(start)
 		if err != nil {
+			// Some helpers return exit 1 when no packages are found.
+			// If output is empty, treat it as "no results" rather than an error.
+			if len(stdout) == 0 {
+				return aurSearchMsg{packages: []Package{}, query: query, timeTaken: duration}
+			}
+
 			// Include the output (stdout+stderr) in the error message for better diagnostics
 			errMsg := string(stdout)
 			if errMsg == "" {

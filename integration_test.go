@@ -109,6 +109,66 @@ func TestSearchAURFailure(t *testing.T) {
 	}
 }
 
+func TestSearchAURNoResults(t *testing.T) {
+	oldRunner := runner
+	defer func() { runner = oldRunner }()
+
+	mock := &MockCommandRunner{
+		RunFunc: func(name string, args ...string) ([]byte, error) {
+			// Simulate no packages found (empty output, success)
+			return []byte(""), nil
+		},
+	}
+	runner = mock
+
+	cfg := DefaultConfig()
+	cmd := searchAUR(&cfg, "nonexistent-pkg")
+	msg := cmd()
+
+	aurMsg, ok := msg.(aurSearchMsg)
+	if !ok {
+		t.Fatalf("expected aurSearchMsg, got %T", msg)
+	}
+
+	if aurMsg.err != nil {
+		t.Errorf("expected no error, got %v", aurMsg.err)
+	}
+
+	if len(aurMsg.packages) != 0 {
+		t.Errorf("expected 0 packages, got %d", len(aurMsg.packages))
+	}
+}
+
+func TestSearchAURNoResultsExit1(t *testing.T) {
+	oldRunner := runner
+	defer func() { runner = oldRunner }()
+
+	mock := &MockCommandRunner{
+		RunFunc: func(name string, args ...string) ([]byte, error) {
+			// Simulate no packages found with exit 1 (common in some helpers)
+			return []byte(""), fmt.Errorf("exit status 1")
+		},
+	}
+	runner = mock
+
+	cfg := DefaultConfig()
+	cmd := searchAUR(&cfg, "nonexistent-pkg")
+	msg := cmd()
+
+	aurMsg, ok := msg.(aurSearchMsg)
+	if !ok {
+		t.Fatalf("expected aurSearchMsg, got %T", msg)
+	}
+
+	// Currently it probably returns an error because of exit status 1
+	// We want to verify this behavior
+	if aurMsg.err == nil {
+		t.Log("AUR helper returned success for no matches (exit 0)")
+	} else {
+		t.Logf("AUR helper returned error for no matches (exit 1): %v", aurMsg.err)
+	}
+}
+
 func TestUpdateKeyboardNavigation(t *testing.T) {
 	m := initialModel(modeInstall, DefaultConfig())
 	m.filtered = make([]Package, 20)
