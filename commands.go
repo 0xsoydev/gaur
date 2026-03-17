@@ -180,7 +180,7 @@ func executeCleanCache(m *model, op confirmationType, keep int, uninstalled bool
 
 	return runner.Interactive(func(err error) tea.Msg {
 		return execCompleteMsg{operation: op, err: err}
-	}, "bash", "-c", fmt.Sprintf(`
+	}, "sudo", "bash", "-c", fmt.Sprintf(`
 		# Clean pacman cache
 		%s -r %s -k %d
 		# Clean AUR helper cache (recursive)
@@ -196,86 +196,89 @@ func executeCleanCache(m *model, op confirmationType, keep int, uninstalled bool
 }
 
 // executeSelectiveClean specifically deletes selected cache files
-func executeSelectiveClean(packages []string, pacmanCachePath string, paruCachePath string) tea.Cmd {
-	return func() tea.Msg {
-		if len(packages) == 0 {
+func executeSelectiveClean(m *model, packages []string, pacmanCachePath string, paruCachePath string) tea.Cmd {
+	if len(packages) == 0 {
+		return func() tea.Msg {
 			return execCompleteMsg{operation: confirmCleanSelective, err: fmt.Errorf("no packages selected")}
 		}
+	}
 
-		// Create a quick lookup map for the base names we want to delete
-		toDelete := make(map[string]bool)
-		for _, p := range packages {
-			toDelete[p] = true
+	// 1. Find all matching files across both caches
+	toDelete := make(map[string]bool)
+	for _, p := range packages {
+		toDelete[p] = true
+	}
+
+	var files []string
+
+	findMatches := func(dirPath string) {
+		entries, err := os.ReadDir(dirPath)
+		if err != nil {
+			return
 		}
-
-		var errs []string
-
-		deleteMatches := func(dirPath string) {
-			entries, err := os.ReadDir(dirPath)
-			if err != nil {
-				errs = append(errs, fmt.Sprintf("failed to read %s: %v", dirPath, err))
-				return
+		for _, entry := range entries {
+			if entry.IsDir() {
+				continue
 			}
-			for _, entry := range entries {
-				if entry.IsDir() {
-					continue
-				}
-				name := entry.Name()
-				if !strings.HasSuffix(name, ".pkg.tar.zst") && !strings.HasSuffix(name, ".pkg.tar.xz") {
-					continue
-				}
-				parts := strings.Split(name, "-")
-				if len(parts) > 3 {
-					baseName := strings.Join(parts[:len(parts)-3], "-")
-					if toDelete[baseName] {
-						// Found a match, delete it
-						filePath := filepath.Join(dirPath, name)
-						if err := os.Remove(filePath); err != nil {
-							errs = append(errs, fmt.Sprintf("failed to remove %s: %v", name, err))
-						}
-					}
-				}
-			}
-		}
-
-		// Delete from pacman cache
-		deleteMatches(pacmanCachePath)
-
-		// Delete from AUR helper cache (nested)
-		_ = filepath.WalkDir(paruCachePath, func(path string, d os.DirEntry, err error) error {
-			if err != nil {
-				return nil
-			}
-			if d.IsDir() {
-				return nil
-			}
-			name := d.Name()
+			name := entry.Name()
 			if !strings.HasSuffix(name, ".pkg.tar.zst") && !strings.HasSuffix(name, ".pkg.tar.xz") {
-				return nil
+				continue
 			}
 			parts := strings.Split(name, "-")
 			if len(parts) > 3 {
 				baseName := strings.Join(parts[:len(parts)-3], "-")
 				if toDelete[baseName] {
-					if err := os.Remove(path); err != nil {
-						errs = append(errs, fmt.Sprintf("failed to remove %s: %v", name, err))
-					}
+					files = append(files, filepath.Join(dirPath, name))
 				}
 			}
-			return nil
-		})
-
-		if len(errs) > 0 {
-			// If many errors, just show a few
-			msg := strings.Join(errs, "; ")
-			if len(errs) > 3 {
-				msg = fmt.Sprintf("%d errors occurred; first few: %s", len(errs), strings.Join(errs[:3], "; "))
-			}
-			return execCompleteMsg{operation: confirmCleanSelective, err: fmt.Errorf("%s", msg)}
 		}
-
-		return execCompleteMsg{operation: confirmCleanSelective, err: nil}
 	}
+
+	findMatches(pacmanCachePath)
+	_ = filepath.WalkDir(paruCachePath, func(path string, d os.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return nil
+		}
+		name := d.Name()
+		if !strings.HasSuffix(name, ".pkg.tar.zst") && !strings.HasSuffix(name, ".pkg.tar.xz") {
+			return nil
+		}
+		parts := strings.Split(name, "-")
+		if len(parts) > 3 {
+			baseName := strings.Join(parts[:len(parts)-3], "-")
+			if toDelete[baseName] {
+				files = append(files, path)
+			}
+		}
+		return nil
+	})
+
+	if len(files) == 0 {
+		return func() tea.Msg {
+			return execCompleteMsg{operation: confirmCleanSelective, err: fmt.Errorf("no matching cache files found")}
+		}
+	}
+
+	// 2. Decide if we need sudo
+	needsSudo := false
+	for _, f := range files {
+		if strings.HasPrefix(f, "/var/cache") {
+			needsSudo = true
+			break
+		}
+	}
+
+	args := append([]string{"rm", "-f"}, files...)
+	execCmd := "rm"
+	execArgs := args[1:]
+	if needsSudo {
+		execCmd = "sudo"
+		execArgs = args
+	}
+
+	return runner.Interactive(func(err error) tea.Msg {
+		return execCompleteMsg{operation: confirmCleanSelective, err: err}
+	}, execCmd, execArgs...)
 }
 
 // executeRemoveOrphansInTerminal runs the AUR helper interactively using tea.ExecProcess

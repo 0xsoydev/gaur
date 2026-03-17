@@ -512,7 +512,7 @@ func (m *model) handleConfirmationKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		case confirmCleanKeep1: return m, executeCleanCache(m, confirmCleanKeep1, 1, false)
 		case confirmCleanUninstalled: return m, executeCleanCache(m, confirmCleanUninstalled, 0, true)
 		case confirmCleanNuke: return m, executeCleanCache(m, confirmCleanNuke, 0, false)
-		case confirmCleanSelective: return m, executeSelectiveClean(m.confirmPackages, m.dashboard.PacmanCachePath, m.dashboard.ParuCachePath)
+		case confirmCleanSelective: return m, executeSelectiveClean(m, m.confirmPackages, m.dashboard.PacmanCachePath, m.dashboard.ParuCachePath)
 		case confirmRemoveOrphans: return m, executeRemoveOrphansInTerminal(m, m.confirmPackages)
 		}
 	} else if key.Matches(msg, m.keys.Cancel) || msg.String() == "n" || msg.String() == "N" {
