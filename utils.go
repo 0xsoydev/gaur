@@ -235,7 +235,9 @@ var repoFilterChars = map[rune]string{
 var uninstallFilterChars = map[rune]string{
 	't': "total",
 	'e': "explicit",
+	'l': "explicit", // Alias for local/explicit
 	'f': "foreign",
+	'a': "foreign",  // Alias for AUR/foreign
 	'o': "orphan",
 }
 

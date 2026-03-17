@@ -127,6 +127,42 @@ func parseInstalledPackages(output string) ([]Package, error) {
 	return packages, nil
 }
 
+func (m *model) filterInstalledPackages(query string) {
+	if query == "" {
+		m.filteredInstalled = m.installed
+		m.matchIndices = nil
+		return
+	}
+
+	filters, searchQuery := parseUninstallFilter(query)
+	
+	candidates := m.installed
+	if len(filters) > 0 {
+		var filtered []Package
+		for _, pkg := range m.installed {
+			match := false
+			if filters["total"] { match = true }
+			if filters["explicit"] && pkg.Explicit { match = true }
+			if filters["foreign"] && pkg.Source == "aur" { match = true }
+			if filters["orphan"] && pkg.Orphan { match = true }
+			
+			if match {
+				filtered = append(filtered, pkg)
+			}
+		}
+		candidates = filtered
+	}
+
+	if searchQuery == "" {
+		m.filteredInstalled = candidates
+		m.matchIndices = nil
+		return
+	}
+
+	m.filteredInstalled = fuzzyFilter(candidates, searchQuery)
+	m.matchIndices = computeAllMatchIndices(m.filteredInstalled, searchQuery)
+}
+
 func uninstallPackage(c *Config, pkg Package) tea.Cmd {
 	return func() tea.Msg {
 

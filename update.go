@@ -573,13 +573,7 @@ func (m *model) performFiltering() tea.Cmd {
 	m.selectedIndex = 0
 
 	if m.mode == modeInstall { m.filterAllPackages(query) }
-	if m.mode == modeUninstall {
-		if query == "" {
-			m.filteredInstalled = m.installed
-		} else {
-			m.filteredInstalled = fuzzyFilter(m.installed, query)
-		}
-	}
+	if m.mode == modeUninstall { m.filterInstalledPackages(query) }
 	if m.mode == modeUpdateSelective {
 		if query == "" {
 			m.filtered = m.updatableAll
