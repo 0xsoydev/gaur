@@ -46,6 +46,7 @@ type model struct {
 	searchingAUR          bool   // Whether AUR search is in progress
 	searchTerm            string // Current search term for status line
 	searchStatus          string // "Searching..." or "Search complete..."
+	searchError           bool   // Whether the last search failed
 	searchStartTime       time.Time
 	lastSearchDuration    time.Duration
 	spinner               spinner.Model

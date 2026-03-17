@@ -304,11 +304,13 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case aurSearchMsg:
 		m.searchingAUR = false
 		if msg.err == nil {
+			m.searchError = false
 			m.aurPackages = msg.packages
 			m.searchStatus = fmt.Sprintf("Search complete. Took %.2f seconds.", msg.timeTaken.Seconds())
 			return m, m.performFiltering()
 		} else {
-			m.searchStatus = "Search failed."
+			m.searchError = true
+			m.searchStatus = fmt.Sprintf("Search failed: %v", msg.err)
 		}
 
 	case spinner.TickMsg:
@@ -592,6 +594,7 @@ func (m *model) performFiltering() tea.Cmd {
 		// Always update the status display if the user is typing a new query
 		if len(searchQuery) >= minSearchQueryLen {
 			if m.searchingAUR || searchQuery != m.lastAURQuery {
+				m.searchError = false // Reset error state
 				m.searchTerm = searchQuery
 				m.searchStatus = fmt.Sprintf("Searching \"%s\"...", searchQuery)
 			}

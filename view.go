@@ -787,11 +787,16 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 		}
 		
 		if m.searchStatus != "" {
-			statusLine = lipgloss.NewStyle().
+			style := lipgloss.NewStyle().
 				Foreground(lipgloss.Color("244")).
 				Italic(true).
-				MarginLeft(2).
-				Render(m.searchStatus)
+				MarginLeft(2)
+			
+			if m.searchError {
+				style = style.Foreground(lipgloss.Color("#FF5555"))
+			}
+			
+			statusLine = style.Render(m.searchStatus)
 		}
 	} else {
 		inputLine = statusStyle.Render(m.statusMessage)
