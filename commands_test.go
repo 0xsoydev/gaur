@@ -7,11 +7,13 @@ import (
 
 func TestBuildAURCommand(t *testing.T) {
 	tests := []struct {
-		name     string
-		helper   string
-		action   string
-		packages []string
-		expected []string
+		name           string
+		helper         string
+		action         string
+		packages       []string
+		installFlags   string
+		uninstallFlags string
+		expected       []string
 	}{
 		{
 			name:     "paru install single",
@@ -55,19 +57,36 @@ func TestBuildAURCommand(t *testing.T) {
 			packages: nil,
 			expected: []string{"yay", "-Qu"},
 		},
+		{
+			name:           "custom install flags",
+			helper:         "yay",
+			action:         "install",
+			packages:       []string{"vim"},
+			installFlags:   "--needed --noconfirm",
+			expected:       []string{"yay", "-S", "--needed", "--noconfirm", "vim"},
+		},
+		{
+			name:           "custom remove flags",
+			helper:         "paru",
+			action:         "remove",
+			packages:       []string{"vim"},
+			uninstallFlags: "-Rcns",
+			expected:       []string{"paru", "-Rcns", "vim"},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			config := &Config{
 				Commands: CommandConfig{
-					AurHelper: tt.helper,
+					AurHelper:      tt.helper,
+					InstallFlags:   tt.installFlags,
+					UninstallFlags: tt.uninstallFlags,
 				},
 			}
-			// This function will be implemented later
 			got := BuildAURCommand(config, tt.action, tt.packages...)
 			if !reflect.DeepEqual(got, tt.expected) {
-				t.Errorf("BuildAURCommand() = %v, want %v", got, tt.expected)
+				t.Errorf("%s: BuildAURCommand() = %v, want %v", tt.name, got, tt.expected)
 			}
 		})
 	}
