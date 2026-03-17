@@ -6,10 +6,10 @@
 
 **A beautiful, interactive TUI for Arch Linux package management**
 
-Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea) • Powered by [paru](https://github.com/Morganamilo/paru)
+Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea) • Powered by [paru](https://github.com/Morganamilo/paru) or [yay](https://github.com/Jguer/yay)
 
 > ⚠️ **Disclaimer:** This project is mostly vibecoded and continues to be developed through vibecoding.  
-> Do report rough edges, and expect an occasional "it works on my machine" moment (trying my best to eliminate those).
+> Do report rough edges, and expect an occasional \"it works on my machine\" moment (trying my best to eliminate those).
 
 </div>
 
@@ -21,6 +21,7 @@ Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea) • Powered 
 - [Requirements](#-requirements)
 - [Interface](#-interface)
 - [Installation](#-installation)
+- [Configuration](#-configuration)
 - [Usage](#-usage)
 - [How It Works](#-how-it-works)
 - [License](#-license)
@@ -30,30 +31,33 @@ Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea) • Powered 
 ### 📦 Package Management
 
 - **Fuzzy Search** — Lightning-fast fuzzy matching powered by `fzf` with match highlighting
+- **Dynamic Helper Support** — Seamlessly switch between `paru` and `yay` via configuration
 - **Repository Filtering** — Filter by source with prefixes: `c:` (core), `e:` (extra), `m:` (multilib), `a:` (aur)
 - **Batch Operations** — Mark multiple packages with `Tab` and install/remove them all at once
+- **Interactive Hand-off** — Correctly handles terminal prompts for password entry and conflict resolution
 - **Real-time Package Info** — View detailed package information with debounced loading
 
 ### 📊 System Dashboard
 
 - **Package Statistics** — Total, explicit, foreign (AUR), and orphan package counts
 - **Disk Space Analysis** — Capacity, usage breakdown (packages, cache, other, free) with visual proportional bars
+- **XDG Compliance** — Automatically respects `$XDG_CACHE_HOME` for all cache operations
 - **Top 10 Packages** — See your largest installed packages at a glance
-- **Top Cache Hogs** — Identifies the top 5 largest aggregated packages taking up space across both pacman and paru caches
-- **Cache Management** — Clean package caches directly from the dashboard
+- **Top Cache Hogs** — Identifies the top largest packages taking up space across both pacman and helper caches
+- **Cache Management** — Clean package caches directly from the dashboard with `sudo` privilege escalation
 - **Orphan Removal** — Identify and remove orphaned packages
 
 ### 🎨 Interface
 
 - **Mode-specific Theming** — Each mode (Install, Info, Remove, Update) has its own color scheme
 - **Selection Panel** — Dedicated panel for managing marked packages
-- **Confirmation Dialogs** — Review operations before executing
-- **Error Overlays** — Clear error messages when things go wrong
+- **Centered Dialogs** — All confirmation and error boxes are perfectly centered line-by-line
+- **Automatic Refresh** — The entire UI refreshes automatically after any system change to ensure data integrity
 
 ## 📋 Requirements
 
 - Arch Linux (or Arch-based distribution)
-- [paru](https://github.com/Morganamilo/paru) — AUR helper
+- [paru](https://github.com/Morganamilo/paru) or [yay](https://github.com/Jguer/yay) — AUR helper
 - [fzf](https://github.com/junegunn/fzf) — Fuzzy finder (for search)
 - Go 1.21+ (for building from source)
 
@@ -95,6 +99,23 @@ sudo mv gaur /usr/local/bin/
 
 ```bash
 go install github.com/prbhtkumr/gaur@latest
+```
+
+## ⚙️ Configuration
+
+Gaur creates a configuration file at `~/.config/gaur/config.toml` on first run.
+
+```toml
+[commands]
+# Set your preferred AUR helper: \"paru\" (default) or \"yay\"
+aur_helper = \"paru\"
+# Custom flags for install/uninstall
+install_flags = \"\"
+uninstall_flags = \"-Rns\"
+
+[advanced]
+# Set a custom cache directory (optional)
+cache_dir = \"\"
 ```
 
 ## 📖 Usage
@@ -176,9 +197,11 @@ Filter installed packages by type:
 | Prefix | Filter                 |
 | ------ | ---------------------- |
 | `t:`   | Total (all packages)   |
-| `e:`   | Explicitly installed   |
-| `f:`   | Foreign (AUR) packages |
+| `e:` / `l:`   | Explicitly installed (local) |
+| `f:` / `a:`   | Foreign (AUR) packages |
 | `o:`   | Orphan packages        |
+
+Combined: `of:google` searches for orphaned AUR packages matching \"google\".
 
 ### Color Legend
 
@@ -222,10 +245,11 @@ gaur --list-themes
 
 ## 🔧 How It Works
 
-1. **Package Database** — Loads all repository packages from local pacman cache on startup
-2. **AUR Search** — Queries AUR via `paru -Ss --aur` when you type (debounced)
+1. **Package Database** — Loads repository packages from local pacman cache on startup
+2. **AUR Search** — Queries AUR via your configured helper (debounced)
 3. **Fuzzy Matching** — Uses `fzf --filter` for fast, relevance-ranked fuzzy matching
-4. **Interactive Operations** — Hands off to `paru` in the terminal for install/remove/update with full interactivity (password prompts, confirmations, etc.)
+4. **Interactive Operations** — Hands off to the AUR helper in the terminal for install/remove/update with full interactivity (password prompts, conflict resolution, etc.)
+5. **Unified Refresh** — Re-scans the system after any change to update dashboard stats and lists instantly.
 
 ## 📄 License
 
