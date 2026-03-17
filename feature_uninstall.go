@@ -127,7 +127,7 @@ func parseInstalledPackages(output string) ([]Package, error) {
 	return packages, nil
 }
 
-func uninstallPackage(pkg Package) tea.Cmd {
+func uninstallPackage(c *Config, pkg Package) tea.Cmd {
 	return func() tea.Msg {
 
 		if !isValidPackageName(pkg.Name) {
@@ -137,7 +137,8 @@ func uninstallPackage(pkg Package) tea.Cmd {
 			}
 		}
 
-		out, err := runner.Run("paru", "-Rns", "--noconfirm", pkg.Name)
+		args := BuildAURCommand(c, "remove", "--noconfirm", pkg.Name)
+		out, err := runner.Run(args[0], args[1:]...)
 		if err != nil {
 			return actionCompleteMsg{
 				message: fmt.Sprintf("Failed to uninstall %s: %s", pkg.Name, string(out)),
@@ -151,7 +152,7 @@ func uninstallPackage(pkg Package) tea.Cmd {
 	}
 }
 
-func uninstallMultiplePackages(pkgNames []string) tea.Cmd {
+func uninstallMultiplePackages(c *Config, pkgNames []string) tea.Cmd {
 	return func() tea.Msg {
 
 		validNames, allValid := sanitizePackageNames(pkgNames)
@@ -168,8 +169,8 @@ func uninstallMultiplePackages(pkgNames []string) tea.Cmd {
 			}
 		}
 
-		args := append([]string{"-Rns", "--noconfirm"}, validNames...)
-		out, err := runner.Run("paru", args...)
+		args := BuildAURCommand(c, "remove", append([]string{"--noconfirm"}, validNames...)...)
+		out, err := runner.Run(args[0], args[1:]...)
 		if err != nil {
 			return actionCompleteMsg{
 				message: fmt.Sprintf("Failed to uninstall packages: %s", string(out)),

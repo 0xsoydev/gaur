@@ -8,9 +8,10 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-func updateSystem() tea.Cmd {
+func updateSystem(c *Config) tea.Cmd {
 	return func() tea.Msg {
-		out, err := runner.Run("paru", "-Syu", "--noconfirm")
+		args := BuildAURCommand(c, "update", "--noconfirm")
+		out, err := runner.Run(args[0], args[1:]...)
 		output := string(out)
 
 		if err != nil {
@@ -28,8 +29,8 @@ func updateSystem() tea.Cmd {
 	}
 }
 
-// checkUpdates fetches available updates using paru -Qu
-func checkUpdates() tea.Cmd {
+// checkUpdates fetches available updates using the AUR helper
+func checkUpdates(c *Config) tea.Cmd {
 	return func() tea.Msg {
 
 		foreignOut, err := runner.Run("pacman", "-Qm")
@@ -61,7 +62,8 @@ func checkUpdates() tea.Cmd {
 			}
 		}
 
-		stdout, err := runner.Run("paru", "-Qu")
+		args := BuildAURCommand(c, "check-updates")
+		stdout, err := runner.Run(args[0], args[1:]...)
 		if err != nil {
 
 			if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {

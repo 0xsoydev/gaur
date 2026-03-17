@@ -15,7 +15,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-func getDashboardData() tea.Cmd {
+func getDashboardData(c *Config) tea.Cmd {
 	return func() tea.Msg {
 		var data DashboardData
 		var errs []error
@@ -36,7 +36,8 @@ func getDashboardData() tea.Cmd {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			out, err := runner.Run("paru", "-Qq")
+			args := BuildAURCommand(c, "query-all", "-Qq") // Using a generic query
+			out, err := runner.Run(args[0], args[1:]...)
 			if err == nil {
 				lines := strings.Split(strings.TrimSpace(string(out)), "\n")
 				dataMu.Lock()
@@ -59,7 +60,8 @@ func getDashboardData() tea.Cmd {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			out, err := runner.Run("paru", "-Qe")
+			args := BuildAURCommand(c, "query-explicit", "-Qe")
+			out, err := runner.Run(args[0], args[1:]...)
 			if err == nil {
 				val := countLines(string(out))
 				dataMu.Lock()
@@ -74,7 +76,8 @@ func getDashboardData() tea.Cmd {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			out, err := runner.Run("paru", "-Qm")
+			args := BuildAURCommand(c, "query-foreign", "-Qm")
+			out, err := runner.Run(args[0], args[1:]...)
 			if err == nil {
 				val := countLines(string(out))
 				dataMu.Lock()
@@ -89,7 +92,8 @@ func getDashboardData() tea.Cmd {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			out, err := runner.Run("paru", "-Qdt")
+			args := BuildAURCommand(c, "query-orphans", "-Qdt")
+			out, err := runner.Run(args[0], args[1:]...)
 			if err == nil {
 				val := countLines(string(out))
 				dataMu.Lock()
@@ -132,7 +136,8 @@ func getDashboardData() tea.Cmd {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			out, err := runner.Run("paru", "-Ps")
+			// Many helpers support -Ps for stats
+			out, err := runner.Run(c.Commands.AurHelper, "-Ps")
 			if err == nil {
 				ts, tsb, miss, top := parseParuStats(string(out))
 				dataMu.Lock()
@@ -185,13 +190,22 @@ func getDashboardData() tea.Cmd {
 			pacmanCachePath := "/var/cache/pacman/pkg"
 			pacmanSize := calculateDirSize(pacmanCachePath)
 
-			homeDir, _ := os.UserHomeDir()
-			paruBase := filepath.Join(homeDir, ".cache", "paru")
-			paruClonePath := filepath.Join(paruBase, "clone")
+			aurClonePath, err := GetAURCacheDir(c)
+			if err != nil {
+				addErr("AUR cache path", err)
+				return
+			}
+			// Base is parent of clone for paru, or the dir itself for yay? 
+			// User logic: paru -> ~/.cache/paru/clone, yay -> ~/.cache/yay
+			aurBase := aurClonePath
+			if c.Commands.AurHelper == "paru" {
+				aurBase = filepath.Dir(aurClonePath)
+			}
 
 			// Fetch installed list locally for this goroutine to avoid complex sync
 			installed := make(map[string]bool)
-			if out, err := runner.Run("paru", "-Qq"); err == nil {
+			args := BuildAURCommand(c, "query-all", "-Qq")
+			if out, err := runner.Run(args[0], args[1:]...) ; err == nil {
 				for _, name := range strings.Split(string(out), "\n") {
 					if n := strings.TrimSpace(name); n != "" {
 						installed[n] = true
@@ -199,12 +213,12 @@ func getDashboardData() tea.Cmd {
 				}
 			}
 
-			type paruCacheFile struct {
+			type aurCacheFile struct {
 				path      string
 				size      int64
 				modTime   time.Time
 			}
-			paruFiles := make(map[string][]paruCacheFile)
+			aurFiles := make(map[string][]aurCacheFile)
 
 			pacmanHogs := make(map[string]int64)
 			if entries, err := os.ReadDir(pacmanCachePath); err == nil {
@@ -222,7 +236,7 @@ func getDashboardData() tea.Cmd {
 				}
 			}
 
-			filepath.WalkDir(paruClonePath, func(path string, d os.DirEntry, err error) error {
+			filepath.WalkDir(aurClonePath, func(path string, d os.DirEntry, err error) error {
 				if err != nil || d.IsDir() { return nil }
 				name := d.Name()
 				if !strings.HasSuffix(name, ".pkg.tar.zst") && !strings.HasSuffix(name, ".pkg.tar.xz") { return nil }
@@ -230,7 +244,7 @@ func getDashboardData() tea.Cmd {
 				if len(parts) > 3 {
 					baseName := strings.Join(parts[:len(parts)-3], "-")
 					if info, err := d.Info(); err == nil {
-						paruFiles[baseName] = append(paruFiles[baseName], paruCacheFile{
+						aurFiles[baseName] = append(aurFiles[baseName], aurCacheFile{
 							path:    path,
 							size:    info.Size(),
 							modTime: info.ModTime(),
@@ -240,19 +254,19 @@ func getDashboardData() tea.Cmd {
 				return nil
 			})
 
-			paruHogs := make(map[string]int64)
-			var paruOrphanSaved, paruKeep1Saved, paruKeep3Saved int64
-			var paruOrphanCount, paruKeep1Count, paruKeep3Count int
-			var paruPackagesSize int64
+			aurHogs := make(map[string]int64)
+			var aurOrphanSaved, aurKeep1Saved, aurKeep3Saved int64
+			var aurOrphanCount, aurKeep1Count, aurKeep3Count int
+			var aurPackagesSize int64
 
-			for name, files := range paruFiles {
+			for name, files := range aurFiles {
 				// Sum for total hogs
 				var totalSize int64
 				for _, f := range files { 
 					totalSize += f.size
-					paruPackagesSize += f.size
+					aurPackagesSize += f.size
 				}
-				paruHogs[name] = totalSize
+				aurHogs[name] = totalSize
 
 				// Calculate savings
 				sort.Slice(files, func(i, j int) bool {
@@ -261,21 +275,21 @@ func getDashboardData() tea.Cmd {
 
 				// Orphans
 				if !installed[name] {
-					paruOrphanSaved += totalSize
-					paruOrphanCount += len(files)
+					aurOrphanSaved += totalSize
+					aurOrphanCount += len(files)
 				}
 
 				// Keep N logic
 				if len(files) > 1 {
 					for i := 1; i < len(files); i++ { 
-						paruKeep1Saved += files[i].size 
-						paruKeep1Count++
+						aurKeep1Saved += files[i].size 
+						aurKeep1Count++
 					}
 				}
 				if len(files) > 3 {
 					for i := 3; i < len(files); i++ { 
-						paruKeep3Saved += files[i].size 
-						paruKeep3Count++
+						aurKeep3Saved += files[i].size 
+						aurKeep3Count++
 					}
 				}
 			}
@@ -283,7 +297,7 @@ func getDashboardData() tea.Cmd {
 			// Combine for AllCacheHogs
 			combinedHogs := make(map[string]int64)
 			for k, v := range pacmanHogs { combinedHogs[k] += v }
-			for k, v := range paruHogs { combinedHogs[k] += v }
+			for k, v := range aurHogs { combinedHogs[k] += v }
 
 			type cacheEntry struct {
 				name string
@@ -319,9 +333,9 @@ func getDashboardData() tea.Cmd {
 			for k, v := range pacmanHogs {
 				if !installed[k] { uninstalledPacman[k] = v }
 			}
-			uninstalledParu := make(map[string]int64)
-			for k, v := range paruHogs {
-				if !installed[k] { uninstalledParu[k] = v }
+			uninstalledAur := make(map[string]int64)
+			for k, v := range aurHogs {
+				if !installed[k] { uninstalledAur[k] = v }
 			}
 
 			var topHogs []PackageSize
@@ -333,15 +347,15 @@ func getDashboardData() tea.Cmd {
 				})
 			}
 
-			paruBaseSize := calculateDirSize(paruBase)
-			totalCache := pacmanSize + paruBaseSize
+			aurBaseSize := calculateDirSize(aurBase)
+			totalCache := pacmanSize + aurBaseSize
 
 			// Estimates for paccache (summing system and manual paru calculation)
 			estimatesPacman := make(map[confirmationType]string)
-			estimatesParu := make(map[confirmationType]string)
+			estimatesAur := make(map[confirmationType]string)
 			estimatesTotal := make(map[confirmationType]string)
 
-			fetchDetailedEstimate := func(ct confirmationType, paruCount int, paruSaved int64, args ...string) {
+			fetchDetailedEstimate := func(ct confirmationType, aurCount int, aurSaved int64, args ...string) {
 				out, _ := runner.Run("paccache", append([]string{"-d", "-c", pacmanCachePath}, args...)...)
 				pacmanCount, pacmanSavedStr := parsePaccacheDryRunDetailed(string(out))
 				pacmanSavedBytes := parseSizeToBytes(pacmanSavedStr)
@@ -352,13 +366,13 @@ func getDashboardData() tea.Cmd {
 					estimatesPacman[ct] = "0 B"
 				}
 
-				if paruCount > 0 {
-					estimatesParu[ct] = fmt.Sprintf("%d pkgs (%s)", paruCount, formatBytes(paruSaved))
+				if aurCount > 0 {
+					estimatesAur[ct] = fmt.Sprintf("%d pkgs (%s)", aurCount, formatBytes(aurSaved))
 				} else {
-					estimatesParu[ct] = "0 B"
+					estimatesAur[ct] = "0 B"
 				}
 
-				totalBytes := pacmanSavedBytes + paruSaved
+				totalBytes := pacmanSavedBytes + aurSaved
 				if totalBytes > 0 {
 					estimatesTotal[ct] = formatBytes(totalBytes)
 				} else {
@@ -366,28 +380,28 @@ func getDashboardData() tea.Cmd {
 				}
 			}
 
-			fetchDetailedEstimate(confirmCleanKeep3, paruKeep3Count, paruKeep3Saved, "-k3")
-			fetchDetailedEstimate(confirmCleanKeep1, paruKeep1Count, paruKeep1Saved, "-k1")
-			fetchDetailedEstimate(confirmCleanUninstalled, paruOrphanCount, paruOrphanSaved, "-uk0")
+			fetchDetailedEstimate(confirmCleanKeep3, aurKeep3Count, aurKeep3Saved, "-k3")
+			fetchDetailedEstimate(confirmCleanKeep1, aurKeep1Count, aurKeep1Saved, "-k1")
+			fetchDetailedEstimate(confirmCleanUninstalled, aurOrphanCount, aurOrphanSaved, "-uk0")
 			
 			estimatesPacman[confirmCleanNuke] = formatBytes(pacmanSize)
-			estimatesParu[confirmCleanNuke] = formatBytes(paruBaseSize)
-			estimatesTotal[confirmCleanNuke] = formatBytes(pacmanSize + paruBaseSize)
+			estimatesAur[confirmCleanNuke] = formatBytes(aurBaseSize)
+			estimatesTotal[confirmCleanNuke] = formatBytes(pacmanSize + aurBaseSize)
 
 			dataMu.Lock()
 			data.TopCacheHogs = topHogs
 			data.AllCacheHogs = toPkgSize(allSorted)
 			data.UninstalledPacmanCache = toPkgSize(sortEntries(uninstalledPacman))
-			data.UninstalledParuCache = toPkgSize(sortEntries(uninstalledParu))
+			data.UninstalledParuCache = toPkgSize(sortEntries(uninstalledAur))
 			data.CacheFreedPacman = estimatesPacman
-			data.CacheFreedParu = estimatesParu
+			data.CacheFreedParu = estimatesAur
 			data.CacheFreedEstimates = estimatesTotal
 			data.PacmanCachePath = pacmanCachePath
 			data.PacmanCacheSizeBytes = pacmanSize
 			data.PacmanCacheSize = formatBytes(pacmanSize)
-			data.ParuCachePath = paruBase
-			data.ParuCacheSizeBytes = paruBaseSize
-			data.ParuCacheSize = formatBytes(paruBaseSize)
+			data.ParuCachePath = aurBase
+			data.ParuCacheSizeBytes = aurBaseSize
+			data.ParuCacheSize = formatBytes(aurBaseSize)
 			data.CleanerSizeBytes = totalCache
 			data.CleanerSize = formatBytes(totalCache)
 			dataMu.Unlock()

@@ -94,15 +94,13 @@ func (m *model) filterAllPackages(query string) {
 	m.matchIndices = computeAllMatchIndices(m.filtered, searchQuery)
 }
 
-// searchAUR searches the AUR via paru (network call)
-func searchAUR(query string) tea.Cmd {
+func searchAUR(c *Config, query string) tea.Cmd {
 	return func() tea.Msg {
 		if query == "" {
 			return aurSearchMsg{packages: []Package{}, query: query}
 		}
 
-		// Sanitize search query - only allow safe characters for search
-		// This prevents command injection through the search query
+		// Sanitize search query
 		var sanitized strings.Builder
 		for _, r := range query {
 			if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') ||
@@ -111,14 +109,14 @@ func searchAUR(query string) tea.Cmd {
 			} else if r == ' ' {
 				sanitized.WriteRune('-')
 			}
-
 		}
 		searchQuery := sanitized.String()
 		if searchQuery == "" {
 			return aurSearchMsg{packages: []Package{}, query: query}
 		}
 
-		stdout, err := runner.Run("paru", "-Ss", "-a", searchQuery)
+		args := BuildAURCommand(c, "search", searchQuery)
+		stdout, err := runner.Run(args[0], args[1:]...)
 		if err != nil {
 			return aurSearchMsg{packages: nil, query: query, err: fmt.Errorf("AUR search command failed: %w", err)}
 		}
@@ -132,9 +130,8 @@ func searchAUR(query string) tea.Cmd {
 	}
 }
 
-func installPackage(pkg Package) tea.Cmd {
+func installPackage(c *Config, pkg Package) tea.Cmd {
 	return func() tea.Msg {
-
 		if !isValidPackageName(pkg.Name) {
 			return actionCompleteMsg{
 				message: fmt.Sprintf("Invalid package name: %s", pkg.Name),
@@ -142,7 +139,8 @@ func installPackage(pkg Package) tea.Cmd {
 			}
 		}
 
-		out, err := runner.Run("paru", "-S", "--noconfirm", pkg.Name)
+		args := BuildAURCommand(c, "install", pkg.Name)
+		out, err := runner.Run(args[0], args[1:]...)
 		if err != nil {
 			return actionCompleteMsg{
 				message: fmt.Sprintf("Failed to install %s: %s", pkg.Name, string(out)),
