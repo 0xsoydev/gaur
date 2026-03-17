@@ -19,8 +19,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		// 1. Global Intercepts (Highest Priority)
 		if key.Matches(msg, m.keys.Quit) {
-			m.saveSettingsToDisk()
-			return m, tea.Quit
+			// ctrl+c should always quit, but 'q' should only quit if input is not focused
+			if msg.Type == tea.KeyCtrlC || !m.textInput.Focused() {
+				m.saveSettingsToDisk()
+				return m, tea.Quit
+			}
 		}
 		if msg.String() == "ctrl+r" && m.mode == modeInstalled {
 			m.loading = true
