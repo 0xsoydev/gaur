@@ -307,14 +307,14 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.searchError = false
 			m.aurPackages = msg.packages
 			if len(msg.packages) == 0 {
-				m.searchStatus = fmt.Sprintf("No packages found. Took %.2f seconds.", msg.timeTaken.Seconds())
+				m.searchStatus = fmt.Sprintf("No AUR packages found. Took %.2f seconds.", msg.timeTaken.Seconds())
 			} else {
-				m.searchStatus = fmt.Sprintf("Search complete. Took %.2f seconds.", msg.timeTaken.Seconds())
+				m.searchStatus = fmt.Sprintf("AUR search complete. Took %.2f seconds.", msg.timeTaken.Seconds())
 			}
 			return m, m.performFiltering()
 		} else {
 			m.searchError = true
-			m.searchStatus = fmt.Sprintf("Search failed: %v", msg.err)
+			m.searchStatus = fmt.Sprintf("AUR search failed: %v", msg.err)
 		}
 
 	case spinner.TickMsg:
@@ -600,7 +600,7 @@ func (m *model) performFiltering() tea.Cmd {
 			if m.searchingAUR || searchQuery != m.lastAURQuery {
 				m.searchError = false // Reset error state
 				m.searchTerm = searchQuery
-				m.searchStatus = fmt.Sprintf("Searching \"%s\"...", searchQuery)
+				m.searchStatus = fmt.Sprintf("Searching AUR for \"%s\"...", searchQuery)
 			}
 		} else if searchQuery == "" {
 			m.searchStatus = ""
