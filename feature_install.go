@@ -122,7 +122,12 @@ func searchAUR(c *Config, query string) tea.Cmd {
 		stdout, err := runner.Run(args[0], args[1:]...)
 		duration := time.Since(start)
 		if err != nil {
-			return aurSearchMsg{packages: nil, query: query, timeTaken: duration, err: fmt.Errorf("AUR search command failed: %w", err)}
+			// Include the output (stdout+stderr) in the error message for better diagnostics
+			errMsg := string(stdout)
+			if errMsg == "" {
+				errMsg = err.Error()
+			}
+			return aurSearchMsg{packages: nil, query: query, timeTaken: duration, err: fmt.Errorf("%s", strings.TrimSpace(errMsg))}
 		}
 
 		if len(stdout) == 0 {
