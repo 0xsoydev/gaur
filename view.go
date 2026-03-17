@@ -784,8 +784,7 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 		if m.searchStatus != "" {
 			style := lipgloss.NewStyle().
 				Foreground(lipgloss.Color("244")).
-				Italic(true).
-				MarginLeft(2)
+				Italic(true)
 			
 			if m.searchError {
 				style = style.Foreground(lipgloss.Color("#FF5555"))
@@ -793,7 +792,8 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 			
 			statusLine = style.Render(m.searchStatus)
 			if m.searchingAUR {
-				// Prepend the braille spinner to the status line instead of the input line
+				// Prepend the braille spinner with 1 space separator
+				// With no MarginLeft, the spinner sits under '>' and text under the query
 				statusLine = m.spinner.View() + " " + statusLine
 			}
 		}
