@@ -191,9 +191,12 @@ func executeCleanCache(m *model, op confirmationType, keep int, uninstalled bool
 		uninstalledFlag = "-u"
 	}
 
-	script := fmt.Sprintf("# Clean pacman cache\nsudo %s -r %s -k %d", cacheTool, uninstalledFlag, keep)
+	// Build a script that provides feedback and handles subdirectories correctly
+	script := fmt.Sprintf("echo 'Cleaning system cache...'\nsudo %s -r %s -k %d || true", cacheTool, uninstalledFlag, keep)
 	if aurCacheExists {
-		script += fmt.Sprintf("\n# Clean AUR helper cache\nfind %s -maxdepth 2 -type d -exec %s -r %s -k %d -c {} +", 
+		// Use \; instead of + to ensure paccache is called for each subdirectory
+		// We use -q to suppress "no candidate packages" noise from empty subdirs
+		script += fmt.Sprintf("\necho 'Cleaning AUR helper cache...'\nfind %s -maxdepth 2 -type d -exec %s -q -r %s -k %d -c {} \\;\necho 'Done.'", 
 			aurCache, cacheTool, uninstalledFlag, keep)
 	}
 
