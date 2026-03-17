@@ -123,9 +123,9 @@ func (m *model) Init() tea.Cmd {
 		func() tea.Msg {
 			switch m.mode {
 			case modeInstalled:
-				return getDashboardData()()
+				return getDashboardData(&m.config)()
 			case modeUpdate:
-				return checkUpdates()()
+				return checkUpdates(&m.config)()
 			}
 			return nil
 		},

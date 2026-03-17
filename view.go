@@ -937,7 +937,7 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 			}
 		}
 		if len(m.dashboard.UninstalledParuCache) > 0 {
-			packages = append(packages, Package{Name: "paru:", Version: "HEADER"})
+			packages = append(packages, Package{Name: m.config.Commands.AurHelper + ":", Version: "HEADER"})
 			for _, p := range m.dashboard.UninstalledParuCache {
 				packages = append(packages, Package{Name: p.Name, Size: p.Size})
 			}
@@ -1029,7 +1029,11 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 
 		valStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
 		pacmanLabel := sourceStyle("core").Render("  pacman:")
-		paruLabel := sourceStyle("aur").Render("  paru:  ")
+		helperLabel := m.config.Commands.AurHelper + ":"
+		if len(helperLabel) < 7 {
+			helperLabel += strings.Repeat(" ", 7-len(helperLabel))
+		}
+		paruLabel := sourceStyle("aur").Render("  " + helperLabel)
 
 		lines = append(lines, fmt.Sprintf("%s %s", pacmanLabel, valStyle.Render(pacmanEstimate)))
 		lines = append(lines, fmt.Sprintf("%s %s", paruLabel, valStyle.Render(paruEstimate)))
@@ -1088,8 +1092,12 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 			paruEst := m.dashboard.CacheFreedParu[m.confirmType]
 			if pacmanEst == "" { pacmanEst = "calculating..." }
 			if paruEst == "" { paruEst = "calculating..." }
+			helperLabel := m.config.Commands.AurHelper + ":"
+			if len(helperLabel) < 7 {
+				helperLabel += strings.Repeat(" ", 7-len(helperLabel))
+			}
 			lines = append(lines, fmt.Sprintf("%s %s", sourceStyle("core").Render("  pacman:"), lipgloss.NewStyle().Foreground(lipgloss.Color("252")).Render(pacmanEst)))
-			lines = append(lines, fmt.Sprintf("%s %s", sourceStyle("aur").Render("  paru:  "), lipgloss.NewStyle().Foreground(lipgloss.Color("252")).Render(paruEst)))
+			lines = append(lines, fmt.Sprintf("%s %s", sourceStyle("aur").Render("  "+helperLabel), lipgloss.NewStyle().Foreground(lipgloss.Color("252")).Render(paruEst)))
 		}
 
 		if m.confirmType == confirmCleanUninstalled || m.confirmType == confirmCleanSelective {

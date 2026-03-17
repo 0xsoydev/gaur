@@ -25,7 +25,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.String() == "ctrl+r" && m.mode == modeInstalled {
 			m.loading = true
 			m.statusMessage = "Refreshing dashboard..."
-			return m, getDashboardData()
+			return m, getDashboardData(&m.config)
 		}
 
 		// 2. Overlays & Panel Intercepts
@@ -189,7 +189,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.packageInfo = ""
 			m.infoForPackage = ""
 			m.infoScrollOffset = 0
-			return m, getDashboardData()
+			return m, getDashboardData(&m.config)
 		case key.Matches(msg, m.keys.UninstallMode):
 			if m.mode != modeUninstall {
 				m.mode = modeUninstall
@@ -276,7 +276,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case syncRepositoriesMsg:
 		if msg.err == nil {
 			m.loading = true
-			return m, checkUpdates()
+			return m, checkUpdates(&m.config)
 		}
 		m.loading = false
 		m.statusMessage = "Sync failed"
@@ -362,7 +362,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				m.statusMessage = "Update completed successfully"
 			}
-			return m, checkUpdates()
+			return m, checkUpdates(&m.config)
 		}
 
 	case execCompleteMsg:
@@ -654,7 +654,7 @@ func (m *model) handleExecComplete(msg execCompleteMsg) (tea.Model, tea.Cmd) {
 	if m.mode == modeUpdate || m.mode == modeUpdateSelective {
 		m.loading = true
 		m.statusMessage = "Refreshing update list..."
-		return m, checkUpdates()
+		return m, checkUpdates(&m.config)
 	}
-	return m, getDashboardData()
+	return m, getDashboardData(&m.config)
 }
