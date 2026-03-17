@@ -338,7 +338,21 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case dashboardMsg:
 		m.loading = false
-		if msg.err == nil { m.dashboard = msg.data }
+		if msg.err == nil {
+			m.dashboard = msg.data
+			// If we are in selective cache mode, we need to update our list from the fresh dashboard data
+			if m.mode == modeCacheSelective {
+				m.filtered = make([]Package, len(m.dashboard.AllCacheHogs))
+				for i, h := range m.dashboard.AllCacheHogs {
+					m.filtered[i] = Package{Name: h.Name, Size: h.Size, SizeBytes: h.SizeBytes}
+				}
+				// Re-apply search filter if there was one
+				if m.textInput.Value() != "" {
+					m.filtered = fuzzyFilter(m.filtered, m.textInput.Value())
+					m.matchIndices = computeAllMatchIndices(m.filtered, m.textInput.Value())
+				}
+			}
+		}
 
 	case actionCompleteMsg:
 		m.loading = false

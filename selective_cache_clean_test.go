@@ -63,4 +63,17 @@ func TestSelectiveCacheCleanFlow(t *testing.T) {
 	if m.cacheToFree != 0 {
 		t.Error("Expected cacheToFree to be reset after selective clean")
 	}
+
+	// 7. Simulate dashboard data refresh
+	// This should update m.filtered with the new list
+	freshData := DashboardData{
+		AllCacheHogs: []PackageSize{{Name: "pkg2", Size: "200 MiB", SizeBytes: 200 * 1024 * 1024}},
+	}
+	m.mode = modeCacheSelective
+	newModel, _ = m.Update(dashboardMsg{data: freshData})
+	m = newModel.(*model)
+
+	if len(m.filtered) != 1 || m.filtered[0].Name != "pkg2" {
+		t.Errorf("Expected filtered list to be updated from fresh dashboard data. Got: %v", m.filtered)
+	}
 }
