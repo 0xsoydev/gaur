@@ -1137,16 +1137,6 @@ func (m *model) renderErrorOverlay(innerWidth, innerHeight int) string {
 		Width(dialogWidth - 4).
 		Align(lipgloss.Center)
 
-	messageStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#FFFFFF")).
-		Width(dialogWidth - 4).
-		Align(lipgloss.Center)
-
-	detailsStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#999999")).
-		Width(dialogWidth - 4).
-		Align(lipgloss.Center)
-
 	hintStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#666666")).
 		Width(dialogWidth - 4).
@@ -1160,12 +1150,23 @@ func (m *model) renderErrorOverlay(innerWidth, innerHeight int) string {
 	// Build content pieces
 	title := titleStyle.Render("⚠  " + m.errorTitle + "  ⚠")
 	
-	// Split error message by newlines and center each part to ensure multi-line strings center correctly
-	message := messageStyle.Render(m.errorMessage)
+	// Ensure each line of the error message is individually centered
+	// We wrap the text manually then center each resulting line
+	wrappedMessage := lipgloss.NewStyle().Width(dialogWidth - 4).Render(m.errorMessage)
+	var messageLines []string
+	for _, line := range strings.Split(wrappedMessage, "\n") {
+		messageLines = append(messageLines, lipgloss.NewStyle().Width(dialogWidth - 4).Align(lipgloss.Center).Render(strings.TrimSpace(line)))
+	}
+	message := lipgloss.JoinVertical(lipgloss.Center, messageLines...)
 	
 	var details string
 	if m.errorDetails != "" {
-		details = "\n" + detailsStyle.Render(m.errorDetails)
+		wrappedDetails := lipgloss.NewStyle().Width(dialogWidth - 4).Render(m.errorDetails)
+		var detailsLines []string
+		for _, line := range strings.Split(wrappedDetails, "\n") {
+			detailsLines = append(detailsLines, lipgloss.NewStyle().Width(dialogWidth - 4).Align(lipgloss.Center).Render(strings.TrimSpace(line)))
+		}
+		details = "\n" + lipgloss.JoinVertical(lipgloss.Center, detailsLines...)
 	}
 
 	hint := "\n" + hintStyle.Render(fmt.Sprintf("Press %s, %s, or %s to dismiss",
