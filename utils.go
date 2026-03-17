@@ -530,8 +530,8 @@ func truncateWithAnsi(s string, maxWidth int) string {
 	result.WriteString("\x1b[0m")
 	return result.String()
 }
-
-// substringAnsi skips the first skipWidth visual characters, preserving ANSI codes
+// substringAnsi returns a substring of s that skips skipWidth visual characters,
+// while preserving ANSI escape sequences.
 func substringAnsi(s string, skipWidth int) string {
 	var result strings.Builder
 	width := 0
@@ -558,6 +558,26 @@ func substringAnsi(s string, skipWidth int) string {
 
 	return result.String()
 }
+
+// GetAURCacheDir resolves the AUR build/clone directory based on the helper or override.
+func GetAURCacheDir(c *Config) (string, error) {
+	if c.Advanced.CacheDir != "" {
+		return c.Advanced.CacheDir, nil
+	}
+
+	cacheDir, err := os.UserCacheDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get user cache directory: %w", err)
+	}
+
+	if c.Commands.AurHelper == "yay" {
+		return filepath.Join(cacheDir, "yay"), nil
+	}
+
+	// Default to paru's clone path
+	return filepath.Join(cacheDir, "paru", "clone"), nil
+}
+
 
 // getKeyDisplay returns a string representing the primary key for a binding
 func getKeyDisplay(b key.Binding) string {

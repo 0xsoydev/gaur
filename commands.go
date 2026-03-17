@@ -20,6 +20,48 @@ func debouncePackageInfo(m *model, pkgName string) tea.Cmd {
 	})
 }
 
+// BuildAURCommand constructs the full command slice for the configured AUR helper.
+func BuildAURCommand(c *Config, action string, args ...string) []string {
+	helper := c.Commands.AurHelper
+	if helper == "" {
+		helper = "paru"
+	}
+
+	var cmd []string
+	switch action {
+	case "install":
+		cmd = []string{helper, "-S"}
+		if c.Commands.InstallFlags != "" {
+			cmd = append([]string{helper}, TokenizeFlags(c.Commands.InstallFlags)...)
+		} else {
+			cmd = append(cmd, "--noconfirm")
+		}
+	case "remove":
+		if c.Commands.UninstallFlags != "" {
+			cmd = append([]string{helper}, TokenizeFlags(c.Commands.UninstallFlags)...)
+		} else {
+			cmd = []string{helper, "-Rns"}
+		}
+	case "update":
+		// User specified that update maps to -Qu
+		cmd = []string{helper, "-Qu"}
+	case "search":
+		cmd = []string{helper, "-Ss", "-a"}
+	case "info":
+		cmd = []string{helper, "-Si"}
+	case "check-updates":
+		cmd = []string{helper, "-Qu"}
+	case "sync":
+		cmd = []string{helper, "-Sy"}
+	case "full-update":
+		cmd = []string{helper, "-Syu"}
+	default:
+		cmd = []string{helper}
+	}
+
+	return append(cmd, args...)
+}
+
 func getPackageInfo(m *model, pkg Package) tea.Cmd {
 	return func() tea.Msg {
 
@@ -87,15 +129,11 @@ func executeInstallInTerminal(m *model, packages []string) tea.Cmd {
 		}
 	}
 
-	args := TokenizeFlags(m.config.Commands.InstallFlags)
-	if !contains(args, "-S") {
-		args = append([]string{"-S"}, args...)
-	}
-	args = append(args, validNames...)
+	args := BuildAURCommand(&m.config, "install", validNames...)
 
 	return runner.Interactive(func(err error) tea.Msg {
 		return execCompleteMsg{operation: confirmInstall, packages: validNames, err: err}
-	}, m.config.Commands.AurHelper, args...)
+	}, args[0], args[1:]...)
 }
 
 func contains(slice []string, val string) bool {
@@ -117,23 +155,19 @@ func executeUninstallInTerminal(m *model, packages []string) tea.Cmd {
 		}
 	}
 
-	args := TokenizeFlags(m.config.Commands.UninstallFlags)
-	// Ensure we have some form of remove flag if not present in config
-	if !strings.Contains(strings.Join(args, " "), "-R") {
-		args = append([]string{"-Rns"}, args...)
-	}
-	args = append(args, validNames...)
+	args := BuildAURCommand(&m.config, "remove", validNames...)
 
 	return runner.Interactive(func(err error) tea.Msg {
 		return execCompleteMsg{operation: confirmUninstall, packages: validNames, err: err}
-	}, m.config.Commands.AurHelper, args...)
+	}, args[0], args[1:]...)
 }
 
 // executeUpdateInTerminal runs the AUR helper interactively using tea.ExecProcess
 func executeUpdateInTerminal(m *model) tea.Cmd {
+	args := BuildAURCommand(&m.config, "full-update")
 	return runner.Interactive(func(err error) tea.Msg {
 		return execCompleteMsg{operation: confirmUpdate, err: err}
-	}, m.config.Commands.AurHelper, "-Syu")
+	}, args[0], args[1:]...)
 }
 
 // executeCleanCache cleans both pacman and AUR helper caches
@@ -142,6 +176,8 @@ func executeCleanCache(m *model, op confirmationType, keep int, uninstalled bool
 	if cacheTool == "" {
 		cacheTool = "paccache"
 	}
+
+	aurCache, _ := GetAURCacheDir(&m.config)
 
 	return runner.Interactive(func(err error) tea.Msg {
 		return execCompleteMsg{operation: op, err: err}
@@ -154,7 +190,7 @@ func executeCleanCache(m *model, op confirmationType, keep int, uninstalled bool
 		cacheTool,
 		func() string { if uninstalled { return "-u" }; return "" }(),
 		keep,
-		m.config.Advanced.CacheDir,
+		aurCache,
 		cacheTool,
 		func() string { if uninstalled { return "-u" }; return "" }(),
 		keep))
@@ -235,10 +271,10 @@ func executeRemoveOrphansInTerminal(m *model, orphans []string) tea.Cmd {
 		}
 	}
 
-	args := append([]string{"-Rns"}, validNames...)
+	args := BuildAURCommand(&m.config, "remove", validNames...)
 	return runner.Interactive(func(err error) tea.Msg {
 		return execCompleteMsg{operation: confirmRemoveOrphans, packages: validNames, err: err}
-	}, m.config.Commands.AurHelper, args...)
+	}, args[0], args[1:]...)
 }
 
 // executeSelectiveUpdateInTerminal runs the AUR helper interactively using tea.ExecProcess
@@ -250,15 +286,16 @@ func executeSelectiveUpdateInTerminal(m *model, packages []string) tea.Cmd {
 		}
 	}
 
-	args := append([]string{"-S"}, validNames...)
+	args := BuildAURCommand(&m.config, "install", validNames...)
 	return runner.Interactive(func(err error) tea.Msg {
 		return execCompleteMsg{operation: confirmSelectiveUpdate, packages: validNames, err: err}
-	}, m.config.Commands.AurHelper, args...)
+	}, args[0], args[1:]...)
 }
 
 // syncRepositoriesInTerminal runs the AUR helper interactively to sync databases
 func syncRepositoriesInTerminal(m *model) tea.Cmd {
+	args := BuildAURCommand(&m.config, "sync")
 	return runner.Interactive(func(err error) tea.Msg {
 		return syncRepositoriesMsg{err: err}
-	}, m.config.Commands.AurHelper, "-Sy")
+	}, args[0], args[1:]...)
 }

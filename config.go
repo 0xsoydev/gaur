@@ -99,7 +99,19 @@ func LoadConfig() (Config, error) {
 		return DefaultConfig(), nil
 	}
 
+	ValidateConfig(&cfg)
 	return cfg, nil
+}
+
+// ValidateConfig ensures the configuration values are supported and safe.
+func ValidateConfig(c *Config) {
+	helper := strings.ToLower(strings.TrimSpace(c.Commands.AurHelper))
+	if helper == "" || (helper != "paru" && helper != "yay") {
+		log.Printf("Warning: unsupported AUR helper '%s'. Resetting to 'paru'.", c.Commands.AurHelper)
+		c.Commands.AurHelper = "paru"
+	} else {
+		c.Commands.AurHelper = helper
+	}
 }
 
 func saveConfig(path string, cfg Config) error {
