@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -304,8 +305,16 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.searchingAUR = false
 		if msg.err == nil {
 			m.aurPackages = msg.packages
+			m.searchStatus = fmt.Sprintf("Search complete. Took %.2f seconds.", msg.timeTaken.Seconds())
 			return m, m.performFiltering()
+		} else {
+			m.searchStatus = "Search failed."
 		}
+
+	case spinner.TickMsg:
+		var cmd tea.Cmd
+		m.spinner, cmd = m.spinner.Update(msg)
+		return m, cmd
 
 	case packageInfoMsg:
 		if msg.packageName == m.infoForPackage {
@@ -582,7 +591,9 @@ func (m *model) performFiltering() tea.Cmd {
 		if len(searchQuery) >= minSearchQueryLen && searchQuery != m.lastAURQuery && !m.searchingAUR {
 			m.searchingAUR = true
 			m.lastAURQuery = searchQuery
-			cmds = append(cmds, searchAUR(&m.config, searchQuery))
+			m.searchTerm = searchQuery
+			m.searchStatus = fmt.Sprintf("Searching \"%s\"...", searchQuery)
+			cmds = append(cmds, m.spinner.Tick, searchAUR(&m.config, searchQuery))
 		}
 	}
 	if m.mode == modeUninstall { m.filterInstalledPackages(query) }

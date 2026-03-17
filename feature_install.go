@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -100,6 +101,8 @@ func searchAUR(c *Config, query string) tea.Cmd {
 			return aurSearchMsg{packages: []Package{}, query: query}
 		}
 
+		start := time.Now()
+
 		// Sanitize search query
 		var sanitized strings.Builder
 		for _, r := range query {
@@ -117,16 +120,17 @@ func searchAUR(c *Config, query string) tea.Cmd {
 
 		args := BuildAURCommand(c, "search", searchQuery)
 		stdout, err := runner.Run(args[0], args[1:]...)
+		duration := time.Since(start)
 		if err != nil {
-			return aurSearchMsg{packages: nil, query: query, err: fmt.Errorf("AUR search command failed: %w", err)}
+			return aurSearchMsg{packages: nil, query: query, timeTaken: duration, err: fmt.Errorf("AUR search command failed: %w", err)}
 		}
 
 		if len(stdout) == 0 {
-			return aurSearchMsg{packages: []Package{}, query: query}
+			return aurSearchMsg{packages: []Package{}, query: query, timeTaken: duration}
 		}
 
 		packages := parseAUROutput(string(stdout))
-		return aurSearchMsg{packages: packages, query: query}
+		return aurSearchMsg{packages: packages, query: query, timeTaken: duration}
 	}
 }
 

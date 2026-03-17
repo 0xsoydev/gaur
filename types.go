@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
@@ -161,9 +162,10 @@ type repoPackagesMsg struct {
 }
 
 type aurSearchMsg struct {
-	packages []Package
-	query    string
-	err      error
+	packages  []Package
+	query     string
+	timeTaken time.Duration
+	err       error
 }
 
 type packageInfoMsg struct {

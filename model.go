@@ -1,8 +1,12 @@
 package main
 
 import (
+	"time"
+
+	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 // Model
@@ -40,6 +44,11 @@ type model struct {
 	lastQuery             string
 	lastAURQuery          string // Last query sent to AUR search
 	searchingAUR          bool   // Whether AUR search is in progress
+	searchTerm            string // Current search term for status line
+	searchStatus          string // "Searching..." or "Search complete..."
+	searchStartTime       time.Time
+	lastSearchDuration    time.Duration
+	spinner               spinner.Model
 	dashboard             DashboardData
 	// Confirmation dialog state
 	showConfirmation    bool
@@ -89,6 +98,10 @@ func initialModel(initialMode viewMode, cfg Config) *model {
 	}
 	ti.Placeholder = placeholder
 
+	s := spinner.New()
+	s.Spinner = spinner.Dot
+	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+
 	m := &model{
 		config:         cfg,
 		keys:           NewKeyMap(cfg.Keys),
@@ -104,6 +117,7 @@ func initialModel(initialMode viewMode, cfg Config) *model {
 		mode:           initialMode,
 		loading:        true,
 		statusMessage:  statusMsg,
+		spinner:        s,
 	}
 
 	if initialMode == modeUninstall {
@@ -118,6 +132,7 @@ func initialModel(initialMode viewMode, cfg Config) *model {
 func (m *model) Init() tea.Cmd {
 	return tea.Batch(
 		textinput.Blink,
+		m.spinner.Tick,
 		loadRepoPackages(),
 		getInstalledPackages(),
 		func() tea.Msg {
