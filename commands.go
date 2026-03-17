@@ -32,15 +32,16 @@ func BuildAURCommand(c *Config, action string, args ...string) []string {
 	case "install":
 		cmd = []string{helper, "-S"}
 		if c.Commands.InstallFlags != "" {
-			cmd = append([]string{helper}, TokenizeFlags(c.Commands.InstallFlags)...)
+			cmd = append(cmd, TokenizeFlags(c.Commands.InstallFlags)...)
 		} else {
 			cmd = append(cmd, "--noconfirm")
 		}
 	case "remove":
+		cmd = []string{helper}
 		if c.Commands.UninstallFlags != "" {
-			cmd = append([]string{helper}, TokenizeFlags(c.Commands.UninstallFlags)...)
+			cmd = append(cmd, TokenizeFlags(c.Commands.UninstallFlags)...)
 		} else {
-			cmd = []string{helper, "-Rns"}
+			cmd = append(cmd, "-Rns")
 		}
 	case "update":
 		// User specified that update maps to -Qu

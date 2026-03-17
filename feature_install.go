@@ -154,7 +154,7 @@ func installPackage(c *Config, pkg Package) tea.Cmd {
 	}
 }
 
-func installMultiplePackages(pkgNames []string) tea.Cmd {
+func installMultiplePackages(c *Config, pkgNames []string) tea.Cmd {
 	return func() tea.Msg {
 
 		validNames, allValid := sanitizePackageNames(pkgNames)
@@ -171,8 +171,8 @@ func installMultiplePackages(pkgNames []string) tea.Cmd {
 			}
 		}
 
-		args := append([]string{"-S", "--noconfirm"}, validNames...)
-		out, err := runner.Run("paru", args...)
+		args := BuildAURCommand(c, "install", validNames...)
+		out, err := runner.Run(args[0], args[1:]...)
 		if err != nil {
 			return actionCompleteMsg{
 				message: fmt.Sprintf("Failed to install packages: %s", string(out)),
