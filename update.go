@@ -572,7 +572,19 @@ func (m *model) performFiltering() tea.Cmd {
 	m.lastQuery = query
 	m.selectedIndex = 0
 
-	if m.mode == modeInstall { m.filterAllPackages(query) }
+	var cmds []tea.Cmd
+
+	if m.mode == modeInstall {
+		m.filterAllPackages(query)
+		
+		// Trigger AUR search if query is long enough and different from last AUR search
+		_, searchQuery := parseRepoFilter(query)
+		if len(searchQuery) >= minSearchQueryLen && searchQuery != m.lastAURQuery && !m.searchingAUR {
+			m.searchingAUR = true
+			m.lastAURQuery = searchQuery
+			cmds = append(cmds, searchAUR(&m.config, searchQuery))
+		}
+	}
 	if m.mode == modeUninstall { m.filterInstalledPackages(query) }
 	if m.mode == modeUpdateSelective {
 		if query == "" {
@@ -601,13 +613,13 @@ func (m *model) performFiltering() tea.Cmd {
 	if pkg != nil && m.mode != modeCacheSelective {
 		m.loadingInfo = true
 		m.pendingInfoPackage = pkg.Name
-		return debouncePackageInfo(m, m.pendingInfoPackage)
+		cmds = append(cmds, debouncePackageInfo(m, m.pendingInfoPackage))
 	} else {
 		m.loadingInfo = false
 		m.packageInfo = ""
 		m.infoForPackage = ""
 	}
-	return nil
+	return tea.Batch(cmds...)
 }
 
 func (m *model) getSelectedPkg() *Package {
