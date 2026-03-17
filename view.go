@@ -1163,7 +1163,7 @@ func (m *model) renderErrorOverlay(innerWidth, innerHeight int) string {
 	content.WriteString(titleStyle.Render("⚠  " + m.errorTitle + "  ⚠"))
 	content.WriteString("\n\n")
 
-	content.WriteString(messageStyle.Render(m.errorMessage))
+	content.WriteString(messageStyle.Render(lipgloss.NewStyle().Width(dialogWidth - 4).Align(lipgloss.Center).Render(m.errorMessage)))
 	content.WriteString("\n")
 
 	if m.errorDetails != "" {
