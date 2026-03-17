@@ -780,11 +780,6 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 
 	if displayMode == modeInstall || displayMode == modeUninstall || displayMode == modeUpdateSelective {
 		inputLine = m.textInput.View()
-		if m.searchingAUR {
-			// Add braille rectangle (spinner) next to the search box prompt area
-			// The textinput view starts with its prompt. We can prepend the spinner.
-			inputLine = m.spinner.View() + " " + inputLine
-		}
 		
 		if m.searchStatus != "" {
 			style := lipgloss.NewStyle().
@@ -797,6 +792,10 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 			}
 			
 			statusLine = style.Render(m.searchStatus)
+			if m.searchingAUR {
+				// Prepend the braille spinner to the status line instead of the input line
+				statusLine = m.spinner.View() + " " + statusLine
+			}
 		}
 	} else {
 		inputLine = statusStyle.Render(m.statusMessage)
