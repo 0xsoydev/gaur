@@ -80,3 +80,46 @@ func TestConfigLoadPersistence(t *testing.T) {
 func containsString(s, substr string) bool {
 	return strings.Contains(s, substr)
 }
+
+func TestValidateConfig(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "valid helper yay",
+			input:    "yay",
+			expected: "yay",
+		},
+		{
+			name:     "valid helper paru",
+			input:    "paru",
+			expected: "paru",
+		},
+		{
+			name:     "unsupported helper fallback",
+			input:    "apt",
+			expected: "paru",
+		},
+		{
+			name:     "blank helper fallback",
+			input:    "",
+			expected: "paru",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config := &Config{
+				Commands: CommandConfig{
+					AurHelper: tt.input,
+				},
+			}
+			ValidateConfig(config)
+			if config.Commands.AurHelper != tt.expected {
+				t.Errorf("ValidateConfig() set helper to %q, want %q", config.Commands.AurHelper, tt.expected)
+			}
+		})
+	}
+}

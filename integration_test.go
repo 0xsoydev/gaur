@@ -59,7 +59,8 @@ func TestSearchAURWithMock(t *testing.T) {
 	}
 	runner = mock
 
-	cmd := searchAUR("pkg")
+	cfg := DefaultConfig()
+	cmd := searchAUR(&cfg, "pkg")
 	msg := cmd()
 
 	aurMsg, ok := msg.(aurSearchMsg)
@@ -142,7 +143,8 @@ func TestGetDashboardDataWithMock(t *testing.T) {
 	}
 	runner = mock
 
-	cmd := getDashboardData()
+	cfg := DefaultConfig()
+	cmd := getDashboardData(&cfg)
 	msg := cmd()
 
 	dashMsg, ok := msg.(dashboardMsg)
@@ -250,5 +252,47 @@ func TestConfirmationFlow(t *testing.T) {
 	m = newModel.(*model)
 	if cmd == nil {
 		t.Errorf("expected command after confirming with 'y'")
+	}
+}
+
+func TestAURHelperIntegration(t *testing.T) {
+	oldRunner := runner
+	defer func() { runner = oldRunner }()
+
+	tests := []struct {
+		helper string
+	}{
+		{"paru"},
+		{"yay"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.helper, func(t *testing.T) {
+			var capturedName string
+			mock := &MockCommandRunner{
+				RunFunc: func(name string, args ...string) ([]byte, error) {
+					capturedName = name
+					return []byte(""), nil
+				},
+			}
+			runner = mock
+
+			cfg := DefaultConfig()
+			cfg.Commands.AurHelper = tt.helper
+
+			// 1. Test search uses helper
+			cmd := searchAUR(&cfg, "pkg")
+			_ = cmd() // Execute the command
+			if capturedName != tt.helper {
+				t.Errorf("expected AUR search to use %q, got %q", tt.helper, capturedName)
+			}
+
+			// 2. Test update check uses helper
+			cmd = checkUpdates(&cfg)
+			_ = cmd()
+			if capturedName != tt.helper {
+				t.Errorf("expected update check to use %q, got %q", tt.helper, capturedName)
+			}
+		})
 	}
 }
