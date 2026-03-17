@@ -1127,8 +1127,8 @@ func (m *model) renderErrorOverlay(innerWidth, innerHeight int) string {
 	if dialogWidth < 50 {
 		dialogWidth = 50
 	}
-	if dialogWidth > 80 {
-		dialogWidth = 80
+	if dialogWidth > 100 {
+		dialogWidth = 100
 	}
 
 	titleStyle := lipgloss.NewStyle().
@@ -1144,8 +1144,8 @@ func (m *model) renderErrorOverlay(innerWidth, innerHeight int) string {
 
 	detailsStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#999999")).
-		Width(dialogWidth-4).
-		Padding(1, 0)
+		Width(dialogWidth - 4).
+		Align(lipgloss.Center)
 
 	hintStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#666666")).
@@ -1157,26 +1157,23 @@ func (m *model) renderErrorOverlay(innerWidth, innerHeight int) string {
 		BorderForeground(errorColor).
 		Padding(1, 2)
 
-	// Build content
-	var content strings.Builder
-
-	content.WriteString(titleStyle.Render("⚠  " + m.errorTitle + "  ⚠"))
-	content.WriteString("\n\n")
-
-	content.WriteString(messageStyle.Render(lipgloss.NewStyle().Width(dialogWidth - 4).Align(lipgloss.Center).Render(m.errorMessage)))
-	content.WriteString("\n")
-
+	// Build content pieces
+	title := titleStyle.Render("⚠  " + m.errorTitle + "  ⚠")
+	
+	// Split error message by newlines and center each part to ensure multi-line strings center correctly
+	message := messageStyle.Render(m.errorMessage)
+	
+	var details string
 	if m.errorDetails != "" {
-		content.WriteString(detailsStyle.Render(m.errorDetails))
-		content.WriteString("\n")
+		details = "\n" + detailsStyle.Render(m.errorDetails)
 	}
 
-	content.WriteString(hintStyle.Render(fmt.Sprintf("Press %s, %s, or %s to dismiss",
+	hint := "\n" + hintStyle.Render(fmt.Sprintf("Press %s, %s, or %s to dismiss",
 		renderKeyHint("esc", m.keys.Cancel, hintStyle),
 		renderKeyHint("enter", m.keys.Confirm, hintStyle),
-		renderKeyHint("quit", m.keys.Quit, hintStyle))))
+		renderKeyHint("quit", m.keys.Quit, hintStyle)))
 
-	dialogContent := content.String()
+	dialogContent := lipgloss.JoinVertical(lipgloss.Center, title, "", message, details, hint)
 	dialog := dialogBorderStyle.Width(dialogWidth).Render(dialogContent)
 
 	dialogHeight := strings.Count(dialog, "\n") + 1
