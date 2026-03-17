@@ -51,8 +51,10 @@ func TestConfirmationCentering(t *testing.T) {
 	
 	m := initialModel(modeInstall, DefaultConfig())
 	m.confirmType = confirmCleanNuke
+	// We don't hardcode paths here because they are now dynamic
 	m.dashboard.PacmanCachePath = "/var/cache/pacman/pkg"
-	m.dashboard.ParuCachePath = "/home/user/.cache/paru/clone"
+	path, _ := GetAURCacheDir(&m.config)
+	m.dashboard.ParuCachePath = path
 	
 	width := 100
 	height := 30

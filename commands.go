@@ -177,22 +177,29 @@ func executeCleanCache(m *model, op confirmationType, keep int, uninstalled bool
 	}
 
 	aurCache, _ := GetAURCacheDir(&m.config)
+	
+	// Check if AUR cache exists to avoid 'find' errors
+	aurCacheExists := false
+	if aurCache != "" {
+		if _, err := os.Stat(aurCache); err == nil {
+			aurCacheExists = true
+		}
+	}
+
+	uninstalledFlag := ""
+	if uninstalled {
+		uninstalledFlag = "-u"
+	}
+
+	script := fmt.Sprintf("# Clean pacman cache\nsudo %s -r %s -k %d", cacheTool, uninstalledFlag, keep)
+	if aurCacheExists {
+		script += fmt.Sprintf("\n# Clean AUR helper cache\nfind %s -maxdepth 2 -type d -exec %s -r %s -k %d -c {} +", 
+			aurCache, cacheTool, uninstalledFlag, keep)
+	}
 
 	return runner.Interactive(func(err error) tea.Msg {
 		return execCompleteMsg{operation: op, err: err}
-	}, "sudo", "bash", "-c", fmt.Sprintf(`
-		# Clean pacman cache
-		%s -r %s -k %d
-		# Clean AUR helper cache (recursive)
-		find %s -maxdepth 2 -type d -exec %s -r %s -k %d -c {} +
-	`,
-		cacheTool,
-		func() string { if uninstalled { return "-u" }; return "" }(),
-		keep,
-		aurCache,
-		cacheTool,
-		func() string { if uninstalled { return "-u" }; return "" }(),
-		keep))
+	}, "bash", "-c", script)
 }
 
 // executeSelectiveClean specifically deletes selected cache files

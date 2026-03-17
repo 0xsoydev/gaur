@@ -36,7 +36,7 @@ func DefaultConfig() Config {
 		},
 		Advanced: AdvancedConfig{
 			DebounceMs: 150,
-			CacheDir:   filepath.Join(os.Getenv("HOME"), ".cache", "gaur"),
+			CacheDir:   "",
 		},
 		Keys: KeyConfig{
 			Quit:           []string{"q", "ctrl+c"},
