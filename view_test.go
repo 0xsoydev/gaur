@@ -46,3 +46,32 @@ func TestViewNoCrash(t *testing.T) {
 		}
 	})
 }
+
+func TestRepoSummary(t *testing.T) {
+	m := initialModel(modeInstall, DefaultConfig())
+	pkgList := []Package{
+		{Source: "core", Name: "linux"},
+		{Source: "extra", Name: "vim"},
+		{Source: "extra", Name: "libpng"},
+		{Source: "aur", Name: "google-chrome"},
+	}
+
+	summary := m.renderRepoSummary(pkgList)
+
+	// Should contain the counts and repo names
+	// renderRepoSummary uses sourceStyle(r).Render(r) which might add ANSI codes
+	if !strings.Contains(summary, "1") || !strings.Contains(summary, "core") {
+		t.Errorf("Expected '1 core' in summary, got %q", summary)
+	}
+	if !strings.Contains(summary, "2") || !strings.Contains(summary, "extra") {
+		t.Errorf("Expected '2 extra' in summary, got %q", summary)
+	}
+	if !strings.Contains(summary, "1") || !strings.Contains(summary, "aur") {
+		t.Errorf("Expected '1 aur' in summary, got %q", summary)
+	}
+
+	// Test empty list
+	if m.renderRepoSummary([]Package{}) != "" {
+		t.Error("Empty package list should return empty summary")
+	}
+}

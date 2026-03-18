@@ -111,12 +111,27 @@ func (m *model) View() string {
 		content = m.renderUpdateSelectiveView(helpText, innerWidth, innerHeight, activeColor)
 	} else {
 		// Handle modeInstall and modeUninstall
+		var pkgList []Package
+		if effectiveMode == modeInstall {
+			pkgList = m.filtered
+		} else if effectiveMode == modeUninstall {
+			pkgList = m.filteredInstalled
+		} else if effectiveMode == modeUpdateSelective {
+			pkgList = m.filtered
+		}
+
+		repoSummary := m.renderRepoSummary(pkgList)
+		if repoSummary != "" {
+			repoSummary = " " + repoSummary + " "
+		}
+
 		helpWidth := lipgloss.Width(helpText)
-		padding := innerWidth - helpWidth
+		summaryWidth := lipgloss.Width(repoSummary)
+		padding := innerWidth - helpWidth - summaryWidth
 		if padding < 0 {
 			padding = 0
 		}
-		footer := strings.Repeat(" ", padding) + helpText
+		footer := repoSummary + strings.Repeat(" ", padding) + helpText
 		if lipgloss.Width(footer) > innerWidth {
 			footer = truncateWithAnsi(footer, innerWidth)
 		}
@@ -612,7 +627,7 @@ func (m *model) renderRepoSummary(pkgList []Package) string {
 		parts = append(parts, fmt.Sprintf("%d %s", counts[r], style.Render(r)))
 	}
 
-	return "  Found: " + strings.Join(parts, ", ")
+	return strings.Join(parts, ", ")
 }
 
 func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor lipgloss.Color, header, footer string) string {
@@ -638,11 +653,11 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 	infoInnerHeight := targetInfoPanelHeight - 2
 	bottomInnerHeight := targetBottomPanelHeight - 2
 
-	resultsHeight := bottomInnerHeight - 5
+	resultsHeight := bottomInnerHeight - 4
 	if resultsHeight < 1 {
 		resultsHeight = 1
-		bottomInnerHeight = 6 // Adjusted from 5
-		targetBottomPanelHeight = 8 // Adjusted from 7
+		bottomInnerHeight = 5 // Adjusted from 5
+		targetBottomPanelHeight = 7 // Adjusted from 7
 		targetInfoPanelHeight = availableHeight - targetBottomPanelHeight
 		infoInnerHeight = targetInfoPanelHeight - 2
 		if infoInnerHeight < 1 {
@@ -823,7 +838,6 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 
 	inputLine := ""
 	statusLine := ""
-	summaryLine := m.renderRepoSummary(pkgList)
 	
 	// Determine what mode's input line to show
 	displayMode := m.mode
@@ -868,7 +882,6 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 		lipgloss.Left,
 		resultsBox,
 		"",
-		summaryLine,
 		lipgloss.NewStyle().Foreground(lipgloss.Color("236")).Render(strings.Repeat("─", contentWidth-2)),
 		inputLine,
 		statusLine,
