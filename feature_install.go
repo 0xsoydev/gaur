@@ -129,11 +129,17 @@ func searchAUR(c *Config, query string) tea.Cmd {
 			}
 
 			// Include the output (stdout+stderr) in the error message for better diagnostics
-			errMsg := string(stdout)
+			errMsg := strings.TrimSpace(string(stdout))
 			if errMsg == "" {
 				errMsg = err.Error()
 			}
-			return aurSearchMsg{packages: nil, query: query, timeTaken: duration, err: fmt.Errorf("%s", strings.TrimSpace(errMsg))}
+			
+			// Clean up redundant prefixes often found in AUR helper output
+			errMsg = strings.TrimPrefix(errMsg, "error: ")
+			errMsg = strings.TrimPrefix(errMsg, "aur search failed: ")
+			errMsg = strings.TrimSpace(errMsg)
+			
+			return aurSearchMsg{packages: nil, query: query, timeTaken: duration, err: fmt.Errorf("%s", errMsg)}
 		}
 
 		if len(stdout) == 0 {

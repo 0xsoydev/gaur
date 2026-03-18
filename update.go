@@ -314,7 +314,12 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.performFiltering()
 		} else {
 			m.searchError = true
-			m.searchStatus = fmt.Sprintf("AUR search failed: %v", msg.err)
+			errMsg := msg.err.Error()
+			if strings.Contains(errMsg, "Too many package results") {
+				m.searchStatus = "Search term too broad (too many results)."
+			} else {
+				m.searchStatus = fmt.Sprintf("AUR search failed: %s", errMsg)
+			}
 		}
 
 	case spinner.TickMsg:
