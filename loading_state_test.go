@@ -97,20 +97,18 @@ func TestModeSwitchesSetLoading(t *testing.T) {
 	cfg := DefaultConfig()
 	m := initialModel(modeInstall, cfg)
 	m.loading = false
+	m.pendingUpdates = []Package{{Name: "old-pkg"}}
 
 	// Switch to Update Mode
 	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(cfg.Keys.UpdateMode)})
 	m = newModel.(*model)
-	// Success logic for update mode: it triggers syncRepositoriesInTerminal, but doesn't immediately set m.loading=true 
-	// until syncRepositoriesMsg or checkUpdates is received or handled.
-	// Actually, Update() logic for UpdateMode:
-	/*
-		case key.Matches(msg, m.keys.UpdateMode):
-			m.mode = modeUpdate
-			return m, syncRepositoriesInTerminal(m)
-	*/
-	// It doesn't set m.loading = true explicitly in the key handler, 
-	// let's check if it SHOULD.
+	
+	if !m.loading {
+		t.Error("expected switching to update mode to set loading = true")
+	}
+	if len(m.pendingUpdates) != 0 {
+		t.Error("expected switching to update mode to clear pendingUpdates")
+	}
 
 	// Switch to Dashboard (n)
 	m.loading = false

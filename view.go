@@ -1300,7 +1300,7 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 	var content strings.Builder
 	innerContentHeight := 0
 
-	if m.loading {
+	if m.loading || m.pendingUpdates == nil {
 		content.WriteString("\n  Checking for updates...")
 		innerContentHeight = 2
 	} else if len(m.pendingUpdates) == 0 {
