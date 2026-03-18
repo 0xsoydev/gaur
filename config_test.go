@@ -107,6 +107,11 @@ func TestValidateConfig(t *testing.T) {
 			input:    "",
 			expected: "paru",
 		},
+		{
+			name:     "mixed case and spaces",
+			input:    " YaY ",
+			expected: "yay",
+		},
 	}
 
 	for _, tt := range tests {
