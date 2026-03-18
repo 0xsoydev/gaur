@@ -177,6 +177,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.packageInfo = ""
 				m.infoForPackage = ""
 				m.infoScrollOffset = 0
+				m.resetSearchState()
 				
 				if len(m.installed) > 0 {
 					m.loading = false
@@ -193,6 +194,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.packageInfo = ""
 			m.infoForPackage = ""
 			m.infoScrollOffset = 0
+			m.resetSearchState()
 			return m, getDashboardData(&m.config)
 		case key.Matches(msg, m.keys.UninstallMode):
 			if m.mode != modeUninstall {
@@ -203,7 +205,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.packageInfo = ""
 				m.infoForPackage = ""
 				m.infoScrollOffset = 0
-				
+				m.resetSearchState()
+
 				m.loading = true
 				m.statusMessage = "Refreshing installed packages..."
 				return m, getInstalledPackages()
@@ -215,13 +218,16 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.packageInfo = ""
 			m.infoForPackage = ""
 			m.infoScrollOffset = 0
+			m.resetSearchState()
 			return m, syncRepositoriesInTerminal(m)
+
 		case key.Matches(msg, m.keys.Selective):
 			if m.mode == modeUpdate {
 				m.mode = modeUpdateSelective
 				m.selectedIndex = 0
 				m.textInput.SetValue("")
 				m.lastQuery = ""
+				m.resetSearchState()
 				m.textInput.Focus()
 				if len(m.pendingUpdates) > 0 {
 					m.filtered = m.pendingUpdates
@@ -247,6 +253,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.packageInfo = ""
 				m.infoForPackage = ""
 				m.infoScrollOffset = 0
+				m.resetSearchState()
 				m.textInput.Focus()
 			}
 		case key.Matches(msg, m.keys.Mark):
@@ -510,6 +517,7 @@ func (m *model) handleActionTrigger() (tea.Model, tea.Cmd) {
 			m.packageInfo = ""
 			m.infoForPackage = ""
 			m.infoScrollOffset = 0
+			m.resetSearchState()
 			m.filtered = make([]Package, len(m.dashboard.AllCacheHogs))
 			for i, h := range m.dashboard.AllCacheHogs { m.filtered[i] = Package{Name: h.Name, Size: h.Size, SizeBytes: h.SizeBytes} }
 		default:

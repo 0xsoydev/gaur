@@ -188,3 +188,12 @@ func (m *model) refreshAll() tea.Cmd {
 		checkUpdates(&m.config),
 	)
 }
+
+// resetSearchState clears all search-related progress and status flags
+func (m *model) resetSearchState() {
+	m.searchingAUR = false
+	m.lastAURQuery = ""
+	m.searchStatus = ""
+	m.searchError = false
+	m.searchTerm = ""
+}
