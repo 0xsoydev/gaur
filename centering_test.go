@@ -1,6 +1,7 @@
 package main
 
 import (
+	"regexp"
 	"strings"
 	"testing"
 
@@ -80,5 +81,64 @@ func TestConfirmationCentering(t *testing.T) {
 	
 	if !found {
 		t.Error("Warning message not found in confirmation output")
+	}
+}
+
+func TestSearchStatusAlignment(t *testing.T) {
+	lipgloss.SetColorProfile(termenv.TrueColor)
+	
+	m := initialModel(modeInstall, DefaultConfig())
+	m.searchStatus = "Searching..."
+	m.searchingAUR = true
+	m.width = 100
+	m.height = 40
+	
+	output := m.View()
+	lines := strings.Split(output, "\n")
+	
+	var inputLine, statusLine string
+	for _, line := range lines {
+		// Find line starting with prompt "> "
+		if strings.Contains(line, "> ") && !strings.Contains(line, "Searching") {
+			inputLine = line
+		}
+		if strings.Contains(line, "Searching") {
+			statusLine = line
+		}
+	}
+	
+	if inputLine == "" || statusLine == "" {
+		t.Fatalf("Could not find input or status lines in View output")
+	}
+	
+	// The prompt starts after some padding from JoinVertical/Place
+	// Find the visual column where the query would start (after "> ")
+	ansi := regexp.MustCompile("\x1b\\[[0-9;]*[a-zA-Z]")
+	plainInput := ansi.ReplaceAllString(inputLine, "")
+	inputRunes := []rune(plainInput)
+	
+	queryStartCol := -1
+	for i := 0; i < len(inputRunes)-1; i++ {
+		if inputRunes[i] == '>' && inputRunes[i+1] == ' ' {
+			queryStartCol = i + 2
+			break
+		}
+	}
+	
+	// Find where "Searching" starts in plain statusLine
+	plainStatus := ansi.ReplaceAllString(statusLine, "")
+	statusRunes := []rune(plainStatus)
+	searchingCol := -1
+	
+	statusStr := string(statusRunes)
+	searchingIdx := strings.Index(statusStr, "Searching")
+	if searchingIdx != -1 {
+		searchingCol = len([]rune(statusStr[:searchingIdx]))
+	}
+	
+	if queryStartCol != searchingCol {
+		t.Errorf("Search status not aligned with query. Query starts at visual col %d, status starts at visual col %d", queryStartCol, searchingCol)
+		t.Errorf("Plain input line: %q", plainInput)
+		t.Errorf("Plain status line: %q", plainStatus)
 	}
 }

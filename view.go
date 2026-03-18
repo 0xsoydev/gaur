@@ -790,11 +790,21 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 				style = style.Foreground(lipgloss.Color("#FF5555"))
 			}
 			
-			statusLine = style.Render(m.searchStatus)
+			renderedStatus := style.Render(m.searchStatus)
+			
 			if m.searchingAUR {
-				// Prepend the braille spinner with 1 space separator
-				// With no MarginLeft, the spinner sits under '>' and text under the query
-				statusLine = m.spinner.View() + " " + statusLine
+				spinnerStr := m.spinner.View()
+				// Some spinners include a space, some don't. 
+				// We want the total prefix width to be 2.
+				sw := lipgloss.Width(spinnerStr)
+				if sw >= 2 {
+					statusLine = spinnerStr + renderedStatus
+				} else {
+					statusLine = spinnerStr + " " + renderedStatus
+				}
+			} else {
+				// Two spaces to align with the start of the query after "> "
+				statusLine = "  " + renderedStatus
 			}
 		}
 	} else {
