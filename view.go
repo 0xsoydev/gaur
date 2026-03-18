@@ -8,6 +8,13 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+func sourceStyle(source string) lipgloss.Style {
+	if color, ok := sourceColors[source]; ok {
+		return lipgloss.NewStyle().Foreground(color)
+	}
+	return lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
+}
+
 // renderHelpText creates the help menu with the active mode highlighted
 func (m *model) renderHelpText(activeColor lipgloss.Color) string {
 	dimStyle := helpStyle
@@ -563,6 +570,51 @@ func (m *model) renderSelectionBox(maxWidth int) string {
 }
 
 // renderPackageListLayout renders the standard split-pane list view for install, uninstall, and selective update
+// renderRepoSummary creates a color-coded summary of packages by repository
+func (m *model) renderRepoSummary(pkgList []Package) string {
+	if len(pkgList) == 0 {
+		return ""
+	}
+
+	counts := make(map[string]int)
+	for _, p := range pkgList {
+		counts[p.Source]++
+	}
+
+	// Ordered repos for consistent display
+	standardRepos := []string{"core", "extra", "multilib", "aur"}
+	var parts []string
+
+	for _, r := range standardRepos {
+		if c, ok := counts[r]; ok && c > 0 {
+			style := sourceStyle(r)
+			parts = append(parts, fmt.Sprintf("%d %s", c, style.Render(r)))
+		}
+	}
+
+	// Add any "other" repos
+	var others []string
+	for r := range counts {
+		isStandard := false
+		for _, sr := range standardRepos {
+			if r == sr {
+				isStandard = true
+				break
+			}
+		}
+		if !isStandard {
+			others = append(others, r)
+		}
+	}
+	sort.Strings(others)
+	for _, r := range others {
+		style := sourceStyle(r)
+		parts = append(parts, fmt.Sprintf("%d %s", counts[r], style.Render(r)))
+	}
+
+	return "  Found: " + strings.Join(parts, ", ")
+}
+
 func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor lipgloss.Color, header, footer string) string {
 	borderStyle := baseBorderStyle.BorderForeground(activeColor)
 
@@ -586,11 +638,11 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 	infoInnerHeight := targetInfoPanelHeight - 2
 	bottomInnerHeight := targetBottomPanelHeight - 2
 
-	resultsHeight := bottomInnerHeight - 3
+	resultsHeight := bottomInnerHeight - 4
 	if resultsHeight < 1 {
 		resultsHeight = 1
-		bottomInnerHeight = 4
-		targetBottomPanelHeight = 6
+		bottomInnerHeight = 5 // Adjusted from 4
+		targetBottomPanelHeight = 7 // Adjusted from 6
 		targetInfoPanelHeight = availableHeight - targetBottomPanelHeight
 		infoInnerHeight = targetInfoPanelHeight - 2
 		if infoInnerHeight < 1 {
@@ -771,6 +823,7 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 
 	inputLine := ""
 	statusLine := ""
+	summaryLine := m.renderRepoSummary(pkgList)
 	
 	// Determine what mode's input line to show
 	displayMode := m.mode
@@ -815,6 +868,7 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 		lipgloss.Left,
 		resultsBox,
 		"",
+		summaryLine,
 		inputLine,
 		statusLine,
 	)
@@ -896,13 +950,6 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 	var title string
 	var actionDesc string
 	var simpleConfirm bool
-
-	sourceStyle := func(source string) lipgloss.Style {
-		if color, ok := sourceColors[source]; ok {
-			return lipgloss.NewStyle().Foreground(color)
-		}
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
-	}
 
 	switch m.confirmType {
 	case confirmInstall:
