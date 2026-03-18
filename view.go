@@ -638,11 +638,11 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 	infoInnerHeight := targetInfoPanelHeight - 2
 	bottomInnerHeight := targetBottomPanelHeight - 2
 
-	resultsHeight := bottomInnerHeight - 4
+	resultsHeight := bottomInnerHeight - 5
 	if resultsHeight < 1 {
 		resultsHeight = 1
-		bottomInnerHeight = 5 // Adjusted from 4
-		targetBottomPanelHeight = 7 // Adjusted from 6
+		bottomInnerHeight = 6 // Adjusted from 5
+		targetBottomPanelHeight = 8 // Adjusted from 7
 		targetInfoPanelHeight = availableHeight - targetBottomPanelHeight
 		infoInnerHeight = targetInfoPanelHeight - 2
 		if infoInnerHeight < 1 {
@@ -869,6 +869,7 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 		resultsBox,
 		"",
 		summaryLine,
+		lipgloss.NewStyle().Foreground(lipgloss.Color("236")).Render(strings.Repeat("─", contentWidth-2)),
 		inputLine,
 		statusLine,
 	)
