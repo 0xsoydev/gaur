@@ -73,6 +73,18 @@ func TestBuildAURCommand(t *testing.T) {
 			uninstallFlags: "-Rcns",
 			expected:       []string{"paru", "-Rcns", "vim"},
 		},
+		{
+			name:     "paru sync",
+			helper:   "paru",
+			action:   "sync",
+			expected: []string{"paru", "-Sy"},
+		},
+		{
+			name:     "yay full-update",
+			helper:   "yay",
+			action:   "full-update",
+			expected: []string{"yay", "-Syu"},
+		},
 	}
 
 	for _, tt := range tests {
