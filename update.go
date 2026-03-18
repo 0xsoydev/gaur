@@ -97,7 +97,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if key.Matches(msg, m.keys.Cancel) {
 				if m.mode == modeUpdateSelective {
 					m.mode = modeUpdate
-					m.markedPackages = make(map[string]bool)
+					m.resetState()
 					m.textInput.SetValue("")
 					m.lastQuery = ""
 					m.packageInfo = ""
@@ -125,8 +125,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.keys.Cancel):
 			if m.mode == modeCacheSelective {
 				m.mode = modeCacheMenu
-				m.markedPackages = make(map[string]bool)
-				m.cacheToFree = 0
+				m.resetState()
 				m.textInput.SetValue("")
 				m.lastQuery = ""
 				m.packageInfo = ""
@@ -141,10 +140,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.packageInfo = ""
 				m.infoForPackage = ""
 				m.infoScrollOffset = 0
+				m.resetState()
 				return m, nil
 			}
 			if len(m.markedPackages) > 0 {
-				m.markedPackages = make(map[string]bool)
+				m.resetState()
 				m.statusMessage = "Selections cleared"
 				return m, nil
 			}
@@ -160,6 +160,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.mode == modeInstalled && !m.loading {
 				m.mode = modeCacheMenu
 				m.cacheMenuIndex = 0
+				m.resetState()
 			}
 		case msg.String() == "R":
 			if m.mode == modeInstalled && !m.loading && m.dashboard.Orphans > 0 {
@@ -177,7 +178,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.packageInfo = ""
 				m.infoForPackage = ""
 				m.infoScrollOffset = 0
-				m.resetSearchState()
+				m.resetState()
 				
 				if len(m.installed) > 0 {
 					m.loading = false
@@ -194,7 +195,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.packageInfo = ""
 			m.infoForPackage = ""
 			m.infoScrollOffset = 0
-			m.resetSearchState()
+			m.resetState()
 			return m, getDashboardData(&m.config)
 		case key.Matches(msg, m.keys.UninstallMode):
 			if m.mode != modeUninstall {
@@ -205,7 +206,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.packageInfo = ""
 				m.infoForPackage = ""
 				m.infoScrollOffset = 0
-				m.resetSearchState()
+				m.resetState()
 
 				m.loading = true
 				m.statusMessage = "Refreshing installed packages..."
@@ -218,7 +219,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.packageInfo = ""
 			m.infoForPackage = ""
 			m.infoScrollOffset = 0
-			m.resetSearchState()
+			m.resetState()
+			m.loading = true
+			m.pendingUpdates = nil
 			return m, syncRepositoriesInTerminal(m)
 
 		case key.Matches(msg, m.keys.Selective):
@@ -227,7 +230,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.selectedIndex = 0
 				m.textInput.SetValue("")
 				m.lastQuery = ""
-				m.resetSearchState()
+				m.resetState()
 				m.textInput.Focus()
 				if len(m.pendingUpdates) > 0 {
 					m.filtered = m.pendingUpdates
@@ -253,7 +256,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.packageInfo = ""
 				m.infoForPackage = ""
 				m.infoScrollOffset = 0
-				m.resetSearchState()
+				m.resetState()
 				m.textInput.Focus()
 			}
 		case key.Matches(msg, m.keys.Mark):
@@ -512,12 +515,12 @@ func (m *model) handleActionTrigger() (tea.Model, tea.Cmd) {
 	case modeCacheMenu:
 		switch m.cacheMenuIndex {
 		case 4:
-			m.mode = modeCacheSelective; m.selectedIndex = 0; m.markedPackages = make(map[string]bool); m.cacheToFree = 0
+			m.mode = modeCacheSelective; m.selectedIndex = 0
 			m.textInput.SetValue(""); m.lastQuery = ""
 			m.packageInfo = ""
 			m.infoForPackage = ""
 			m.infoScrollOffset = 0
-			m.resetSearchState()
+			m.resetState()
 			m.filtered = make([]Package, len(m.dashboard.AllCacheHogs))
 			for i, h := range m.dashboard.AllCacheHogs { m.filtered[i] = Package{Name: h.Name, Size: h.Size, SizeBytes: h.SizeBytes} }
 		default:
@@ -710,8 +713,7 @@ func (m *model) handleExecComplete(msg execCompleteMsg) (tea.Model, tea.Cmd) {
 	}
 
 	// Clear selection state on success
-	m.markedPackages = make(map[string]bool)
-	m.cacheToFree = 0
+	m.resetState()
 	m.confirmPackages = nil
 
 	m.statusMessage = "Operation completed successfully"

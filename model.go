@@ -181,6 +181,7 @@ func (m *model) selectedPackage() *Package {
 // refreshAll triggers a full refresh of all system data
 func (m *model) refreshAll() tea.Cmd {
 	m.loading = true
+	m.pendingUpdates = nil
 	return tea.Batch(
 		getDashboardData(&m.config),
 		loadRepoPackages(),
@@ -189,11 +190,16 @@ func (m *model) refreshAll() tea.Cmd {
 	)
 }
 
-// resetSearchState clears all search-related progress and status flags
-func (m *model) resetSearchState() {
+// resetState clears common state fields like search progress and package selections
+func (m *model) resetState() {
 	m.searchingAUR = false
 	m.lastAURQuery = ""
 	m.searchStatus = ""
 	m.searchError = false
 	m.searchTerm = ""
+	m.markedPackages = make(map[string]bool)
+	m.selectionPanelFocused = false
+	m.selectionPanelIndex = 0
+	m.selectionScrollOffset = 0
+	m.cacheToFree = 0
 }
