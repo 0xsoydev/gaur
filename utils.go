@@ -503,10 +503,15 @@ func formatBytes(bytes int64) string {
 	return fmt.Sprintf("%.1f %ciB", float64(bytes)/float64(div), "KMGTPE"[exp])
 }
 
-// truncateWithAnsi truncates a string to a visual width, preserving ANSI codes
+// truncateWithAnsi truncates a string to a visual width, preserving ANSI codes.
+// It uses lipgloss.Width to correctly account for multibyte and wide characters.
 func truncateWithAnsi(s string, maxWidth int) string {
+	if maxWidth <= 0 {
+		return "\x1b[0m"
+	}
+	
 	var result strings.Builder
-	width := 0
+	currentWidth := 0
 	inEscape := false
 
 	for _, r := range s {
@@ -522,11 +527,13 @@ func truncateWithAnsi(s string, maxWidth int) string {
 			}
 			continue
 		}
-		if width >= maxWidth {
+		
+		w := lipgloss.Width(string(r))
+		if currentWidth+w > maxWidth {
 			break
 		}
 		result.WriteRune(r)
-		width++
+		currentWidth += w
 	}
 
 	result.WriteString("\x1b[0m")
@@ -546,15 +553,19 @@ func truncateHeight(s string, maxHeight int) string {
 }
 
 // substringAnsi returns a substring of s that skips skipWidth visual characters,
-// while preserving ANSI escape sequences.
+// while preserving ANSI escape sequences correctly.
 func substringAnsi(s string, skipWidth int) string {
 	var result strings.Builder
-	width := 0
+	currentWidth := 0
 	inEscape := false
 
 	for _, r := range s {
 		if r == '\x1b' {
 			inEscape = true
+			// We only include escape sequences if we are past the skip point,
+			// OR if they are required to set state for later.
+			// To be safe and simple, we include all escape sequences but
+			// we must be careful they don't count towards width.
 			result.WriteRune(r)
 			continue
 		}
@@ -565,10 +576,12 @@ func substringAnsi(s string, skipWidth int) string {
 			}
 			continue
 		}
-		if width >= skipWidth {
+		
+		w := lipgloss.Width(string(r))
+		if currentWidth >= skipWidth {
 			result.WriteRune(r)
 		}
-		width++
+		currentWidth += w
 	}
 
 	return result.String()

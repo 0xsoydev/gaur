@@ -49,24 +49,27 @@ func TestHighlightMatchesWithSourceColor(t *testing.T) {
 
 func TestTruncateWithAnsi(t *testing.T) {
 	red := lipgloss.NewStyle().Foreground(lipgloss.Color("1")).Render("Hello World")
-	
+
 	tests := []struct {
 		name     string
 		input    string
 		width    int
-		expected string // visual check
+		expected int
 	}{
-		{"no truncate", "hello", 10, "hello"},
-		{"simple truncate", "hello world", 5, "hello"},
-		{"ansi truncate", red, 5, "Hello"},
+		{"no truncate", "hello", 10, 5},
+		{"simple truncate", "hello world", 5, 5},
+		{"ansi truncate", red, 5, 5},
+		{"zero width", "abc", 0, 0},
+		{"multibyte bullet", "• bullet", 1, 1},
+		{"multibyte with spaces", "  • bullet", 3, 3},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := truncateWithAnsi(tt.input, tt.width)
 			actualWidth := lipgloss.Width(result)
-			if actualWidth > tt.width {
-				t.Errorf("truncateWithAnsi(%q, %d) width = %d, want <= %d", tt.input, tt.width, actualWidth, tt.width)
+			if actualWidth != tt.expected {
+				t.Errorf("truncateWithAnsi(%q, %d) width = %d, want %d", tt.input, tt.width, actualWidth, tt.expected)
 			}
 		})
 	}
@@ -74,30 +77,84 @@ func TestTruncateWithAnsi(t *testing.T) {
 
 func TestSubstringAnsi(t *testing.T) {
 	red := lipgloss.NewStyle().Foreground(lipgloss.Color("1")).Render("Hello World")
-	
+
 	tests := []struct {
-		name  string
-		input string
-		skip  int
-		want  string
+		name     string
+		input    string
+		skip     int
+		expected int
 	}{
-		{"no skip", "hello", 0, "hello"},
-		{"simple skip", "hello", 2, "llo"},
-		{"ansi skip", red, 6, "World"},
+		{"no skip", "hello", 0, 5},
+		{"simple skip", "hello", 2, 3},
+		{"ansi skip", red, 6, 5},
+		{"bullet skip", "• bullet", 1, 7},
+		{"skip all", "abc", 5, 0},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := substringAnsi(tt.input, tt.skip)
 			actualWidth := lipgloss.Width(result)
-			expectedWidth := lipgloss.Width(tt.input) - tt.skip
-			if actualWidth != expectedWidth {
-				t.Errorf("substringAnsi(%q, %d) width = %d, want %d", tt.input, tt.skip, actualWidth, expectedWidth)
+			if actualWidth != tt.expected {
+				t.Errorf("substringAnsi(%q, %d) width = %d, want %d", tt.input, tt.skip, actualWidth, tt.expected)
 			}
 		})
 	}
 }
 
+func TestSafeJoinVertical(t *testing.T) {
+	width := 20
+	height := 5
+	header := "Header"
+	panels := []string{
+		"Panel1\nLine2",
+		"Panel2",
+	}
+	footer := "Footer"
+
+	got := SafeJoinVertical(width, height, header, panels, footer)
+	lines := strings.Split(strings.TrimSuffix(got, "\n"), "\n")
+
+	if len(lines) != height {
+		t.Errorf("SafeJoinVertical height = %d, expected %d", len(lines), height)
+	}
+
+	for i, line := range lines {
+		if lipgloss.Width(line) != width {
+			t.Errorf("Line %d width = %d, expected %d. Line: %q", i, lipgloss.Width(line), width, line)
+		}
+	}
+}
+
+func TestOverlayCompositingLogic(t *testing.T) {
+	// Simulate the compositing logic used in renderUpdateSelectiveView
+	innerWidth := 40
+	overlayWidth := 20
+	paddingX := (innerWidth - overlayWidth) / 2 // 10
+
+	bgLine := strings.Repeat("x", innerWidth)
+	paneLine := "│" + strings.Repeat("-", overlayWidth-2) + "│"
+
+	// Composite one line logic
+	leftStr := truncateWithAnsi(bgLine, paddingX)
+	if lipgloss.Width(leftStr) < paddingX {
+		leftStr += strings.Repeat(" ", paddingX-lipgloss.Width(leftStr))
+	}
+
+	rightStart := paddingX + overlayWidth
+	rightPartWidth := innerWidth - rightStart
+	rightStr := substringAnsi(bgLine, rightStart)
+	rightStr = truncateWithAnsi(rightStr, rightPartWidth)
+	if lipgloss.Width(rightStr) < rightPartWidth {
+		rightStr += strings.Repeat(" ", rightPartWidth-lipgloss.Width(rightStr))
+	}
+
+	composite := leftStr + paneLine + rightStr
+
+	if lipgloss.Width(composite) != innerWidth {
+		t.Errorf("Composite width = %d, expected %d", lipgloss.Width(composite), innerWidth)
+	}
+}
 func TestMaintainBackground(t *testing.T) {
 	bgColor := lipgloss.Color("235")
 	input := "\x1b[31mRed\x1b[0m Text"
