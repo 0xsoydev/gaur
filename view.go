@@ -292,53 +292,40 @@ func (m *model) renderUpdateSelectiveView(helpText string, innerWidth, innerHeig
 					paneLine = truncateWithAnsi(paneLine, overlayWidth)
 				}
 
-				// Detect if this paneLine is a horizontal border line to avoid "border leakage"
-				// which occurs when background content (like bullets) is placed next to many border chars.
-				isBorderLine := strings.Count(paneLine, "─") > overlayWidth/2
-				
 				// Get the background left and right parts
-				bgWidth := lipgloss.Width(bgLine)
-				
+				// We MUST ensure they are correctly sized to fill the remaining width
 				leftStr := ""
 				if paddingX > 0 {
 					leftStr = truncateWithAnsi(bgLine, paddingX)
-					// If it's a border line, we want to clear any background content
-					if isBorderLine {
-						leftStr = strings.Repeat(" ", paddingX)
-					} else {
-						lw := lipgloss.Width(leftStr)
-						if lw < paddingX {
-							leftStr += strings.Repeat(" ", paddingX-lw)
-						}
+					// Ensure left part is exactly paddingX wide
+					lw := lipgloss.Width(leftStr)
+					if lw < paddingX {
+						leftStr += strings.Repeat(" ", paddingX-lw)
 					}
 				}
 
 				rightStr := ""
 				rightStart := paddingX + overlayWidth
-				if rightStart < bgWidth {
+				rightPartWidth := innerWidth - rightStart
+				if rightPartWidth > 0 {
 					rightStr = substringAnsi(bgLine, rightStart)
-					// If it's a border line, clear background
-					if isBorderLine {
-						rightStr = strings.Repeat(" ", innerWidth-rightStart)
-					} else {
-						rw := lipgloss.Width(rightStr)
-						if rightStart + rw < innerWidth {
-							rightStr += strings.Repeat(" ", innerWidth - (rightStart + rw))
-						}
+					rightStr = truncateWithAnsi(rightStr, rightPartWidth)
+					// Ensure right part is exactly rightPartWidth wide
+					rw := lipgloss.Width(rightStr)
+					if rw < rightPartWidth {
+						rightStr += strings.Repeat(" ", rightPartWidth-rw)
 					}
-				} else if paddingX + overlayWidth < innerWidth {
-					rightStr = strings.Repeat(" ", innerWidth - (paddingX + overlayWidth))
 				}
 
 				line := leftStr + paneLine + rightStr
-				output.WriteString(truncateWithAnsi(line, innerWidth))
+				output.WriteString(line)
 				if i < len(bgLines)-1 {
 					output.WriteString("\n")
 				}
 				continue
 			}
 		}
-		output.WriteString(truncateWithAnsi(bgLine, innerWidth))
+		output.WriteString(bgLine)
 		if i < len(bgLines)-1 {
 			output.WriteString("\n")
 		}
@@ -517,15 +504,11 @@ func (m *model) renderVerticalSplitLayout(innerWidth, innerHeight int, activeCol
 		for i, line := range bgLines {
 			if i >= startRow && i < startRow+panelHeight {
 				panelLineIdx := i - startRow
-				lineWidth := lipgloss.Width(line)
 				
+				// Get background piece safely
 				leftStr := ""
 				if startCol > 0 {
-					if lineWidth < startCol {
-						leftStr = line + strings.Repeat(" ", startCol-lineWidth)
-					} else {
-						leftStr = truncateWithAnsi(line, startCol)
-					}
+					leftStr = truncateWithAnsi(line, startCol)
 					// Ensure left part is exactly startCol wide
 					lw := lipgloss.Width(leftStr)
 					if lw < startCol {
@@ -987,15 +970,11 @@ func (m *model) overlaySelectionsPanel(content string, innerWidth int, headerHei
 	for i, line := range lines {
 		if i >= startRow && i < startRow+panelHeight {
 			panelLineIdx := i - startRow
-			lineWidth := lipgloss.Width(line)
 			
+			// Get background pieces safely
 			leftStr := ""
 			if startCol > 0 {
-				if lineWidth < startCol {
-					leftStr = line + strings.Repeat(" ", startCol-lineWidth)
-				} else {
-					leftStr = truncateWithAnsi(line, startCol)
-				}
+				leftStr = truncateWithAnsi(line, startCol)
 				// Ensure left part is exactly startCol wide
 				lw := lipgloss.Width(leftStr)
 				if lw < startCol {
@@ -1005,8 +984,15 @@ func (m *model) overlaySelectionsPanel(content string, innerWidth int, headerHei
 
 			rightStr := ""
 			rightStart := startCol + panelWidth
-			if rightStart < lineWidth {
+			rightPartWidth := innerWidth - rightStart
+			if rightPartWidth > 0 {
 				rightStr = substringAnsi(line, rightStart)
+				rightStr = truncateWithAnsi(rightStr, rightPartWidth)
+				// Ensure right part is exactly rightPartWidth wide
+				rw := lipgloss.Width(rightStr)
+				if rw < rightPartWidth {
+					rightStr += strings.Repeat(" ", rightPartWidth-rw)
+				}
 			}
 
 			line = leftStr + panelLines[panelLineIdx] + rightStr
