@@ -372,8 +372,8 @@ func (m *model) renderVerticalSplitLayout(innerWidth, innerHeight int, activeCol
 	}
 
 	// Calculate results height for the list
-	// InnerHeight - 2 for borders - 2 for search input and separator
-	resultsHeight := innerHeight - 4 
+	// InnerHeight - 2 for borders - 2 for search input and separator - 1 for bottom padding
+	resultsHeight := innerHeight - 5 
 	if resultsHeight < 1 {
 		resultsHeight = 1
 	}
