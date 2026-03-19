@@ -532,6 +532,19 @@ func truncateWithAnsi(s string, maxWidth int) string {
 	result.WriteString("\x1b[0m")
 	return result.String()
 }
+
+// truncateHeight truncates a string to a specified number of lines.
+func truncateHeight(s string, maxHeight int) string {
+	if maxHeight <= 0 {
+		return ""
+	}
+	lines := strings.Split(s, "\n")
+	if len(lines) <= maxHeight {
+		return s
+	}
+	return strings.Join(lines[:maxHeight], "\n")
+}
+
 // substringAnsi returns a substring of s that skips skipWidth visual characters,
 // while preserving ANSI escape sequences.
 func substringAnsi(s string, skipWidth int) string {
@@ -709,4 +722,75 @@ func renderScrollbar(total, offset, visibleHeight int, activeColor lipgloss.Colo
 	}
 
 	return scrollbar.String()
+}
+
+// SafeJoinVertical joins multiple sections vertically, ensuring the result is exactly width x height.
+// It takes a header, a slice of panels (which will be truncated if they exceed available space),
+// and a footer. The header and footer are prioritized over panels.
+func SafeJoinVertical(width, height int, header string, panels []string, footer string) string {
+	if height <= 0 {
+		return ""
+	}
+
+	var allLines []string
+
+	// Helper to split lines consistently with how Lipgloss calculates height
+	split := func(s string) []string {
+		if s == "" {
+			return nil
+		}
+		// Trust the string's internal line count, just trim the trailing newline from Render()
+		return strings.Split(strings.TrimSuffix(s, "\n"), "\n")
+	}
+
+	headerLines := split(header)
+	headerH := len(headerLines)
+
+	footerLines := split(footer)
+	footerH := len(footerLines)
+
+	// Available space for panels
+	availableForPanels := height - headerH - footerH
+	if availableForPanels < 0 {
+		availableForPanels = 0
+	}
+
+	// Collect all panel lines
+	var middleLines []string
+	for _, p := range panels {
+		middleLines = append(middleLines, split(p)...)
+	}
+
+	// Truncate panels ONLY if they exceed the available space
+	if len(middleLines) > availableForPanels {
+		middleLines = middleLines[:availableForPanels]
+	}
+
+	// Assemble everything
+	allLines = append(allLines, headerLines...)
+	allLines = append(allLines, middleLines...)
+
+	// Pad with blanks if still short (BEFORE footer) to ensure footer is pinned to bottom
+	for len(allLines) < height-footerH {
+		allLines = append(allLines, strings.Repeat(" ", width))
+	}
+
+	// Add footer
+	allLines = append(allLines, footerLines...)
+
+	// Final safety truncation and width normalization
+	if len(allLines) > height {
+		allLines = allLines[:height]
+	}
+
+	for i := range allLines {
+		w := lipgloss.Width(allLines[i])
+		if w < width {
+			allLines[i] += strings.Repeat(" ", width-w)
+		} else if w > width {
+			allLines[i] = truncateWithAnsi(allLines[i], width)
+		}
+	}
+
+	return strings.Join(allLines, "\n")
 }
