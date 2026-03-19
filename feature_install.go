@@ -138,10 +138,9 @@ func searchAUR(c *Config, query string) tea.Cmd {
 			errMsg = strings.TrimPrefix(errMsg, "error: ")
 			errMsg = strings.TrimPrefix(errMsg, "aur search failed: ")
 			errMsg = strings.TrimSpace(errMsg)
-			
-			return aurSearchMsg{packages: nil, query: query, timeTaken: duration, err: fmt.Errorf("%s", errMsg)}
-		}
 
+			return aurSearchMsg{packages: nil, query: query, timeTaken: duration, err: fmt.Errorf("%s", simplifyErrorMessage(errMsg))}
+			}
 		if len(stdout) == 0 {
 			return aurSearchMsg{packages: []Package{}, query: query, timeTaken: duration}
 		}

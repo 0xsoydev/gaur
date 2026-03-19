@@ -114,3 +114,41 @@ func TestMaintainBackground(t *testing.T) {
 		t.Error("maintainBackground stripped original foreground code")
 	}
 }
+
+func TestSimplifyErrorMessage(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			"no repeats",
+			"network error: connection refused",
+			"network error: connection refused",
+		},
+		{
+			"simple repeats",
+			"error: error: something failed",
+			"error: something failed",
+		},
+		{
+			"complex repeats from screenshot",
+			"error sending request for url: error trying to connect: dns error: failed to lookup address: Temporary failure: error trying to connect: dns error: failed to lookup address: Temporary failure",
+			"error sending request for url: error trying to connect: dns error: failed to lookup address: Temporary failure",
+		},
+		{
+			"empty string",
+			"",
+			"",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := simplifyErrorMessage(tt.input)
+			if result != tt.expected {
+				t.Errorf("simplifyErrorMessage(%q) = %q, want %q", tt.input, result, tt.expected)
+			}
+		})
+	}
+}

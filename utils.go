@@ -794,3 +794,30 @@ func SafeJoinVertical(width, height int, header string, panels []string, footer 
 
 	return strings.Join(allLines, "\n")
 }
+
+// simplifyErrorMessage deduplicates repeating segments in an error message.
+// It splits by common separators like ": " and keeps only unique parts to avoid
+// extremely long repetitive messages from nested errors.
+func simplifyErrorMessage(msg string) string {
+	if msg == "" {
+		return ""
+	}
+
+	// Split by ": "
+	parts := strings.Split(msg, ": ")
+	seen := make(map[string]bool)
+	var uniqueParts []string
+
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		if !seen[part] {
+			uniqueParts = append(uniqueParts, part)
+			seen[part] = true
+		}
+	}
+
+	return strings.Join(uniqueParts, ": ")
+}
