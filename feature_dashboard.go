@@ -585,11 +585,18 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 	}
 
 	if m.loading {
+		// Total height is innerHeight. Footer is 1 line.
+		// dashPanel Total Height = innerHeight - 1.
+		panelTotalHeight := innerHeight - 1
+		if panelTotalHeight < 3 {
+			panelTotalHeight = 3
+		}
+
 		loadingBox := borderStyle.
 			Width(innerWidth - 2).
-			Height(innerHeight - 1 - 2). // innerContentHeight = totalHeight - footer - borders
-			Render(lipgloss.Place(innerWidth-2, innerHeight-1-2, lipgloss.Center, lipgloss.Center, "Loading system statistics..."))
-		return lipgloss.JoinVertical(lipgloss.Left, loadingBox, footerLine)
+			Height(max(0, panelTotalHeight-2)).
+			Render(lipgloss.Place(innerWidth-2, max(0, panelTotalHeight-2), lipgloss.Center, lipgloss.Center, "Loading system statistics..."))
+		return lipgloss.JoinVertical(lipgloss.Left, strings.TrimSuffix(loadingBox, "\n"), footerLine)
 	}
 
 	// ═══════════════════════════════════════════════════════
@@ -1022,16 +1029,23 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 	bottomRow := lipgloss.JoinHorizontal(lipgloss.Top, topWeightBox, "  ", cacheHogsBox, "  ", recentBox)
 	dashboard.WriteString(bottomRow)
 
+	// Total height = innerHeight. Footer = 1 line.
+	// dashPanel Total Height = innerHeight - 1.
+	panelTotalHeight := innerHeight - 1
+	if panelTotalHeight < 5 {
+		panelTotalHeight = 5
+	}
+	panelInnerHeight := panelTotalHeight - 2
+
 	dashContent := lipgloss.NewStyle().
-		Width(innerWidth - 2).
-		Height(innerHeight - 1 - 2). // inner content height (subtract footer and borders)
+		Width(innerWidth - 4). // account for Padding(0, 1)
 		Padding(0, 1).
-		Render(dashboard.String())
+		Render(truncateHeight(dashboard.String(), panelInnerHeight))
 
 	dashPanel := borderStyle.
 		Width(innerWidth - 2).
-		Height(innerHeight - 1 - 2). // Total height of panel = (innerHeight-1-2) + 2 = innerHeight - 1
+		Height(max(0, panelTotalHeight-2)).
 		Render(dashContent)
 
-	return lipgloss.JoinVertical(lipgloss.Left, dashPanel, footerLine)
+	return SafeJoinVertical(innerWidth, innerHeight, "", []string{dashPanel}, footerLine)
 }

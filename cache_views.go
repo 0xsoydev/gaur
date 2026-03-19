@@ -84,15 +84,32 @@ func (m *model) renderCacheMenu(helpText string, innerWidth, innerHeight int) st
 	}
 
 	menuBox := lipgloss.NewStyle().
-		Width(menuWidth).
-		Height(menuHeight).
+		Width(max(0, menuWidth-2)).
+		Height(max(0, menuHeight-4)).
 		Border(m.getBorderStyle()).
 		BorderForeground(selectedColor).
 		Padding(1, 2).
-		Render(menuContent.String())
+		Render(truncateHeight(menuContent.String(), max(0, menuHeight-4)))
 
 	// Overlay menu onto dashboard
-	return lipgloss.Place(innerWidth, innerHeight, lipgloss.Center, lipgloss.Center, menuBox, lipgloss.WithWhitespaceChars(" "), lipgloss.WithWhitespaceForeground(lipgloss.Color("235")))
+	footerHeight := 0
+	var footerLine string
+	if helpText != "" {
+		footerHeight = 1
+		helpWidth := lipgloss.Width(helpText)
+		padding := innerWidth - helpWidth
+		if padding < 0 {
+			padding = 0
+		}
+		footerLine = strings.Repeat(" ", padding) + helpText
+		if lipgloss.Width(footerLine) > innerWidth {
+			footerLine = truncateWithAnsi(footerLine, innerWidth)
+		}
+	}
+
+	mainContent := lipgloss.Place(innerWidth, innerHeight-footerHeight, lipgloss.Center, lipgloss.Center, menuBox, lipgloss.WithWhitespaceChars(" "), lipgloss.WithWhitespaceForeground(lipgloss.Color("235")))
+
+	return SafeJoinVertical(innerWidth, innerHeight, "", []string{mainContent}, footerLine)
 }
 
 func (m *model) renderSelectiveCacheView(helpText string, innerWidth, innerHeight int, activeColor lipgloss.Color) string {
@@ -108,13 +125,15 @@ func (m *model) renderSelectiveCacheView(helpText string, innerWidth, innerHeigh
 
 	targetBottomPanelHeight := availableHeight
 	bottomInnerHeight := targetBottomPanelHeight - 2
-	resultsHeight := bottomInnerHeight - 3
+
+	// Subtract space for statusLine, inputLine and JoinVertical separators (2)
+	resultsHeight := bottomInnerHeight - 4
 
 	if resultsHeight < 1 {
 		resultsHeight = 1
 	}
 
-	contentWidth := innerWidth - 2
+	contentWidth := innerWidth - 4
 	if contentWidth < 10 {
 		contentWidth = 10
 	}
@@ -153,12 +172,11 @@ func (m *model) renderSelectiveCacheView(helpText string, innerWidth, innerHeigh
 				prefix = "> " + marker
 			}
 
-			// Define consistent name width
+			// nameWidth calculation
 			// Left gutter: prefix (5) + space (1) = 6 chars
-			// Right gutter: we want 6 chars as well.
-			// Total layout: prefix (5) + space (1) + name (nameWidth) + space (1) + size (10) + right gutter (6) = contentWidth
-			// nameWidth = contentWidth - 23
-			nameWidth := contentWidth - 23
+			// Right gutter: we want 2 chars for scrollbar space
+			// Total layout: prefix (5) + space (1) + name (nameWidth) + space (1) + size (10) + scrollbar(2) = contentWidth
+			nameWidth := contentWidth - 20
 			if nameWidth < 10 {
 				nameWidth = 10
 			}
@@ -168,41 +186,47 @@ func (m *model) renderSelectiveCacheView(helpText string, innerWidth, innerHeigh
 				nameStr = highlightMatches(pkg.Name, indices)
 			}
 			nameStr = truncateWithAnsi(nameStr, nameWidth)
-			
-			// Ensure name is padded to exact width for alignment
+
 			visualNameWidth := lipgloss.Width(nameStr)
 			paddedName := nameStr
 			if visualNameWidth < nameWidth {
 				paddedName += strings.Repeat(" ", nameWidth-visualNameWidth)
 			}
-			
-			sizeStr := fmt.Sprintf("%10s", pkg.Size)
+
+			// Use non-breaking space to prevent wrapping within the size string
+			displaySize := strings.ReplaceAll(pkg.Size, " ", "\u00a0")
+			sizeStr := fmt.Sprintf("%10s", displaySize)
 
 			var line string
+			itemWidth := contentWidth
+			if len(pkgList) > resultsHeight {
+				itemWidth = contentWidth - 2
+			}
+
 			if i == m.selectedIndex || m.markedPackages[pkg.Name] {
 				bgColor := lipgloss.Color("237") // Default marked grey
 				if i == m.selectedIndex {
 					bgColor = lipgloss.Color("135") // Selection purple
 				}
 				fgColor := lipgloss.Color("255")
-				
-				// Apply background maintenance to name which contains resets from highlighting/truncation
+
 				maintainedName := maintainBackground(paddedName, bgColor)
-				
-				// Construct line content with consistent spacing: prefix + " " + name + " " + size
 				lineContent := fmt.Sprintf("%s %s %s", prefix, maintainedName, sizeStr)
-				
+
 				line = lipgloss.NewStyle().
 					Background(bgColor).
 					Foreground(fgColor).
 					Bold(i == m.selectedIndex).
-					Width(contentWidth).
+					Width(itemWidth).
 					Render(lineContent)
 			} else {
-				// Normal items: Styled parts but same layout for alignment
 				namePart := lipgloss.NewStyle().Foreground(lipgloss.Color("250")).Render(paddedName)
 				sizePart := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render(sizeStr)
 				line = fmt.Sprintf("%s %s %s", prefix, namePart, sizePart)
+				// Ensure unselected lines also fit the width
+				if lipgloss.Width(line) > itemWidth {
+					line = truncateWithAnsi(line, itemWidth)
+				}
 			}
 
 			lines = append(lines, line)
@@ -237,14 +261,14 @@ func (m *model) renderSelectiveCacheView(helpText string, innerWidth, innerHeigh
 	} else {
 		statusMsg = fmt.Sprintf("Select packages to remove... (Total Cache: %s)", m.dashboard.CleanerSize)
 	}
-	
+
 	statusLine := statusStyle.Render(statusMsg)
-	
+
 	inputLine := m.textInput.View()
 
 	bottomContent := lipgloss.JoinVertical(
 		lipgloss.Left,
-		resultsBox,
+		truncateHeight(resultsBox, resultsHeight),
 		"",
 		statusLine,
 		inputLine,
@@ -253,7 +277,8 @@ func (m *model) renderSelectiveCacheView(helpText string, innerWidth, innerHeigh
 	bottomPanel := borderStyle.
 		Width(innerWidth - 2).
 		Height(targetBottomPanelHeight - 2).
-		Render(bottomContent)
+		Align(lipgloss.Left, lipgloss.Bottom).
+		Render(truncateHeight(bottomContent, bottomInnerHeight))
 
 	header := lipgloss.NewStyle().Bold(true).Foreground(activeColor).Render(" \uf0c7 Selective Cache Clean")
 
@@ -267,8 +292,5 @@ func (m *model) renderSelectiveCacheView(helpText string, innerWidth, innerHeigh
 		footer = truncateWithAnsi(footer, innerWidth)
 	}
 
-	var layoutSections []string
-	layoutSections = append(layoutSections, header, bottomPanel, footer)
-
-	return lipgloss.JoinVertical(lipgloss.Left, layoutSections...)
+	return SafeJoinVertical(innerWidth, innerHeight, header, []string{bottomPanel}, footer)
 }
