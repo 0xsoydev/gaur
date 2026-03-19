@@ -1361,8 +1361,10 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 		// panelHeight is TOTAL height of the panel including borders
 		// Inner height is panelHeight - 2
 		// Buttons take 1 line
-		// JoinVertical for list and buttons adds 1 line
-		availableLinesForList := (panelHeight - 2) - 1 - 1 
+		// A blank gap is needed above the buttons to truncate the list by 1 line
+		// Header takes 2 lines ("The following... \n\n")
+		// availableLinesForList = (innerHeightOfPanel) - buttons - gap - header
+		availableLinesForList := (panelHeight - 2) - 1 - 1 - 2
 		if availableLinesForList < 1 {
 			availableLinesForList = 1
 		}
@@ -1443,16 +1445,17 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 		buttonsContent = lipgloss.PlaceHorizontal(innerWidth-4, lipgloss.Right, buttons)
 	}
 
-	// Join list and buttons, ensuring buttons are at the bottom
 	// Total available inner height is panelHeight - 2
 	innerHeightOfPanel := panelHeight - 2
 	
 	// We use Height() on the list container to push buttons to the bottom
-	listHeight := innerHeightOfPanel - 1 - 1 // -1 for buttons, -1 for JoinVertical separator
+	// -1 for buttons, -1 for truncation gap
+	listHeight := innerHeightOfPanel - 1 - 1
 	if listHeight < 1 { listHeight = 1 }
 
 	innerPanelContent := lipgloss.JoinVertical(lipgloss.Left,
 		truncateHeight(listContent, listHeight),
+		"", // bottom truncation gap
 		buttonsContent,
 	)
 
