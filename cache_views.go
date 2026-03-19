@@ -126,8 +126,9 @@ func (m *model) renderSelectiveCacheView(helpText string, innerWidth, innerHeigh
 	targetBottomPanelHeight := availableHeight
 	bottomInnerHeight := targetBottomPanelHeight - 2
 
-	// Subtract space for statusLine, inputLine and JoinVertical separators (2)
-	resultsHeight := bottomInnerHeight - 4
+	// Calculate resultsHeight precisely to fill available space
+	// Overhead: separator(1) + statusLine(1) + inputLine(1)
+	resultsHeight := bottomInnerHeight - 3
 
 	if resultsHeight < 1 {
 		resultsHeight = 1

@@ -778,6 +778,56 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 		Height(max(0, targetInfoPanelHeight-2)).
 		Render(truncateHeight(infoBox, max(0, targetInfoPanelHeight-2)))
 
+	inputLine := ""
+	statusLine := ""
+	
+	// Determine what mode's input line to show
+	displayMode := m.mode
+	if m.mode == modeSettings {
+		displayMode = m.previousMode
+	}
+
+	if displayMode == modeInstall || displayMode == modeUninstall || displayMode == modeUpdateSelective {
+		inputLine = m.textInput.View()
+		
+		if m.searchStatus != "" {
+			style := lipgloss.NewStyle().
+				Foreground(lipgloss.Color("244")).
+				Italic(true)
+			
+			if m.searchError {
+				style = style.Foreground(lipgloss.Color("#FF5555"))
+			}
+			
+			renderedStatus := style.Render(m.searchStatus)
+			
+			if m.searchingAUR {
+				spinnerStr := m.spinner.View()
+				sw := lipgloss.Width(spinnerStr)
+				if sw >= 2 {
+					statusLine = spinnerStr + renderedStatus
+				} else {
+					statusLine = spinnerStr + " " + renderedStatus
+				}
+			} else {
+				statusLine = "  " + renderedStatus
+			}
+		}
+	} else {
+		inputLine = statusStyle.Render(m.statusMessage)
+	}
+
+	// Calculate resultsHeight precisely to fill available space
+	// Overhead: separator(1) + inputLine(1)
+	overhead := 2
+	if statusLine != "" {
+		overhead++
+	}
+	resultsHeight = bottomInnerHeight - overhead
+	if resultsHeight < 1 {
+		resultsHeight = 1
+	}
+
 	// Build results list
 	var results strings.Builder
 	var resultsStr string
@@ -890,51 +940,10 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 		Align(lipgloss.Left, lipgloss.Bottom).
 		Render(resultsStr)
 
-	inputLine := ""
-	statusLine := ""
-	
-	// Determine what mode's input line to show
-	displayMode := m.mode
-	if m.mode == modeSettings {
-		displayMode = m.previousMode
-	}
-
-	if displayMode == modeInstall || displayMode == modeUninstall || displayMode == modeUpdateSelective {
-		inputLine = m.textInput.View()
-		
-		if m.searchStatus != "" {
-			style := lipgloss.NewStyle().
-				Foreground(lipgloss.Color("244")).
-				Italic(true)
-			
-			if m.searchError {
-				style = style.Foreground(lipgloss.Color("#FF5555"))
-			}
-			
-			renderedStatus := style.Render(m.searchStatus)
-			
-			if m.searchingAUR {
-				spinnerStr := m.spinner.View()
-				// Some spinners include a space, some don't. 
-				// We want the total prefix width to be 2.
-				sw := lipgloss.Width(spinnerStr)
-				if sw >= 2 {
-					statusLine = spinnerStr + renderedStatus
-				} else {
-					statusLine = spinnerStr + " " + renderedStatus
-				}
-			} else {
-				// Two spaces to align with the start of the query after "> "
-				statusLine = "  " + renderedStatus
-			}
-		}
-	} else {
-		inputLine = statusStyle.Render(m.statusMessage)
-	}
 	bottomParts := []string{
-	truncateHeight(resultsBox, resultsHeight),
-	lipgloss.NewStyle().Foreground(lipgloss.Color("236")).Render(strings.Repeat("─", innerWidth-4)),
-	inputLine,
+		resultsBox,
+		lipgloss.NewStyle().Foreground(lipgloss.Color("236")).Render(strings.Repeat("─", innerWidth-4)),
+		inputLine,
 	}
 	if statusLine != "" {
 		bottomParts = append(bottomParts, statusLine)
