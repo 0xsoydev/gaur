@@ -464,15 +464,15 @@ func (m *model) renderVerticalSplitLayout(innerWidth, innerHeight int, activeCol
 	// 2. Render Details Side (Right)
 	infoContent := ""
 	if m.loadingInfo {
-		infoContent = fmt.Sprintf(" Loading details for %s...", m.infoForPackage)
+		infoContent = fmt.Sprintf("Loading details for %s...", m.infoForPackage)
 	} else if m.packageInfo != "" {
 		infoContent = m.packageInfo
 	} else {
-		infoContent = " Select an update to see details"
+		infoContent = "Select an update to see details"
 	}
 
 	infoInnerHeight := innerHeight - 2
-	infoInnerWidth := detailsWidth - 4 // padding
+	infoInnerWidth := detailsWidth - 6 // 2 chars padding on each side
 
 	wrappedText := lipgloss.NewStyle().Width(infoInnerWidth).Render(infoContent)
 	infoLines := strings.Split(wrappedText, "\n")
@@ -492,9 +492,9 @@ func (m *model) renderVerticalSplitLayout(innerWidth, innerHeight int, activeCol
 	infoContent = strings.Join(infoLines, "\n")
 
 	detailsBox := lipgloss.NewStyle().
-		Width(infoInnerWidth).
+		Width(detailsWidth - 2).
 		Height(infoInnerHeight).
-		Padding(0, 1).
+		Padding(0, 2).
 		Render(infoContent)
 
 	if len(m.markedPackages) > 0 {
@@ -722,19 +722,19 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 	infoContent := ""
 	if m.mode == modeUpdateSelective {
 		if m.loadingInfo {
-			infoContent = fmt.Sprintf(" Loading details for %s...", m.infoForPackage)
+			infoContent = fmt.Sprintf("Loading details for %s...", m.infoForPackage)
 		} else if m.packageInfo != "" {
 			infoContent = m.packageInfo
 		} else {
-			infoContent = " Select an update to see details"
+			infoContent = "Select an update to see details"
 		}
 	} else {
 		if m.loadingInfo {
-			infoContent = fmt.Sprintf(" Loading details for %s...", m.infoForPackage)
+			infoContent = fmt.Sprintf("Loading details for %s...", m.infoForPackage)
 		} else if m.packageInfo != "" {
 			infoContent = m.packageInfo
 		} else {
-			infoContent = " Select a package to see details"
+			infoContent = "Select a package to see details"
 		}
 	}
 
@@ -770,7 +770,8 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 	infoContent = strings.Join(infoLines, "\n")
 
 	infoBox := lipgloss.NewStyle().
-		Width(innerWidth - 4). // Total width including padding
+		Width(innerWidth - 2).
+		Padding(0, 2).
 		Render(truncateHeight(infoContent, infoInnerHeight))
 
 	infoPanel := borderStyle.
