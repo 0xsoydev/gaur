@@ -464,11 +464,11 @@ func (m *model) renderVerticalSplitLayout(innerWidth, innerHeight int, activeCol
 	// 2. Render Details Side (Right)
 	infoContent := ""
 	if m.loadingInfo {
-		infoContent = fmt.Sprintf("Loading details for %s...", m.infoForPackage)
+		infoContent = fmt.Sprintf(" Loading details for %s...", m.infoForPackage)
 	} else if m.packageInfo != "" {
 		infoContent = m.packageInfo
 	} else {
-		infoContent = "Select an update to see details"
+		infoContent = " Select an update to see details"
 	}
 
 	infoInnerHeight := innerHeight - 2
@@ -722,19 +722,19 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 	infoContent := ""
 	if m.mode == modeUpdateSelective {
 		if m.loadingInfo {
-			infoContent = fmt.Sprintf("Loading details for %s...", m.infoForPackage)
+			infoContent = fmt.Sprintf(" Loading details for %s...", m.infoForPackage)
 		} else if m.packageInfo != "" {
 			infoContent = m.packageInfo
 		} else {
-			infoContent = "Select an update to see details"
+			infoContent = " Select an update to see details"
 		}
 	} else {
 		if m.loadingInfo {
-			infoContent = fmt.Sprintf("Loading details for %s...", m.infoForPackage)
+			infoContent = fmt.Sprintf(" Loading details for %s...", m.infoForPackage)
 		} else if m.packageInfo != "" {
 			infoContent = m.packageInfo
 		} else {
-			infoContent = "Select a package to see details"
+			infoContent = " Select a package to see details"
 		}
 	}
 
