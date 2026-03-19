@@ -458,6 +458,7 @@ func (m *model) renderVerticalSplitLayout(innerWidth, innerHeight int, activeCol
 		Render(strings.TrimSuffix(truncateHeight(lipgloss.JoinVertical(lipgloss.Left,
 			resultsContainer,
 			"", // spacing separator
+			"", // bottom truncation gap
 			strings.TrimSuffix(m.textInput.View(), "\n"),
 		), innerHeight-2), "\n"))
 
