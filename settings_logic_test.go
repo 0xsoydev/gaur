@@ -13,7 +13,19 @@ func TestSettingsNavigation(t *testing.T) {
 	
 	// Open settings
 	m.mode = modeSettings
-	m.settingsIndex = 0 // "Theme" is usually first
+	
+	// Find Theme index
+	themeIdx := -1
+	for i, item := range m.settingsItems {
+		if item.Label == "Theme" {
+			themeIdx = i
+			break
+		}
+	}
+	if themeIdx == -1 {
+		t.Fatal("Theme setting not found")
+	}
+	m.settingsIndex = themeIdx
 	
 	initialTheme := m.config.UI.Theme
 	

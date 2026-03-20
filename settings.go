@@ -14,6 +14,11 @@ import (
 func (m *model) initSettings() {
 	m.settingsItems = []SettingItem{
 		{
+			Label:     "AUR Helper",
+			ConfigKey: "commands.aur_helper",
+			Options:   []string{"paru", "yay"},
+		},
+		{
 			Label:     "Theme",
 			ConfigKey: "ui.theme",
 			Options:   listThemes(), // Use existing listThemes() from styles.go
@@ -34,6 +39,8 @@ func (m *model) initSettings() {
 	for i, item := range m.settingsItems {
 		var currentVal string
 		switch item.ConfigKey {
+		case "commands.aur_helper":
+			currentVal = m.config.Commands.AurHelper
 		case "ui.theme":
 			currentVal = m.config.UI.Theme
 		case "startup.default_mode":
@@ -51,13 +58,16 @@ func (m *model) initSettings() {
 			}
 		}
 	}
-}
-// updateConfigFromSettings applies carousel changes to the internal config struct
-func (m *model) updateConfigFromSettings() {
+	}
+
+	// updateConfigFromSettings applies carousel changes to the internal config struct
+	func (m *model) updateConfigFromSettings() {
 	item := m.settingsItems[m.settingsIndex]
 	val := item.Options[item.ActiveIndex]
 
 	switch item.ConfigKey {
+	case "commands.aur_helper":
+		m.config.Commands.AurHelper = val
 	case "ui.theme":
 		m.config.UI.Theme = val
 		// Instant update: apply theme
@@ -71,7 +81,7 @@ func (m *model) updateConfigFromSettings() {
 	}
 
 	// We no longer save instantly to disk to allow real-time theme preview without I/O churn
-}
+	}
 
 // saveSettingsToDisk marshals current config to TOML and writes to XDG path
 func (m *model) saveSettingsToDisk() {
