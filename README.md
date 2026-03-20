@@ -35,7 +35,7 @@ Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea) • Powered 
 - **Repository Filtering** — Filter by source with prefixes: `c:` (core), `e:` (extra), `m:` (multilib), `a:` (aur)
 - **Batch Operations** — Mark multiple packages with `Tab` and install/remove them all at once
 - **Interactive Hand-off** — Correctly handles terminal prompts for password entry and conflict resolution
-- **Real-time Package Info** — View detailed package information with debounced loading
+- **Real-time Package Dash** — View detailed package dashboard with debounced loading
 
 ### 📊 System Dashboard
 
@@ -49,7 +49,7 @@ Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea) • Powered 
 
 ### 🎨 Interface
 
-- **Mode-specific Theming** — Each mode (Install, Info, Remove, Update) has its own color scheme
+- **Mode-specific Theming** — Each mode (Install, Dash, Remove, Update) has its own color scheme
 - **Selection Panel** — Dedicated panel for managing marked packages
 - **Centered Dialogs** — All confirmation and error boxes are perfectly centered line-by-line
 - **Automatic Refresh** — The entire UI refreshes automatically after any system change to ensure data integrity
@@ -81,7 +81,7 @@ Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea) • Powered 
 │Found 610 packages (492 from AUR)                                           │
 │> firefox                                                                   │
 ╰────────────────────────────────────────────────────────────────────────────╯
-       [/] search  [tab] mark  [i]nstall  i[n]fo  [r]emove  [u]pdate  [q]uit
+       [/] search  [tab] mark  [i]nstall  [d]ash  [r]emove  [u]pdate  [q]uit
 ```
 
 ## 🚀 Installation
@@ -131,7 +131,7 @@ gaur
 | Key      | Action                                        |
 | -------- | --------------------------------------------- |
 | `i`      | Switch to **Install** mode                    |
-| `n`      | Switch to **Info** (dashboard) mode           |
+| `d`      | Switch to **Dash** (dashboard) mode            |
 | `r`      | Switch to **Remove** mode                     |
 | `u`      | Switch to **Update** mode / Check for updates |
 | `q`      | Quit                                          |
@@ -156,7 +156,7 @@ gaur
 | `Enter`   | Install/remove selected or marked packages |
 | `*`       | Toggle selection panel focus               |
 
-#### Dashboard (Info Mode)
+#### Dashboard (Dash Mode)
 
 | Key | Action                                       |
 | --- | -------------------------------------------- |

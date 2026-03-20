@@ -26,7 +26,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Quit
 			}
 		}
-		if msg.String() == "ctrl+r" && m.mode == modeInstalled {
+		if msg.String() == "ctrl+r" && m.mode == modeDashboard {
 			m.loading = true
 			m.statusMessage = "Refreshing dashboard..."
 			return m, getDashboardData(&m.config)
@@ -103,9 +103,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.resetState()
 					m.textInput.SetValue("")
 					m.lastQuery = ""
-					m.packageInfo = ""
-					m.infoForPackage = ""
-					m.infoScrollOffset = 0
+					m.packageDash = ""
+					m.dashForPackage = ""
+					m.dashScrollOffset = 0
 				}
 				m.textInput.Blur()
 				return m, nil
@@ -131,18 +131,18 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.resetState()
 				m.textInput.SetValue("")
 				m.lastQuery = ""
-				m.packageInfo = ""
-				m.infoForPackage = ""
-				m.infoScrollOffset = 0
+				m.packageDash = ""
+				m.dashForPackage = ""
+				m.dashScrollOffset = 0
 				m.statusMessage = "Selective cache cleaning cancelled"
 				return m, nil
 			}
 			if m.mode == modeCacheMenu {
-				m.mode = modeInstalled
+				m.mode = modeDashboard
 				m.statusMessage = "Cache menu cancelled"
-				m.packageInfo = ""
-				m.infoForPackage = ""
-				m.infoScrollOffset = 0
+				m.packageDash = ""
+				m.dashForPackage = ""
+				m.dashScrollOffset = 0
 				m.resetState()
 				return m, nil
 			}
@@ -161,27 +161,27 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.textInput.Focus()
 			return m, nil
 		case msg.String() == "c":
-			if m.mode == modeInstalled && !m.loading {
+			if m.mode == modeDashboard && !m.loading {
 				m.mode = modeCacheMenu
 				m.cacheMenuIndex = 0
 				m.resetState()
 			}
 		case msg.String() == "R":
-			if m.mode == modeInstalled && !m.loading && m.dashboard.Orphans > 0 {
+			if m.mode == modeDashboard && !m.loading && m.dashboard.Orphans > 0 {
 				orphanList, _ := runner.Run(m.config.Commands.AurHelper, "-Qdtq")
 				m.confirmPackages = strings.Fields(string(orphanList))
 				m.showConfirmation = true
 				m.confirmType = confirmRemoveOrphans
 			}
 		case msg.String() == "t", msg.String() == "e", msg.String() == "f", msg.String() == "o":
-			if m.mode == modeInstalled && !m.loading {
+			if m.mode == modeDashboard && !m.loading {
 				m.mode = modeUninstall
 				m.selectedIndex = 0
 				m.textInput.SetValue(msg.String() + ":")
 				m.lastQuery = ""
-				m.packageInfo = ""
-				m.infoForPackage = ""
-				m.infoScrollOffset = 0
+				m.packageDash = ""
+				m.dashForPackage = ""
+				m.dashScrollOffset = 0
 				m.resetState()
 				
 				if len(m.installed) > 0 {
@@ -192,13 +192,13 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, getInstalledPackages()
 			}
 		case key.Matches(msg, m.keys.DashboardMode):
-			m.mode = modeInstalled
+			m.mode = modeDashboard
 			m.loading = true
 			m.textInput.SetValue("")
 			m.lastQuery = ""
-			m.packageInfo = ""
-			m.infoForPackage = ""
-			m.infoScrollOffset = 0
+			m.packageDash = ""
+			m.dashForPackage = ""
+			m.dashScrollOffset = 0
 			m.resetState()
 			return m, getDashboardData(&m.config)
 		case key.Matches(msg, m.keys.UninstallMode):
@@ -207,9 +207,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.selectedIndex = 0
 				m.textInput.SetValue("")
 				m.lastQuery = ""
-				m.packageInfo = ""
-				m.infoForPackage = ""
-				m.infoScrollOffset = 0
+				m.packageDash = ""
+				m.dashForPackage = ""
+				m.dashScrollOffset = 0
 				m.resetState()
 
 				m.loading = true
@@ -220,9 +220,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.mode = modeUpdate
 			m.textInput.SetValue("")
 			m.lastQuery = ""
-			m.packageInfo = ""
-			m.infoForPackage = ""
-			m.infoScrollOffset = 0
+			m.packageDash = ""
+			m.dashForPackage = ""
+			m.dashScrollOffset = 0
 			m.resetState()
 			m.loading = true
 			m.pendingUpdates = nil
@@ -238,9 +238,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.textInput.Focus()
 				if len(m.pendingUpdates) > 0 {
 					m.filtered = m.pendingUpdates
-					m.loadingInfo = true
-					m.infoForPackage = m.filtered[0].Name
-					return m, getPackageInfo(m, m.filtered[0])
+					m.loadingDash = true
+					m.dashForPackage = m.filtered[0].Name
+					return m, getPackageDash(m, m.filtered[0])
 				}
 			}
 		case key.Matches(msg, m.keys.Confirm):
@@ -257,9 +257,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.filtered = []Package{}
 				m.textInput.SetValue("")
 				m.lastQuery = ""
-				m.packageInfo = ""
-				m.infoForPackage = ""
-				m.infoScrollOffset = 0
+				m.packageDash = ""
+				m.dashForPackage = ""
+				m.dashScrollOffset = 0
 				m.resetState()
 				m.textInput.Focus()
 			}
@@ -341,20 +341,20 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
 
-	case packageInfoMsg:
-		if msg.packageName == m.infoForPackage {
-			m.loadingInfo = false
-			m.packageInfo = msg.info
-			m.infoCache[msg.packageName] = msg.info
+	case packageDashMsg:
+		if msg.packageName == m.dashForPackage {
+			m.loadingDash = false
+			m.packageDash = msg.dash
+			m.dashCache[msg.packageName] = msg.dash
 		}
 
 	case debounceTickMsg:
-		if msg.packageName == m.pendingInfoPackage {
-			m.infoForPackage = msg.packageName
+		if msg.packageName == m.pendingDashPackage {
+			m.dashForPackage = msg.packageName
 			pkg := m.getPackageByName(msg.packageName)
 			if pkg != nil {
-				m.infoScrollOffset = 0
-				return m, getPackageInfo(m, *pkg)
+				m.dashScrollOffset = 0
+				return m, getPackageDash(m, *pkg)
 			}
 		}
 
@@ -469,12 +469,12 @@ func (m *model) handleNavigation(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.selectedIndex < 0 { m.selectedIndex = 0 }
 
 	if m.selectedIndex != oldIdx {
-		m.infoScrollOffset = 0
+		m.dashScrollOffset = 0
 		pkg := m.getSelectedPkg()
 		if pkg != nil && m.mode != modeCacheSelective {
-			m.loadingInfo = true
-			m.pendingInfoPackage = pkg.Name
-			return m, debouncePackageInfo(m, m.pendingInfoPackage)
+			m.loadingDash = true
+			m.pendingDashPackage = pkg.Name
+			return m, debouncePackageDash(m, m.pendingDashPackage)
 		}
 	}
 	return m, nil
@@ -521,9 +521,9 @@ func (m *model) handleActionTrigger() (tea.Model, tea.Cmd) {
 		case 4:
 			m.mode = modeCacheSelective; m.selectedIndex = 0
 			m.textInput.SetValue(""); m.lastQuery = ""
-			m.packageInfo = ""
-			m.infoForPackage = ""
-			m.infoScrollOffset = 0
+			m.packageDash = ""
+			m.dashForPackage = ""
+			m.dashScrollOffset = 0
 			m.resetState()
 			m.filtered = make([]Package, len(m.dashboard.AllCacheHogs))
 			for i, h := range m.dashboard.AllCacheHogs { m.filtered[i] = Package{Name: h.Name, Size: h.Size, SizeBytes: h.SizeBytes} }
@@ -655,16 +655,16 @@ func (m *model) performFiltering() tea.Cmd {
 		}
 	}
 
-	// Fetch info for the first item automatically if list is not empty
+	// Fetch dash for the first item automatically if list is not empty
 	pkg := m.getSelectedPkg()
 	if pkg != nil && m.mode != modeCacheSelective {
-		m.loadingInfo = true
-		m.pendingInfoPackage = pkg.Name
-		cmds = append(cmds, debouncePackageInfo(m, m.pendingInfoPackage))
+		m.loadingDash = true
+		m.pendingDashPackage = pkg.Name
+		cmds = append(cmds, debouncePackageDash(m, m.pendingDashPackage))
 	} else {
-		m.loadingInfo = false
-		m.packageInfo = ""
-		m.infoForPackage = ""
+		m.loadingDash = false
+		m.packageDash = ""
+		m.dashForPackage = ""
 	}
 	return tea.Batch(cmds...)
 }
@@ -694,11 +694,11 @@ func (m *model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	
 	// Details pane scroll check
 	if (m.mode == modeInstall || m.mode == modeUninstall) && msg.Y < m.height/2 {
-		if msg.Type == tea.MouseWheelUp { if m.infoScrollOffset > 0 { m.infoScrollOffset-- } } else { if m.infoScrollOffset < m.maxInfoScroll { m.infoScrollOffset++ } }
+		if msg.Type == tea.MouseWheelUp { if m.dashScrollOffset > 0 { m.dashScrollOffset-- } } else { if m.dashScrollOffset < m.maxDashScroll { m.dashScrollOffset++ } }
 		return m, nil
 	}
 	if m.mode == modeUpdateSelective && msg.X >= m.width/2 {
-		if msg.Type == tea.MouseWheelUp { if m.infoScrollOffset > 0 { m.infoScrollOffset-- } } else { if m.infoScrollOffset < m.maxInfoScroll { m.infoScrollOffset++ } }
+		if msg.Type == tea.MouseWheelUp { if m.dashScrollOffset > 0 { m.dashScrollOffset-- } } else { if m.dashScrollOffset < m.maxDashScroll { m.dashScrollOffset++ } }
 		return m, nil
 	}
 

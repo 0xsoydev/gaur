@@ -36,11 +36,11 @@ func (m *model) renderHelpText(activeColor lipgloss.Color) string {
 	parts = append(parts, renderKeyHint("install", m.keys.InstallMode, installStyle))
 	parts = append(parts, dimStyle.Render("  "))
 
-	infoStyle := dimStyle
-	if m.mode == modeInstalled {
-		infoStyle = activeStyle
+	dashStyle := dimStyle
+	if m.mode == modeDashboard {
+		dashStyle = activeStyle
 	}
-	parts = append(parts, renderKeyHint("info", m.keys.DashboardMode, infoStyle))
+	parts = append(parts, renderKeyHint("dash", m.keys.DashboardMode, dashStyle))
 	parts = append(parts, dimStyle.Render("  "))
 
 	removeStyle := dimStyle
@@ -103,7 +103,7 @@ func (m *model) View() string {
 		content = m.renderCacheMenu(helpText, innerWidth, innerHeight)
 	} else if effectiveMode == modeCacheSelective {
 		content = m.renderSelectiveCacheView(helpText, innerWidth, innerHeight, activeColor)
-	} else if effectiveMode == modeInstalled {
+	} else if effectiveMode == modeDashboard {
 		content = m.renderDashboard(helpText, innerWidth, innerHeight)
 	} else if effectiveMode == modeUpdate {
 		content = m.renderSimpleUpdateView(helpText, innerWidth, innerHeight, activeColor)
@@ -450,40 +450,40 @@ func (m *model) renderVerticalSplitLayout(innerWidth, innerHeight int, activeCol
 		), innerHeight-2), "\n"))
 
 	// 2. Render Details Side (Right)
-	infoContent := ""
-	if m.loadingInfo {
-		infoContent = fmt.Sprintf("Loading details for %s...", m.infoForPackage)
-	} else if m.packageInfo != "" {
-		infoContent = m.packageInfo
+	dashContent := ""
+	if m.loadingDash {
+		dashContent = fmt.Sprintf("Loading dashboard for %s...", m.dashForPackage)
+	} else if m.packageDash != "" {
+		dashContent = m.packageDash
 	} else {
-		infoContent = "Select an update to see details"
+		dashContent = "Select an update to see dashboard"
 	}
 
-	infoInnerHeight := innerHeight - 2
-	infoInnerWidth := detailsWidth - 6 // 2 chars padding on each side
+	dashInnerHeight := innerHeight - 2
+	dashInnerWidth := detailsWidth - 6 // 2 chars padding on each side
 
-	wrappedText := lipgloss.NewStyle().Width(infoInnerWidth).Render(infoContent)
-	infoLines := strings.Split(wrappedText, "\n")
+	wrappedText := lipgloss.NewStyle().Width(dashInnerWidth).Render(dashContent)
+	dashLines := strings.Split(wrappedText, "\n")
 
-	totalLines := len(infoLines)
-	if totalLines > infoInnerHeight {
-		maxScroll := totalLines - infoInnerHeight
-		m.maxInfoScroll = maxScroll
-		if m.infoScrollOffset > maxScroll {
-			m.infoScrollOffset = maxScroll
+	totalLines := len(dashLines)
+	if totalLines > dashInnerHeight {
+		maxScroll := totalLines - dashInnerHeight
+		m.maxDashScroll = maxScroll
+		if m.dashScrollOffset > maxScroll {
+			m.dashScrollOffset = maxScroll
 		}
-		infoLines = infoLines[m.infoScrollOffset : m.infoScrollOffset+infoInnerHeight]
+		dashLines = dashLines[m.dashScrollOffset : m.dashScrollOffset+dashInnerHeight]
 	} else {
-		m.maxInfoScroll = 0
-		m.infoScrollOffset = 0
+		m.maxDashScroll = 0
+		m.dashScrollOffset = 0
 	}
-	infoContent = strings.Join(infoLines, "\n")
+	dashContent = strings.Join(dashLines, "\n")
 
 	detailsBox := lipgloss.NewStyle().
 		Width(detailsWidth - 2).
-		Height(infoInnerHeight).
+		Height(dashInnerHeight).
 		Padding(0, 2).
-		Render(infoContent)
+		Render(dashContent)
 
 	if len(m.markedPackages) > 0 {
 		selectionPanel := m.renderSelectionBox(detailsWidth - 6)
@@ -494,8 +494,8 @@ func (m *model) renderVerticalSplitLayout(innerWidth, innerHeight int, activeCol
 		bgLines := strings.Split(detailsBox, "\n")
 		
 		// Overlay selectionPanel on bottom right of detailsBox
-		startRow := infoInnerHeight - panelHeight
-		startCol := infoInnerWidth + 2 - panelWidth
+		startRow := dashInnerHeight - panelHeight
+		startCol := dashInnerWidth + 2 - panelWidth
 		
 		if startRow < 0 { startRow = 0 }
 		if startCol < 0 { startCol = 0 }
@@ -682,19 +682,19 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 		availableHeight = 6
 	}
 
-	targetInfoPanelHeight := availableHeight / 2
-	targetBottomPanelHeight := availableHeight - targetInfoPanelHeight
+	targetDashPanelHeight := availableHeight / 2
+	targetBottomPanelHeight := availableHeight - targetDashPanelHeight
 
-	infoInnerHeight := targetInfoPanelHeight - 2
+	dashInnerHeight := targetDashPanelHeight - 2
 	bottomInnerHeight := targetBottomPanelHeight - 2
 
 	if bottomInnerHeight < 5 {
 		bottomInnerHeight = 5
 		targetBottomPanelHeight = bottomInnerHeight + 2
-		targetInfoPanelHeight = availableHeight - targetBottomPanelHeight
-		infoInnerHeight = targetInfoPanelHeight - 2
-		if infoInnerHeight < 1 {
-			infoInnerHeight = 1
+		targetDashPanelHeight = availableHeight - targetBottomPanelHeight
+		dashInnerHeight = targetDashPanelHeight - 2
+		if dashInnerHeight < 1 {
+			dashInnerHeight = 1
 		}
 	}
 
@@ -703,65 +703,65 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 		resultsHeight = 1
 	}
 
-	infoContent := ""
+	dashContent := ""
 	if m.mode == modeUpdateSelective {
-		if m.loadingInfo {
-			infoContent = fmt.Sprintf("Loading details for %s...", m.infoForPackage)
-		} else if m.packageInfo != "" {
-			infoContent = m.packageInfo
+		if m.loadingDash {
+			dashContent = fmt.Sprintf("Loading dashboard for %s...", m.dashForPackage)
+		} else if m.packageDash != "" {
+			dashContent = m.packageDash
 		} else {
-			infoContent = "Select an update to see details"
+			dashContent = "Select an update to see dashboard"
 		}
 	} else {
-		if m.loadingInfo {
-			infoContent = fmt.Sprintf("Loading details for %s...", m.infoForPackage)
-		} else if m.packageInfo != "" {
-			infoContent = m.packageInfo
+		if m.loadingDash {
+			dashContent = fmt.Sprintf("Loading dashboard for %s...", m.dashForPackage)
+		} else if m.packageDash != "" {
+			dashContent = m.packageDash
 		} else {
-			infoContent = "Select a package to see details"
+			dashContent = "Select a package to see dashboard"
 		}
 	}
 
 	// InnerWidth is the total terminal width
-	// infoPanel Total Width = innerWidth
-	// infoPanel Inner Width = innerWidth - 2
-	// infoBox Total Width (including padding) = innerWidth - 4 (1 char margin on each side)
-	// infoBox Content Width = innerWidth - 6
+	// dashPanel Total Width = innerWidth
+	// dashPanel Inner Width = innerWidth - 2
+	// dashBox Total Width (including padding) = innerWidth - 4 (1 char margin on each side)
+	// dashBox Content Width = innerWidth - 6
 	contentWidth := innerWidth - 6
 	if contentWidth < 10 {
 		contentWidth = 10
 	}
 
 	// Render the text with a width limit first so Lipgloss wraps it
-	wrappedText := lipgloss.NewStyle().Width(contentWidth).Render(infoContent)
-	infoLines := strings.Split(wrappedText, "\n")
+	wrappedText := lipgloss.NewStyle().Width(contentWidth).Render(dashContent)
+	dashLines := strings.Split(wrappedText, "\n")
 
-	totalLines := len(infoLines)
-	if totalLines > infoInnerHeight {
-		maxScroll := totalLines - infoInnerHeight
-		m.maxInfoScroll = maxScroll
+	totalLines := len(dashLines)
+	if totalLines > dashInnerHeight {
+		maxScroll := totalLines - dashInnerHeight
+		m.maxDashScroll = maxScroll
 		// Clamp offset
-		if m.infoScrollOffset > maxScroll {
-			m.infoScrollOffset = maxScroll
-		} else if m.infoScrollOffset < 0 {
-			m.infoScrollOffset = 0
+		if m.dashScrollOffset > maxScroll {
+			m.dashScrollOffset = maxScroll
+		} else if m.dashScrollOffset < 0 {
+			m.dashScrollOffset = 0
 		}
-		infoLines = infoLines[m.infoScrollOffset : m.infoScrollOffset+infoInnerHeight]
+		dashLines = dashLines[m.dashScrollOffset : m.dashScrollOffset+dashInnerHeight]
 	} else {
-		m.maxInfoScroll = 0
-		m.infoScrollOffset = 0
+		m.maxDashScroll = 0
+		m.dashScrollOffset = 0
 	}
-	infoContent = strings.Join(infoLines, "\n")
+	dashContent = strings.Join(dashLines, "\n")
 
-	infoBox := lipgloss.NewStyle().
+	dashBox := lipgloss.NewStyle().
 		Width(innerWidth - 2).
 		Padding(0, 2).
-		Render(truncateHeight(infoContent, infoInnerHeight))
+		Render(truncateHeight(dashContent, dashInnerHeight))
 
-	infoPanel := borderStyle.
+	dashPanel := borderStyle.
 		Width(innerWidth - 2).
-		Height(max(0, targetInfoPanelHeight-2)).
-		Render(truncateHeight(infoBox, max(0, targetInfoPanelHeight-2)))
+		Height(max(0, targetDashPanelHeight-2)).
+		Render(truncateHeight(dashBox, max(0, targetDashPanelHeight-2)))
 
 	inputLine := ""
 	statusLine := ""
@@ -941,7 +941,7 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 		Align(lipgloss.Left, lipgloss.Bottom).
 		Render(truncateHeight(bottomContent, max(0, targetBottomPanelHeight-2)))
 
-	content := SafeJoinVertical(innerWidth, innerHeight, header, []string{infoPanel, bottomPanel}, footer)
+	content := SafeJoinVertical(innerWidth, innerHeight, header, []string{dashPanel, bottomPanel}, footer)
 
 	if len(m.markedPackages) > 0 {
 		content = m.overlaySelectionsPanel(content, innerWidth, headerHeight)
