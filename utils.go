@@ -615,9 +615,10 @@ func getKeyDisplay(b key.Binding) string {
 	}
 	k := keys[0]
 	// Special cases for display
+	if strings.HasPrefix(k, "ctrl+") && len(k) == 6 {
+		return "^" + string(k[5])
+	}
 	switch k {
-	case "ctrl+c":
-		return "^c"
 	case "enter":
 		return "enter"
 	case "esc":
