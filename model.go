@@ -60,9 +60,9 @@ type model struct {
 	maxConfirmScroll    int       // Max scroll for confirmation list
 	lastCompletedOp     string    // Description of last completed operation
 	// Update selection state
-	updatableAll []Package // All packages available for update (before selection)
-	updateScrollOffset int   // Scroll offset for the simple update view
-	maxUpdateScroll    int   // Max scroll for update view
+	updatableAll       []Package // All packages available for update (before selection)
+	updateScrollOffset int       // Scroll offset for the simple update view
+	maxUpdateScroll    int       // Max scroll for update view
 	// Error overlay state
 	showErrorOverlay bool
 	errorTitle       string
@@ -74,9 +74,9 @@ type model struct {
 	cacheMenuIndex int
 	cacheToFree    int64
 	// Settings state
-	settingsItems []SettingItem
-	settingsIndex int
-	previousMode  viewMode
+	settingsItems  []SettingItem
+	settingsIndex  int
+	previousMode   viewMode
 	originalHelper string // Track AUR helper change for refresh
 }
 
@@ -109,7 +109,7 @@ func initialModel(initialMode viewMode, cfg Config) *model {
 	m.updatePlaceholder()
 	m.statusMessage = "Loading package database..."
 	switch initialMode {
-	case modeUninstall:
+	case modeRemove:
 		m.statusMessage = "Loading installed packages..."
 	case modeUpdate:
 		m.statusMessage = "Checking for updates..."
@@ -117,7 +117,7 @@ func initialModel(initialMode viewMode, cfg Config) *model {
 		m.statusMessage = "Loading system statistics..."
 	}
 
-	if initialMode == modeUninstall {
+	if initialMode == modeRemove {
 		m.loadingDash = true
 		m.dashForPackage = "..."
 	}
@@ -149,7 +149,7 @@ func (m *model) currentPackageList() []Package {
 	switch m.mode {
 	case modeInstall:
 		return m.filtered
-	case modeUninstall:
+	case modeRemove:
 		return m.filteredInstalled
 	default:
 		return nil
@@ -214,7 +214,7 @@ func (m *model) resetState() {
 func (m *model) updatePlaceholder() {
 	placeholder := "Search packages..."
 	switch m.mode {
-	case modeUninstall:
+	case modeRemove:
 		placeholder = "Filter installed packages..."
 	case modeUpdate:
 		placeholder = "Checking for updates..."
