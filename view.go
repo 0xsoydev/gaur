@@ -13,7 +13,7 @@ func sourceStyle(source string) lipgloss.Style {
 		return lipgloss.NewStyle().Foreground(color)
 	}
 	return lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
-	}
+}
 
 // renderHelpText creates the help menu with the active mode highlighted
 func (m *model) renderHelpText(activeColor lipgloss.Color) string {
@@ -51,10 +51,10 @@ func (m *model) renderHelpText(activeColor lipgloss.Color) string {
 	parts = append(parts, dimStyle.Render("  "))
 
 	removeStyle := dimStyle
-	if m.mode == modeUninstall {
+	if m.mode == modeRemove {
 		removeStyle = activeStyle
 	}
-	parts = append(parts, renderKeyHint("remove", m.keys.UninstallMode, removeStyle))
+	parts = append(parts, renderKeyHint("remove", m.keys.RemoveMode, removeStyle))
 	parts = append(parts, dimStyle.Render("  "))
 
 	settingsStyle := dimStyle
@@ -67,7 +67,7 @@ func (m *model) renderHelpText(activeColor lipgloss.Color) string {
 	parts = append(parts, renderKeyHint("quit", m.keys.Quit, dimStyle))
 
 	return strings.Join(parts, "")
-	}
+}
 
 func (m *model) View() string {
 	if m.width == 0 {
@@ -94,7 +94,7 @@ func (m *model) View() string {
 	helpText := m.renderHelpText(activeColor)
 
 	var content string
-	
+
 	if m.showConfirmation {
 		content = m.renderConfirmationDialog(innerWidth, innerHeight, activeColor)
 	} else if m.showErrorOverlay {
@@ -110,11 +110,11 @@ func (m *model) View() string {
 	} else if effectiveMode == modeUpdateSelective {
 		content = m.renderUpdateSelectiveView(helpText, innerWidth, innerHeight, activeColor)
 	} else {
-		// Handle modeInstall and modeUninstall
+		// Handle modeInstall and modeRemove
 		var pkgList []Package
 		if effectiveMode == modeInstall {
 			pkgList = m.filtered
-		} else if effectiveMode == modeUninstall {
+		} else if effectiveMode == modeRemove {
 			pkgList = m.filteredInstalled
 		} else if effectiveMode == modeUpdateSelective {
 			pkgList = m.filtered
@@ -145,19 +145,18 @@ func (m *model) View() string {
 	}
 
 	return content
-	}
-
+}
 
 // overlaySettings manually layers the settings menu on top of base content
 func (m *model) overlaySettings(base, overlay string, width, height int) string {
 	baseLines := strings.Split(base, "\n")
 	overlayLines := strings.Split(overlay, "\n")
-	
+
 	overlayHeight := len(overlayLines)
 	if overlayHeight == 0 {
 		return base
 	}
-	
+
 	overlayWidth := lipgloss.Width(overlayLines[0])
 
 	// Ensure base has enough lines to match terminal height
@@ -177,32 +176,32 @@ func (m *model) overlaySettings(base, overlay string, width, height int) string 
 		targetY := startY + y
 		if targetY >= 0 && targetY < len(result) {
 			bgLine := result[targetY]
-			
+
 			// Ensure bgLine is at least width chars wide (considering ANSI)
 			bgWidth := lipgloss.Width(bgLine)
 			if bgWidth < width {
-				bgLine += strings.Repeat(" ", width - bgWidth)
+				bgLine += strings.Repeat(" ", width-bgWidth)
 			}
-			
+
 			// Reconstruct the line using precise slicing
 			left := truncateWithAnsi(bgLine, startCol)
 			// Ensure left part is exactly startCol wide by padding if needed
 			leftWidth := lipgloss.Width(left)
 			if leftWidth < startCol {
-				left += strings.Repeat(" ", startCol - leftWidth)
+				left += strings.Repeat(" ", startCol-leftWidth)
 			}
-			
-			right := substringAnsi(bgLine, startCol + overlayWidth)
+
+			right := substringAnsi(bgLine, startCol+overlayWidth)
 			// Ensure right part doesn't exceed the remaining width
-			right = truncateWithAnsi(right, width - (startCol + overlayWidth))
-			
+			right = truncateWithAnsi(right, width-(startCol+overlayWidth))
+
 			// Composite the line: [Base Left] [Overlay Content] [Base Right]
 			result[targetY] = left + overlayLines[y] + right
 		}
 	}
 
 	return SafeJoinVertical(width, height, "", []string{strings.Join(result, "\n")}, "")
-	}
+}
 
 // renderUpdateSelectiveView renders the selective update overlay on top of the simple update view
 func (m *model) renderUpdateSelectiveView(helpText string, innerWidth, innerHeight int, activeColor lipgloss.Color) string {
@@ -252,13 +251,13 @@ func (m *model) renderUpdateSelectiveView(helpText string, innerWidth, innerHeig
 	}
 
 	paneContent := m.renderVerticalSplitLayout(overlayWidth, overlayInnerHeight, activeColor)
-	
+
 	// Composite panels and warning
 	// Ensure warning overlay has a fixed height that we accounted for
 	warningBoxWrapped := lipgloss.NewStyle().
 		Height(warningHeight).
 		Render(strings.TrimSuffix(warningOverlay, "\n"))
-		
+
 	paneContent = lipgloss.JoinVertical(lipgloss.Left, strings.TrimSuffix(paneContent, "\n"), strings.TrimSuffix(warningBoxWrapped, "\n"))
 
 	// Enforce strict rectangle bounds - this ensures we exactly match overlayHeight
@@ -332,7 +331,7 @@ func (m *model) renderUpdateSelectiveView(helpText string, innerWidth, innerHeig
 	}
 
 	return SafeJoinVertical(innerWidth, innerHeight, "", []string{output.String()}, "")
-	}
+}
 
 // renderVerticalSplitLayout renders a side-by-side view (list on left, dash on right)
 func (m *model) renderVerticalSplitLayout(innerWidth, innerHeight int, activeColor lipgloss.Color) string {
@@ -360,7 +359,7 @@ func (m *model) renderVerticalSplitLayout(innerWidth, innerHeight int, activeCol
 
 	// Calculate results height for the list
 	// InnerHeight - 2 for borders - 2 for search input and separator - 1 for bottom padding
-	resultsHeight := innerHeight - 5 
+	resultsHeight := innerHeight - 5
 	if resultsHeight < 1 {
 		resultsHeight = 1
 	}
@@ -404,7 +403,7 @@ func (m *model) renderVerticalSplitLayout(innerWidth, innerHeight int, activeCol
 			}
 
 			line := fmt.Sprintf("%s%s", prefix, displayPkgStr)
-			
+
 			// Truncate to fit listWidth-6 (accounting for scrollbar space)
 			if lipgloss.Width(line) > listWidth-6 {
 				line = truncateWithAnsi(line, listWidth-9) + "..."
@@ -434,13 +433,13 @@ func (m *model) renderVerticalSplitLayout(innerWidth, innerHeight int, activeCol
 
 	resultsContainer := lipgloss.NewStyle().
 		Height(resultsHeight).
-		Width(listWidth - 4).
+		Width(listWidth-4).
 		Align(lipgloss.Left, lipgloss.Bottom).
 		Render(strings.TrimSuffix(resultsStr, "\n"))
 
 	listPanel := borderStyle.
-		Width(listWidth - 2).
-		Height(innerHeight - 2).
+		Width(listWidth-2).
+		Height(innerHeight-2).
 		Align(lipgloss.Left, lipgloss.Bottom).
 		Render(strings.TrimSuffix(truncateHeight(lipgloss.JoinVertical(lipgloss.Left,
 			resultsContainer,
@@ -480,7 +479,7 @@ func (m *model) renderVerticalSplitLayout(innerWidth, innerHeight int, activeCol
 	dashContent = strings.Join(dashLines, "\n")
 
 	dashBox := lipgloss.NewStyle().
-		Width(dashWidth - 2).
+		Width(dashWidth-2).
 		Height(dashInnerHeight).
 		Padding(0, 2).
 		Render(dashContent)
@@ -492,19 +491,23 @@ func (m *model) renderVerticalSplitLayout(innerWidth, innerHeight int, activeCol
 		panelWidth := lipgloss.Width(panelLines[0])
 
 		bgLines := strings.Split(dashBox, "\n")
-		
+
 		// Overlay selectionPanel on bottom right of dashBox
 		startRow := dashInnerHeight - panelHeight
 		startCol := dashInnerWidth + 2 - panelWidth
-		
-		if startRow < 0 { startRow = 0 }
-		if startCol < 0 { startCol = 0 }
+
+		if startRow < 0 {
+			startRow = 0
+		}
+		if startCol < 0 {
+			startCol = 0
+		}
 
 		var result strings.Builder
 		for i, line := range bgLines {
 			if i >= startRow && i < startRow+panelHeight {
 				panelLineIdx := i - startRow
-				
+
 				// Get background piece safely
 				leftStr := ""
 				if startCol > 0 {
@@ -512,10 +515,10 @@ func (m *model) renderVerticalSplitLayout(innerWidth, innerHeight int, activeCol
 					// Ensure left part is exactly startCol wide
 					lw := lipgloss.Width(leftStr)
 					if lw < startCol {
-						leftStr += strings.Repeat(" ", startCol - lw)
+						leftStr += strings.Repeat(" ", startCol-lw)
 					}
 				}
-				
+
 				line = leftStr + panelLines[panelLineIdx]
 			}
 			result.WriteString(line)
@@ -532,7 +535,7 @@ func (m *model) renderVerticalSplitLayout(innerWidth, innerHeight int, activeCol
 		Render(strings.TrimSuffix(truncateHeight(dashBox, innerHeight-2), "\n"))
 
 	return lipgloss.JoinHorizontal(lipgloss.Top, strings.TrimSuffix(listPanel, "\n"), strings.TrimSuffix(dashPanel, "\n"))
-	}
+}
 
 // renderSelectionBox renders a box containing currently marked packages
 func (m *model) renderSelectionBox(maxWidth int) string {
@@ -577,7 +580,7 @@ func (m *model) renderSelectionBox(maxWidth int) string {
 	}
 
 	titleText := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("205")).Render(fmt.Sprintf(" Selected (%d) ", len(pkgNames)))
-	
+
 	itemStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
 	selectedItemStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Bold(true)
 
@@ -606,14 +609,14 @@ func (m *model) renderSelectionBox(maxWidth int) string {
 		// Add scrollbar for selection box (Top-down)
 		scrollbar := renderScrollbar(len(pkgNames), startIdx, (endIdx - startIdx), lipgloss.Color("205"), false)
 		listStr = lipgloss.JoinHorizontal(lipgloss.Top,
-			lipgloss.NewStyle().Width(panelWidth - 4).Render(listStr),
+			lipgloss.NewStyle().Width(panelWidth-4).Render(listStr),
 			lipgloss.NewStyle().MarginLeft(1).Render(scrollbar))
 	}
 
 	return panelStyle.Width(panelWidth).Render(titleText + "\n" + listStr)
-	}
+}
 
-// renderPackageListLayout renders the standard split-pane list view for install, uninstall, and selective update
+// renderPackageListLayout renders the standard split-pane list view for install, remove, and selective update
 // renderRepoSummary creates a color-coded summary of packages by repository
 func (m *model) renderRepoSummary(pkgList []Package) string {
 	if len(pkgList) == 0 {
@@ -656,7 +659,7 @@ func (m *model) renderRepoSummary(pkgList []Package) string {
 	}
 
 	return strings.Join(parts, ", ")
-	}
+}
 
 func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor lipgloss.Color, header, footer string) string {
 	borderStyle := baseBorderStyle.BorderForeground(activeColor)
@@ -754,7 +757,7 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 	dashContent = strings.Join(dashLines, "\n")
 
 	dashBox := lipgloss.NewStyle().
-		Width(innerWidth - 2).
+		Width(innerWidth-2).
 		Padding(0, 2).
 		Render(truncateHeight(dashContent, dashInnerHeight))
 
@@ -765,27 +768,27 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 
 	inputLine := ""
 	statusLine := ""
-	
+
 	// Determine what mode's input line to show
 	displayMode := m.mode
 	if m.mode == modeSettings {
 		displayMode = m.previousMode
 	}
 
-	if displayMode == modeInstall || displayMode == modeUninstall || displayMode == modeUpdateSelective {
+	if displayMode == modeInstall || displayMode == modeRemove || displayMode == modeUpdateSelective {
 		inputLine = m.textInput.View()
-		
+
 		if m.searchStatus != "" {
 			style := lipgloss.NewStyle().
 				Foreground(lipgloss.Color("244")).
 				Italic(true)
-			
+
 			if m.searchError {
 				style = style.Foreground(lipgloss.Color("#FF5555"))
 			}
-			
+
 			renderedStatus := style.Render(m.searchStatus)
-			
+
 			if m.searchingAUR {
 				spinnerStr := m.spinner.View()
 				sw := lipgloss.Width(spinnerStr)
@@ -819,7 +822,7 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 	var pkgList []Package
 	if m.mode == modeInstall {
 		pkgList = m.filtered
-	} else if m.mode == modeUninstall {
+	} else if m.mode == modeRemove {
 		pkgList = m.filteredInstalled
 	} else if m.mode == modeUpdateSelective {
 		pkgList = m.filtered
@@ -845,7 +848,7 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 		var matchIndicesMap map[int][]int
 		if m.mode == modeInstall {
 			matchIndicesMap = m.matchIndices
-		} else if m.mode == modeUninstall {
+		} else if m.mode == modeRemove {
 			matchIndicesMap = m.installedMatchIndices
 		} else if m.mode == modeUpdateSelective {
 			matchIndicesMap = m.matchIndices
@@ -920,7 +923,7 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 	}
 
 	resultsBox := lipgloss.NewStyle().
-		Width(innerWidth - 4).
+		Width(innerWidth-4).
 		Height(resultsHeight).
 		Align(lipgloss.Left, lipgloss.Bottom).
 		Render(resultsStr)
@@ -936,7 +939,7 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 	bottomContent := strings.Join(bottomParts, "\n")
 
 	bottomPanel := borderStyle.
-		Width(innerWidth - 2).
+		Width(innerWidth-2).
 		Height(max(0, targetBottomPanelHeight-2)).
 		Align(lipgloss.Left, lipgloss.Bottom).
 		Render(truncateHeight(bottomContent, max(0, targetBottomPanelHeight-2)))
@@ -948,7 +951,7 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 	}
 
 	return content
-	}
+}
 
 // overlaySelectionsPanel renders a selection panel on the bottom right of the screen
 func (m *model) overlaySelectionsPanel(content string, innerWidth int, headerHeight int) string {
@@ -970,7 +973,7 @@ func (m *model) overlaySelectionsPanel(content string, innerWidth int, headerHei
 	for i, line := range lines {
 		if i >= startRow && i < startRow+panelHeight {
 			panelLineIdx := i - startRow
-			
+
 			// Get background pieces safely
 			leftStr := ""
 			if startCol > 0 {
@@ -1004,9 +1007,9 @@ func (m *model) overlaySelectionsPanel(content string, innerWidth int, headerHei
 	}
 
 	return result.String()
-	}
+}
 
-// renderConfirmationDialog renders a centered confirmation dialog for install/uninstall/update
+// renderConfirmationDialog renders a centered confirmation dialog for install/remove/update
 func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColor lipgloss.Color) string {
 	var title string
 	var packages []Package
@@ -1019,14 +1022,18 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 		actionDesc = "install"
 		for name := range m.markedPackages {
 			pkg := m.getPackageByName(name)
-			if pkg != nil { packages = append(packages, *pkg) }
+			if pkg != nil {
+				packages = append(packages, *pkg)
+			}
 		}
-	case confirmUninstall:
+	case confirmRemove:
 		title = "🗑 Confirm Removal"
-		actionDesc = "uninstall"
+		actionDesc = "remove"
 		for name := range m.markedPackages {
 			pkg := m.getPackageByName(name)
-			if pkg != nil { packages = append(packages, *pkg) }
+			if pkg != nil {
+				packages = append(packages, *pkg)
+			}
 		}
 	case confirmUpdate:
 		title = "🔄 Confirm System Update"
@@ -1037,7 +1044,9 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 		actionDesc = "update"
 		for name := range m.markedPackages {
 			pkg := m.getPackageByName(name)
-			if pkg != nil { packages = append(packages, *pkg) }
+			if pkg != nil {
+				packages = append(packages, *pkg)
+			}
 		}
 	case confirmRemoveOrphans:
 		title = "🧹 Confirm Orphan Removal"
@@ -1071,14 +1080,18 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 	}
 
 	dialogWidth := innerWidth - 10
-	if dialogWidth < 60 { dialogWidth = 60 }
-	if dialogWidth > 90 { dialogWidth = 90 }
+	if dialogWidth < 60 {
+		dialogWidth = 60
+	}
+	if dialogWidth > 90 {
+		dialogWidth = 90
+	}
 
 	activeBorderColor := activeColor
 	switch m.confirmType {
 	case confirmInstall:
 		activeBorderColor = lipgloss.Color("39")
-	case confirmUninstall:
+	case confirmRemove:
 		activeBorderColor = lipgloss.Color("208")
 	case confirmCleanUninstalled:
 		activeBorderColor = lipgloss.Color("42")
@@ -1142,8 +1155,12 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 			pacmanEstimate = m.dashboard.PacmanCacheSize
 			aurEstimate = m.dashboard.AurCacheSize
 		}
-		if pacmanEstimate == "" { pacmanEstimate = "calculating..." }
-		if aurEstimate == "" { aurEstimate = "calculating..." }
+		if pacmanEstimate == "" {
+			pacmanEstimate = "calculating..."
+		}
+		if aurEstimate == "" {
+			aurEstimate = "calculating..."
+		}
 
 		valStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
 		pacmanLabel := sourceStyle("core").Render("  pacman:")
@@ -1159,7 +1176,9 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 
 		estStyle := lipgloss.NewStyle().Width(contentWidth).Align(lipgloss.Center)
 		estimate := m.dashboard.CacheFreedEstimates[m.confirmType]
-		if estimate == "" { estimate = "calculating..." }
+		if estimate == "" {
+			estimate = "calculating..."
+		}
 		dialogContent = append(dialogContent, estStyle.Render(fmt.Sprintf("Estimated space to be freed: %s", lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("214")).Render(estimate))))
 	} else {
 		// List-based Confirmations
@@ -1176,9 +1195,13 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 		maxVisible := 10
 		startIdx := m.confirmScrollOffset
 		endIdx := startIdx + maxVisible
-		if endIdx > len(packages) { endIdx = len(packages) }
+		if endIdx > len(packages) {
+			endIdx = len(packages)
+		}
 		m.maxConfirmScroll = len(packages) - maxVisible
-		if m.maxConfirmScroll < 0 { m.maxConfirmScroll = 0 }
+		if m.maxConfirmScroll < 0 {
+			m.maxConfirmScroll = 0
+		}
 
 		for i := startIdx; i < endIdx; i++ {
 			pkg := packages[i]
@@ -1191,7 +1214,9 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 				namePart := "  • " + packageNameStyle.Render(pkg.Name)
 				sizePart := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render(pkg.Size)
 				spacing := (dialogWidth - 10) - lipgloss.Width(namePart) - lipgloss.Width(sizePart)
-				if spacing < 1 { spacing = 1 }
+				if spacing < 1 {
+					spacing = 1
+				}
 				line = namePart + strings.Repeat(" ", spacing) + sizePart
 			} else {
 				line = fmt.Sprintf("  • %s", packageNameStyle.Render(pkg.Name))
@@ -1210,8 +1235,12 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 			dialogContent = append(dialogContent, breakdownHeaderStyle.Render("Breakdown:"))
 			pacmanEst := m.dashboard.CacheFreedPacman[m.confirmType]
 			aurEst := m.dashboard.CacheFreedAur[m.confirmType]
-			if pacmanEst == "" { pacmanEst = "calculating..." }
-			if aurEst == "" { aurEst = "calculating..." }
+			if pacmanEst == "" {
+				pacmanEst = "calculating..."
+			}
+			if aurEst == "" {
+				aurEst = "calculating..."
+			}
 
 			helperLabel := m.config.Commands.AurHelper + ":"
 			if len(helperLabel) < 7 {
@@ -1224,21 +1253,25 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 		if m.confirmType == confirmCleanUninstalled || m.confirmType == confirmCleanSelective {
 			dialogContent = append(dialogContent, "")
 			est := m.dashboard.CacheFreedEstimates[m.confirmType]
-			if m.confirmType == confirmCleanSelective { est = formatBytes(m.cacheToFree) }
-			if est == "" { est = "calculating..." }
+			if m.confirmType == confirmCleanSelective {
+				est = formatBytes(m.cacheToFree)
+			}
+			if est == "" {
+				est = "calculating..."
+			}
 			dialogContent = append(dialogContent, lipgloss.PlaceHorizontal(contentWidth, lipgloss.Center, fmt.Sprintf("Estimated space to be freed: %s", lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("214")).Render(est))))
 		}
 	}
 
 	dialogContent = append(dialogContent, "")
-	dialogContent = append(dialogContent, lipgloss.PlaceHorizontal(contentWidth, lipgloss.Center, promptStyle.Render(fmt.Sprintf("Proceed? %s  %s", 
+	dialogContent = append(dialogContent, lipgloss.PlaceHorizontal(contentWidth, lipgloss.Center, promptStyle.Render(fmt.Sprintf("Proceed? %s  %s",
 		renderKeyHint("yes", m.keys.Confirm, keyStyle),
 		renderKeyHint("no", m.keys.Cancel, keyStyle)))))
 
 	dialog := dialogBorderStyle.Width(dialogWidth).Render(strings.Join(dialogContent, "\n"))
 
 	return SafeJoinVertical(innerWidth, innerHeight, "", []string{lipgloss.Place(innerWidth, innerHeight, lipgloss.Center, lipgloss.Center, dialog)}, "")
-	}
+}
 
 // renderErrorOverlay renders a centered error overlay dialog
 func (m *model) renderErrorOverlay(innerWidth, innerHeight int) string {
@@ -1266,7 +1299,7 @@ func (m *model) renderErrorOverlay(innerWidth, innerHeight int) string {
 
 	// Build content pieces
 	title := titleStyle.Render("⚠  " + m.errorTitle + "  ⚠")
-	
+
 	// Ensure each line of the error message is individually centered
 	// We wrap the text manually then center each resulting line
 	msgWidth := dialogWidth - 4
@@ -1279,7 +1312,7 @@ func (m *model) renderErrorOverlay(innerWidth, innerHeight int) string {
 		}
 	}
 	message := lipgloss.JoinVertical(lipgloss.Center, messageLines...)
-	
+
 	var details string
 	if m.errorDetails != "" {
 		wrappedDetails := lipgloss.NewStyle().Width(msgWidth).Render(m.errorDetails)
@@ -1302,7 +1335,7 @@ func (m *model) renderErrorOverlay(innerWidth, innerHeight int) string {
 	dialog := dialogBorderStyle.Width(dialogWidth).Render(dialogContent)
 
 	return SafeJoinVertical(innerWidth, innerHeight, "", []string{lipgloss.Place(innerWidth, innerHeight, lipgloss.Center, lipgloss.Center, dialog)}, "")
-	}
+}
 
 // renderSimpleUpdateView renders the simple overview page for pending updates
 func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight int, activeColor lipgloss.Color) string {
@@ -1322,7 +1355,7 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 	if footerLine != "" {
 		footerHeight = 1
 	}
-	
+
 	// The panel must fit in the remaining height
 	panelHeight := innerHeight - footerHeight
 	if panelHeight < 5 {
@@ -1383,11 +1416,11 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 			} else {
 				sourceBadge = fmt.Sprintf("[%s]", pkg.Source)
 			}
-			
+
 			line := fmt.Sprintf("    • %s %s %s", sourceBadge, lipgloss.NewStyle().Foreground(lipgloss.Color("39")).Render(pkg.Name), lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render(pkg.Version))
 			// Truncate to fit innerWidth-8 (accounting for scrollbar space)
-			if lipgloss.Width(line) > innerWidth - 8 {
-				line = truncateWithAnsi(line, innerWidth - 11) + "..."
+			if lipgloss.Width(line) > innerWidth-8 {
+				line = truncateWithAnsi(line, innerWidth-11) + "..."
 			}
 			listBuilder.WriteString(line + "\n")
 		}
@@ -1397,8 +1430,8 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 			// Add scrollbar (Top-down)
 			scrollbar := renderScrollbar(len(m.pendingUpdates), m.updateScrollOffset, displayCount, activeColor, false)
 			// Join list and scrollbar
-			listStr = lipgloss.JoinHorizontal(lipgloss.Top, 
-				lipgloss.NewStyle().Width(innerWidth - 8).Render(listStr),
+			listStr = lipgloss.JoinHorizontal(lipgloss.Top,
+				lipgloss.NewStyle().Width(innerWidth-8).Render(listStr),
 				lipgloss.NewStyle().MarginLeft(1).Render(scrollbar))
 		}
 		content.WriteString(listStr)
@@ -1426,18 +1459,20 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 		btnSelective := buttonStyleRed.Render(renderKeyHint("select", m.keys.Selective, buttonStyleRed))
 
 		buttons := btnUpdate + "   " + btnSelective
-		
+
 		// Total inner width is innerWidth - 2 (borders) - 2 (padding) = innerWidth - 4
 		buttonsContent = lipgloss.PlaceHorizontal(innerWidth-4, lipgloss.Right, buttons)
 	}
 
 	// Total available inner height is panelHeight - 2
 	innerHeightOfPanel := panelHeight - 2
-	
+
 	// We use Height() on the list container to push buttons to the bottom
 	// -1 for buttons, -1 for truncation gap
 	listHeight := innerHeightOfPanel - 1 - 1
-	if listHeight < 1 { listHeight = 1 }
+	if listHeight < 1 {
+		listHeight = 1
+	}
 
 	innerPanelContent := lipgloss.JoinVertical(lipgloss.Left,
 		truncateHeight(listContent, listHeight),
@@ -1446,11 +1481,11 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 	)
 
 	mainPanel := borderStyle.
-		Width(innerWidth - 2).
+		Width(innerWidth-2).
 		Height(max(0, panelHeight-2)).
 		Padding(0, 1).
 		Align(lipgloss.Left, lipgloss.Bottom).
 		Render(truncateHeight(innerPanelContent, max(0, panelHeight-2)))
 
 	return SafeJoinVertical(innerWidth, innerHeight, "", []string{mainPanel}, footerLine)
-	}
+}
