@@ -17,8 +17,8 @@ func TestUnitConsistency(t *testing.T) {
 		{"1 MiB", 1024 * 1024, "1.00 MiB"},
 		{"1 GiB", 1024 * 1024 * 1024, "1.00 GiB"},
 		{"1 TiB", 1024 * 1024 * 1024 * 1024, "1.00 TiB"},
-		{"Random size MiB", 508.17 * 1024 * 1024, "508.17 MiB"},
-		{"Random size GiB", 2.07 * 1024 * 1024 * 1024, "2.07 GiB"},
+		{"Random size MiB", 532854931, "508.17 MiB"},
+		{"Random size GiB", 2222645575, "2.07 GiB"},
 	}
 
 	for _, tt := range tests {
