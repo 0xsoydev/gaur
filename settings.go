@@ -26,7 +26,7 @@ func (m *model) initSettings() {
 		{
 			Label:     "Default View",
 			ConfigKey: "startup.default_mode",
-			Options:   []string{"install", "dashboard", "update", "uninstall"},
+			Options:   []string{"dashboard", "install", "update", "uninstall"},
 		},
 		{
 			Label:     "Border Type",
