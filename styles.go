@@ -39,7 +39,7 @@ type Theme struct {
 	// Mode colors
 	InstallColor   lipgloss.Color
 	DashboardColor lipgloss.Color
-	UninstallColor lipgloss.Color
+	RemoveColor    lipgloss.Color
 	UpdateColor    lipgloss.Color
 
 	// Source colors
@@ -72,7 +72,7 @@ var themes = map[themeType]Theme{
 		TitleColor:       lipgloss.Color("#e5c890"),
 		InstallColor:     lipgloss.Color("#8caaee"),
 		DashboardColor:   lipgloss.Color("#f4b8e4"),
-		UninstallColor:   lipgloss.Color("#e78284"),
+		RemoveColor:      lipgloss.Color("#e78284"),
 		UpdateColor:      lipgloss.Color("#a6d189"),
 		CoreColor:        lipgloss.Color("#a6d189"),
 		ExtraColor:       lipgloss.Color("#8caaee"),
@@ -96,7 +96,7 @@ var themes = map[themeType]Theme{
 		TitleColor:       lipgloss.Color("#eed49f"),
 		InstallColor:     lipgloss.Color("#8aadf4"),
 		DashboardColor:   lipgloss.Color("#f5bde6"),
-		UninstallColor:   lipgloss.Color("#ed8796"),
+		RemoveColor:      lipgloss.Color("#ed8796"),
 		UpdateColor:      lipgloss.Color("#a6da95"),
 		CoreColor:        lipgloss.Color("#a6da95"),
 		ExtraColor:       lipgloss.Color("#8aadf4"),
@@ -120,7 +120,7 @@ var themes = map[themeType]Theme{
 		TitleColor:       lipgloss.Color("#f9e2af"),
 		InstallColor:     lipgloss.Color("#89b4fa"),
 		DashboardColor:   lipgloss.Color("#f5c2e7"),
-		UninstallColor:   lipgloss.Color("#f38ba8"),
+		RemoveColor:      lipgloss.Color("#f38ba8"),
 		UpdateColor:      lipgloss.Color("#a6e3a1"),
 		CoreColor:        lipgloss.Color("#a6e3a1"),
 		ExtraColor:       lipgloss.Color("#89b4fa"),
@@ -144,7 +144,7 @@ var themes = map[themeType]Theme{
 		TitleColor:       lipgloss.Color("#f1fa8c"),
 		InstallColor:     lipgloss.Color("#8be9fd"),
 		DashboardColor:   lipgloss.Color("#ff79c6"),
-		UninstallColor:   lipgloss.Color("#ff5555"),
+		RemoveColor:      lipgloss.Color("#ff5555"),
 		UpdateColor:      lipgloss.Color("#50fa7b"),
 		CoreColor:        lipgloss.Color("#50fa7b"),
 		ExtraColor:       lipgloss.Color("#8be9fd"),
@@ -168,7 +168,7 @@ var themes = map[themeType]Theme{
 		TitleColor:       lipgloss.Color("#fabd2f"),
 		InstallColor:     lipgloss.Color("#83a598"),
 		DashboardColor:   lipgloss.Color("#d3869b"),
-		UninstallColor:   lipgloss.Color("#fb4934"),
+		RemoveColor:      lipgloss.Color("#fb4934"),
 		UpdateColor:      lipgloss.Color("#b8bb26"),
 		CoreColor:        lipgloss.Color("#b8bb26"),
 		ExtraColor:       lipgloss.Color("#83a598"),
@@ -192,7 +192,7 @@ var themes = map[themeType]Theme{
 		TitleColor:       lipgloss.Color("#e5c07b"),
 		InstallColor:     lipgloss.Color("#61afef"),
 		DashboardColor:   lipgloss.Color("#c678dd"),
-		UninstallColor:   lipgloss.Color("#e06c75"),
+		RemoveColor:      lipgloss.Color("#e06c75"),
 		UpdateColor:      lipgloss.Color("#98c379"),
 		CoreColor:        lipgloss.Color("#98c379"),
 		ExtraColor:       lipgloss.Color("#61afef"),
@@ -216,7 +216,7 @@ var themes = map[themeType]Theme{
 		TitleColor:       lipgloss.Color("#ffd866"),
 		InstallColor:     lipgloss.Color("#78dce8"),
 		DashboardColor:   lipgloss.Color("#ff6188"),
-		UninstallColor:   lipgloss.Color("#ff6188"),
+		RemoveColor:      lipgloss.Color("#ff6188"),
 		UpdateColor:      lipgloss.Color("#a9dc76"),
 		CoreColor:        lipgloss.Color("#a9dc76"),
 		ExtraColor:       lipgloss.Color("#78dce8"),
@@ -240,7 +240,7 @@ var themes = map[themeType]Theme{
 		TitleColor:       lipgloss.Color("#f6c177"),
 		InstallColor:     lipgloss.Color("#31748f"),
 		DashboardColor:   lipgloss.Color("#ebbcba"),
-		UninstallColor:   lipgloss.Color("#eb6f92"),
+		RemoveColor:      lipgloss.Color("#eb6f92"),
 		UpdateColor:      lipgloss.Color("#9ccfd8"),
 		CoreColor:        lipgloss.Color("#9ccfd8"),
 		ExtraColor:       lipgloss.Color("#31748f"),
@@ -264,7 +264,7 @@ var themes = map[themeType]Theme{
 		TitleColor:       lipgloss.Color("#b58900"),
 		InstallColor:     lipgloss.Color("#268bd2"),
 		DashboardColor:   lipgloss.Color("#d33682"),
-		UninstallColor:   lipgloss.Color("#dc322f"),
+		RemoveColor:      lipgloss.Color("#dc322f"),
 		UpdateColor:      lipgloss.Color("#859900"),
 		CoreColor:        lipgloss.Color("#859900"),
 		ExtraColor:       lipgloss.Color("#268bd2"),
@@ -288,7 +288,7 @@ var themes = map[themeType]Theme{
 		TitleColor:       lipgloss.Color("#e0af68"),
 		InstallColor:     lipgloss.Color("#7aa2f7"),
 		DashboardColor:   lipgloss.Color("#bb9af7"),
-		UninstallColor:   lipgloss.Color("#f7768e"),
+		RemoveColor:      lipgloss.Color("#f7768e"),
 		UpdateColor:      lipgloss.Color("#9ece6a"),
 		CoreColor:        lipgloss.Color("#9ece6a"),
 		ExtraColor:       lipgloss.Color("#7aa2f7"),
@@ -312,7 +312,7 @@ var themes = map[themeType]Theme{
 		TitleColor:       lipgloss.Color("#e0af68"),
 		InstallColor:     lipgloss.Color("#7aa2f7"),
 		DashboardColor:   lipgloss.Color("#bb9af7"),
-		UninstallColor:   lipgloss.Color("#f7768e"),
+		RemoveColor:      lipgloss.Color("#f7768e"),
 		UpdateColor:      lipgloss.Color("#9ece6a"),
 		CoreColor:        lipgloss.Color("#9ece6a"),
 		ExtraColor:       lipgloss.Color("#7aa2f7"),
@@ -420,7 +420,7 @@ func getModeColors() map[viewMode]lipgloss.Color {
 		modeInstall:         currentTheme.InstallColor,
 		modeUpdate:          currentTheme.UpdateColor,
 		modeUpdateSelective: currentTheme.UpdateColor,
-		modeUninstall:       currentTheme.UninstallColor,
+		modeRemove:          currentTheme.RemoveColor,
 		modeCacheSelective:  lipgloss.Color("135"),
 	}
 }
@@ -462,8 +462,8 @@ var (
 			Foreground(currentTheme.TextColor)
 
 	packageDashStyle = lipgloss.NewStyle().
-			Foreground(currentTheme.TextColor).
-			Padding(1)
+				Foreground(currentTheme.TextColor).
+				Padding(1)
 
 	statusStyle = lipgloss.NewStyle().
 			Foreground(currentTheme.SubtleColor)
