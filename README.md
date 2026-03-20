@@ -109,9 +109,9 @@ Gaur creates a configuration file at `~/.config/gaur/config.toml` on first run.
 [commands]
 # Set your preferred AUR helper: \"paru\" (default) or \"yay\"
 aur_helper = \"paru\"
-# Custom flags for install/uninstall
-install_flags = \"\"
-uninstall_flags = \"-Rns\"
+# Custom flags for install/remove
+install_flags = ""
+remove_flags = "-Rns"
 
 [advanced]
 # Set a custom cache directory (optional)
