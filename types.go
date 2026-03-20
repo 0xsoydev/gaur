@@ -29,10 +29,10 @@ type UIConfig struct {
 }
 
 type CommandConfig struct {
-	AurHelper      string `toml:"aur_helper"`
-	InstallFlags   string `toml:"install_flags"`
-	UninstallFlags string `toml:"uninstall_flags"`
-	CacheTool      string `toml:"cache_tool"`
+	AurHelper    string `toml:"aur_helper"`
+	InstallFlags string `toml:"install_flags"`
+	RemoveFlags  string `toml:"remove_flags"`
+	CacheTool    string `toml:"cache_tool"`
 }
 
 type AdvancedConfig struct {
@@ -41,32 +41,32 @@ type AdvancedConfig struct {
 }
 
 type KeyConfig struct {
-	Quit           []string `toml:"quit"`
-	InstallMode    []string `toml:"install_mode"`
-	UninstallMode  []string `toml:"uninstall_mode"`
-	UpdateMode     []string `toml:"update_mode"`
-	DashboardMode  []string `toml:"dashboard_mode"`
-	Search         string   `toml:"search"`
-	Mark           string   `toml:"mark"`
-	Selective      string   `toml:"selective"`
-	Settings       string   `toml:"settings"`
-	Confirm        string   `toml:"confirm"`
-	Cancel         string   `toml:"cancel"`
+	Quit          []string `toml:"quit"`
+	InstallMode   []string `toml:"install_mode"`
+	RemoveMode    []string `toml:"remove_mode"`
+	UpdateMode    []string `toml:"update_mode"`
+	DashboardMode []string `toml:"dashboard_mode"`
+	Search        string   `toml:"search"`
+	Mark          string   `toml:"mark"`
+	Selective     string   `toml:"selective"`
+	Settings      string   `toml:"settings"`
+	Confirm       string   `toml:"confirm"`
+	Cancel        string   `toml:"cancel"`
 }
 
 // KeyMap defines the application's keybindings using charmbracelet/bubbles/key
 type KeyMap struct {
-	Quit           key.Binding
-	InstallMode    key.Binding
-	UninstallMode  key.Binding
-	UpdateMode     key.Binding
-	DashboardMode  key.Binding
-	Search         key.Binding
-	Mark           key.Binding
-	Selective      key.Binding
-	Settings       key.Binding
-	Confirm        key.Binding
-	Cancel         key.Binding
+	Quit          key.Binding
+	InstallMode   key.Binding
+	RemoveMode    key.Binding
+	UpdateMode    key.Binding
+	DashboardMode key.Binding
+	Search        key.Binding
+	Mark          key.Binding
+	Selective     key.Binding
+	Settings      key.Binding
+	Confirm       key.Binding
+	Cancel        key.Binding
 }
 
 // CommandRunner defines an interface for executing shell commands.
@@ -103,10 +103,10 @@ const (
 	modeInstall
 	modeUpdate          // Viewing available updates
 	modeUpdateSelective // Selecting specific updates
-	modeUninstall
-	modeCacheMenu       // Menu for selecting cache clearing strategy
-	modeCacheSelective  // Selecting specific packages to clear from cache
-	modeSettings        // In-app settings overlay
+	modeRemove
+	modeCacheMenu      // Menu for selecting cache clearing strategy
+	modeCacheSelective // Selecting specific packages to clear from cache
+	modeSettings       // In-app settings overlay
 )
 
 // SettingItem represents a single configurable setting in the carousel
@@ -122,7 +122,7 @@ type confirmationType int
 
 const (
 	confirmInstall confirmationType = iota
-	confirmUninstall
+	confirmRemove
 	confirmUpdate
 	confirmSelectiveUpdate
 	confirmCleanKeep3       // paccache -r
@@ -145,8 +145,8 @@ type Package struct {
 	Version     string
 	Description string
 	Installed   bool
-	Explicit    bool // Explicitly installed (not a dependency)
-	Orphan      bool // Orphan package (no longer required)
+	Explicit    bool   // Explicitly installed (not a dependency)
+	Orphan      bool   // Orphan package (no longer required)
 	Size        string // For formatted sizes, like in cache hogs
 	SizeBytes   int64  // Raw size
 }
@@ -213,36 +213,36 @@ type debounceTickMsg struct {
 
 // DashboardData holds system package statistics
 type DashboardData struct {
-	TotalPackages        int
-	ExplicitlyInstalled  int
-	ForeignPackages      int
-	RepoDistribution     map[string]int // core, extra, multilib, etc.
-	TotalSize            string
-	TotalSizeBytes       int64 // For comparison
-	CleanerSize          string
-	CleanerSizeBytes     int64 // For comparison and coloring
-	PacmanCacheSize      string
-	PacmanCacheSizeBytes int64
-	PacmanCachePath      string
-	ParuCacheSize        string `toml:"-"` // Deprecated: use AurCacheSize
-	AurCacheSize         string
-	AurCacheSizeBytes    int64
-	AurCachePath         string
-	Orphans              int
-	MissingFromAUR       int
-	TopPackages          []PackageSize // Top 10 packages by size
-	RecentlyInstalled    []RecentPackage // Details of 5 recently installed packages
-	TopCacheHogs         []PackageSize // Top 5 packages taking up cache space
-	AllCacheHogs         []PackageSize // All packages taking up cache space
-	UninstalledPacmanCache []PackageSize // Uninstalled packages in pacman cache
-	UninstalledAurCache    []PackageSize // Uninstalled packages in AUR helper cache
-	CacheFreedPacman     map[confirmationType]string // Estimated savings for pacman
-	CacheFreedAur        map[confirmationType]string // Estimated savings for AUR helper
-	CacheFreedEstimates  map[confirmationType]string // Total estimated savings
+	TotalPackages          int
+	ExplicitlyInstalled    int
+	ForeignPackages        int
+	RepoDistribution       map[string]int // core, extra, multilib, etc.
+	TotalSize              string
+	TotalSizeBytes         int64 // For comparison
+	CleanerSize            string
+	CleanerSizeBytes       int64 // For comparison and coloring
+	PacmanCacheSize        string
+	PacmanCacheSizeBytes   int64
+	PacmanCachePath        string
+	ParuCacheSize          string `toml:"-"` // Deprecated: use AurCacheSize
+	AurCacheSize           string
+	AurCacheSizeBytes      int64
+	AurCachePath           string
+	Orphans                int
+	MissingFromAUR         int
+	TopPackages            []PackageSize               // Top 10 packages by size
+	RecentlyInstalled      []RecentPackage             // Details of 5 recently installed packages
+	TopCacheHogs           []PackageSize               // Top 5 packages taking up cache space
+	AllCacheHogs           []PackageSize               // All packages taking up cache space
+	UninstalledPacmanCache []PackageSize               // Uninstalled packages in pacman cache
+	UninstalledAurCache    []PackageSize               // Uninstalled packages in AUR helper cache
+	CacheFreedPacman       map[confirmationType]string // Estimated savings for pacman
+	CacheFreedAur          map[confirmationType]string // Estimated savings for AUR helper
+	CacheFreedEstimates    map[confirmationType]string // Total estimated savings
 	// Disk usage dash
-	DiskTotal      string
-	DiskUsed       string
-	DiskFree       string
+	DiskTotal       string
+	DiskUsed        string
+	DiskFree        string
 	DiskUsedPercent float64
 }
 
