@@ -129,20 +129,12 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.mode == modeCacheSelective {
 				m.mode = modeCacheMenu
 				m.resetState()
-				m.textInput.SetValue("")
-				m.lastQuery = ""
-				m.packageDash = ""
-				m.dashForPackage = ""
-				m.dashScrollOffset = 0
 				m.statusMessage = "Selective cache cleaning cancelled"
 				return m, nil
 			}
 			if m.mode == modeCacheMenu {
 				m.mode = modeDashboard
 				m.statusMessage = "Cache menu cancelled"
-				m.packageDash = ""
-				m.dashForPackage = ""
-				m.dashScrollOffset = 0
 				m.resetState()
 				return m, nil
 			}
@@ -176,13 +168,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case msg.String() == "t", msg.String() == "e", msg.String() == "f", msg.String() == "o":
 			if m.mode == modeDashboard && !m.loading {
 				m.mode = modeUninstall
-				m.selectedIndex = 0
-				m.textInput.SetValue(msg.String() + ":")
-				m.lastQuery = ""
-				m.packageDash = ""
-				m.dashForPackage = ""
-				m.dashScrollOffset = 0
 				m.resetState()
+				m.textInput.SetValue(msg.String() + ":")
 				
 				if len(m.installed) > 0 {
 					m.loading = false
@@ -194,22 +181,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.keys.DashboardMode):
 			m.mode = modeDashboard
 			m.loading = true
-			m.textInput.SetValue("")
-			m.lastQuery = ""
-			m.packageDash = ""
-			m.dashForPackage = ""
-			m.dashScrollOffset = 0
 			m.resetState()
 			return m, getDashboardData(&m.config)
 		case key.Matches(msg, m.keys.UninstallMode):
 			if m.mode != modeUninstall {
 				m.mode = modeUninstall
-				m.selectedIndex = 0
-				m.textInput.SetValue("")
-				m.lastQuery = ""
-				m.packageDash = ""
-				m.dashForPackage = ""
-				m.dashScrollOffset = 0
 				m.resetState()
 
 				m.loading = true
@@ -218,11 +194,6 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case key.Matches(msg, m.keys.UpdateMode):
 			m.mode = modeUpdate
-			m.textInput.SetValue("")
-			m.lastQuery = ""
-			m.packageDash = ""
-			m.dashForPackage = ""
-			m.dashScrollOffset = 0
 			m.resetState()
 			m.loading = true
 			m.pendingUpdates = nil
@@ -231,9 +202,6 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.keys.Selective):
 			if m.mode == modeUpdate {
 				m.mode = modeUpdateSelective
-				m.selectedIndex = 0
-				m.textInput.SetValue("")
-				m.lastQuery = ""
 				m.resetState()
 				m.textInput.Focus()
 				if len(m.pendingUpdates) > 0 {
@@ -253,13 +221,6 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.keys.InstallMode):
 			if m.mode != modeInstall {
 				m.mode = modeInstall
-				m.selectedIndex = 0
-				m.filtered = []Package{}
-				m.textInput.SetValue("")
-				m.lastQuery = ""
-				m.packageDash = ""
-				m.dashForPackage = ""
-				m.dashScrollOffset = 0
 				m.resetState()
 				m.textInput.Focus()
 			}

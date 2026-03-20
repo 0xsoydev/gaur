@@ -85,21 +85,6 @@ func initialModel(initialMode viewMode, cfg Config) *model {
 	ti.CharLimit = textInputCharLimit
 	ti.Width = textInputDefaultWidth
 
-	statusMsg := "Loading package database..."
-	placeholder := "Search packages..."
-	switch initialMode {
-	case modeUninstall:
-		placeholder = "Filter installed packages..."
-		statusMsg = "Loading installed packages..."
-	case modeUpdate:
-		placeholder = "Checking for updates..."
-		statusMsg = "Checking for updates..."
-	case modeDashboard:
-		placeholder = "View system dashboard"
-		statusMsg = "Loading system statistics..."
-	}
-	ti.Placeholder = placeholder
-
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
@@ -118,8 +103,18 @@ func initialModel(initialMode viewMode, cfg Config) *model {
 		selectedIndex:  0,
 		mode:           initialMode,
 		loading:        true,
-		statusMessage:  statusMsg,
 		spinner:        s,
+	}
+
+	m.updatePlaceholder()
+	m.statusMessage = "Loading package database..."
+	switch initialMode {
+	case modeUninstall:
+		m.statusMessage = "Loading installed packages..."
+	case modeUpdate:
+		m.statusMessage = "Checking for updates..."
+	case modeDashboard:
+		m.statusMessage = "Loading system statistics..."
 	}
 
 	if initialMode == modeUninstall {
@@ -203,4 +198,28 @@ func (m *model) resetState() {
 	m.selectionPanelIndex = 0
 	m.selectionScrollOffset = 0
 	m.cacheToFree = 0
+	m.packageDash = ""
+	m.dashForPackage = ""
+	m.dashScrollOffset = 0
+	m.loadingDash = false
+	m.textInput.SetValue("")
+	m.lastQuery = ""
+	m.selectedIndex = 0
+	m.filtered = nil
+	m.filteredInstalled = nil
+	m.updatePlaceholder()
+}
+
+// updatePlaceholder sets the text input placeholder based on the current mode
+func (m *model) updatePlaceholder() {
+	placeholder := "Search packages..."
+	switch m.mode {
+	case modeUninstall:
+		placeholder = "Filter installed packages..."
+	case modeUpdate:
+		placeholder = "Checking for updates..."
+	case modeDashboard:
+		placeholder = "View system dashboard"
+	}
+	m.textInput.Placeholder = placeholder
 }
