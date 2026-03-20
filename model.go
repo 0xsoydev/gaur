@@ -77,6 +77,7 @@ type model struct {
 	settingsItems []SettingItem
 	settingsIndex int
 	previousMode  viewMode
+	originalHelper string // Track AUR helper change for refresh
 }
 
 func initialModel(initialMode viewMode, cfg Config) *model {

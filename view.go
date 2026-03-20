@@ -1209,16 +1209,16 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 			breakdownHeaderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Bold(true).Width(contentWidth).Align(lipgloss.Center)
 			dialogContent = append(dialogContent, breakdownHeaderStyle.Render("Breakdown:"))
 			pacmanEst := m.dashboard.CacheFreedPacman[m.confirmType]
-			paruEst := m.dashboard.CacheFreedParu[m.confirmType]
+			aurEst := m.dashboard.CacheFreedAur[m.confirmType]
 			if pacmanEst == "" { pacmanEst = "calculating..." }
-			if paruEst == "" { paruEst = "calculating..." }
+			if aurEst == "" { aurEst = "calculating..." }
 
 			helperLabel := m.config.Commands.AurHelper + ":"
 			if len(helperLabel) < 7 {
 				helperLabel += strings.Repeat(" ", 7-len(helperLabel))
 			}
 			dialogContent = append(dialogContent, lipgloss.PlaceHorizontal(contentWidth, lipgloss.Center, fmt.Sprintf("%s %s", sourceStyle("core").Render("  pacman:"), lipgloss.NewStyle().Foreground(lipgloss.Color("252")).Render(pacmanEst))))
-			dialogContent = append(dialogContent, lipgloss.PlaceHorizontal(contentWidth, lipgloss.Center, fmt.Sprintf("%s %s", sourceStyle("aur").Render("  "+helperLabel), lipgloss.NewStyle().Foreground(lipgloss.Color("252")).Render(paruEst))))
+			dialogContent = append(dialogContent, lipgloss.PlaceHorizontal(contentWidth, lipgloss.Center, fmt.Sprintf("%s %s", sourceStyle("aur").Render("  "+helperLabel), lipgloss.NewStyle().Foreground(lipgloss.Color("252")).Render(aurEst))))
 		}
 
 		if m.confirmType == confirmCleanUninstalled || m.confirmType == confirmCleanSelective {
