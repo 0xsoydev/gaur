@@ -334,20 +334,20 @@ func (m *model) renderUpdateSelectiveView(helpText string, innerWidth, innerHeig
 	return SafeJoinVertical(innerWidth, innerHeight, "", []string{output.String()}, "")
 	}
 
-// renderVerticalSplitLayout renders a side-by-side view (list on left, details on right)
+// renderVerticalSplitLayout renders a side-by-side view (list on left, dash on right)
 func (m *model) renderVerticalSplitLayout(innerWidth, innerHeight int, activeColor lipgloss.Color) string {
 	borderStyle := baseBorderStyle.BorderForeground(activeColor)
 
 	listWidth := int(float64(innerWidth) * 0.4)
-	detailsWidth := innerWidth - listWidth
+	dashWidth := innerWidth - listWidth
 
 	if listWidth < 25 {
 		listWidth = 25
-		detailsWidth = innerWidth - listWidth
+		dashWidth = innerWidth - listWidth
 	}
-	if detailsWidth < 20 {
-		detailsWidth = 20
-		listWidth = innerWidth - detailsWidth
+	if dashWidth < 20 {
+		dashWidth = 20
+		listWidth = innerWidth - dashWidth
 	}
 
 	// 1. Render List Side (Left)
@@ -449,7 +449,7 @@ func (m *model) renderVerticalSplitLayout(innerWidth, innerHeight int, activeCol
 			strings.TrimSuffix(m.textInput.View(), "\n"),
 		), innerHeight-2), "\n"))
 
-	// 2. Render Details Side (Right)
+	// 2. Render Dash Side (Right)
 	dashContent := ""
 	if m.loadingDash {
 		dashContent = fmt.Sprintf("Loading dashboard for %s...", m.dashForPackage)
@@ -460,7 +460,7 @@ func (m *model) renderVerticalSplitLayout(innerWidth, innerHeight int, activeCol
 	}
 
 	dashInnerHeight := innerHeight - 2
-	dashInnerWidth := detailsWidth - 6 // 2 chars padding on each side
+	dashInnerWidth := dashWidth - 6 // 2 chars padding on each side
 
 	wrappedText := lipgloss.NewStyle().Width(dashInnerWidth).Render(dashContent)
 	dashLines := strings.Split(wrappedText, "\n")
@@ -479,21 +479,21 @@ func (m *model) renderVerticalSplitLayout(innerWidth, innerHeight int, activeCol
 	}
 	dashContent = strings.Join(dashLines, "\n")
 
-	detailsBox := lipgloss.NewStyle().
-		Width(detailsWidth - 2).
+	dashBox := lipgloss.NewStyle().
+		Width(dashWidth - 2).
 		Height(dashInnerHeight).
 		Padding(0, 2).
 		Render(dashContent)
 
 	if len(m.markedPackages) > 0 {
-		selectionPanel := m.renderSelectionBox(detailsWidth - 6)
+		selectionPanel := m.renderSelectionBox(dashWidth - 6)
 		panelLines := strings.Split(selectionPanel, "\n")
 		panelHeight := len(panelLines)
 		panelWidth := lipgloss.Width(panelLines[0])
 
-		bgLines := strings.Split(detailsBox, "\n")
+		bgLines := strings.Split(dashBox, "\n")
 		
-		// Overlay selectionPanel on bottom right of detailsBox
+		// Overlay selectionPanel on bottom right of dashBox
 		startRow := dashInnerHeight - panelHeight
 		startCol := dashInnerWidth + 2 - panelWidth
 		
@@ -523,15 +523,15 @@ func (m *model) renderVerticalSplitLayout(innerWidth, innerHeight int, activeCol
 				result.WriteString("\n")
 			}
 		}
-		detailsBox = result.String()
+		dashBox = result.String()
 	}
 
-	detailsPanel := borderStyle.
-		Width(detailsWidth - 2).
+	dashPanel := borderStyle.
+		Width(dashWidth - 2).
 		Height(innerHeight - 2).
-		Render(strings.TrimSuffix(truncateHeight(detailsBox, innerHeight-2), "\n"))
+		Render(strings.TrimSuffix(truncateHeight(dashBox, innerHeight-2), "\n"))
 
-	return lipgloss.JoinHorizontal(lipgloss.Top, strings.TrimSuffix(listPanel, "\n"), strings.TrimSuffix(detailsPanel, "\n"))
+	return lipgloss.JoinHorizontal(lipgloss.Top, strings.TrimSuffix(listPanel, "\n"), strings.TrimSuffix(dashPanel, "\n"))
 	}
 
 // renderSelectionBox renders a box containing currently marked packages
