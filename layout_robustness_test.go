@@ -22,7 +22,7 @@ func TestLayoutRobustness(t *testing.T) {
 
 	modes := []viewMode{
 		modeInstall,
-		modeInstalled,
+		modeDashboard,
 		modeUninstall,
 		modeUpdate,
 		modeUpdateSelective,
@@ -33,7 +33,7 @@ func TestLayoutRobustness(t *testing.T) {
 
 	modeNames := map[viewMode]string{
 		modeInstall:         "Install",
-		modeInstalled:       "Dashboard",
+		modeDashboard:       "Dashboard",
 		modeUninstall:       "Uninstall",
 		modeUpdate:          "Update",
 		modeUpdateSelective: "UpdateSelective",
@@ -73,7 +73,7 @@ func TestLayoutRobustness(t *testing.T) {
 				}
 				
 				if mode == modeSettings {
-					m.previousMode = modeInstalled
+					m.previousMode = modeDashboard
 				}
 
 				view := m.View()
@@ -101,7 +101,7 @@ func TestLayoutRobustness(t *testing.T) {
 
 				// 4. FOOTER
 				lastLine := stripAnsiLoc(lines[len(lines)-1])
-				keywords := []string{"quit", "search", "install", "update", "info"}
+				keywords := []string{"quit", "search", "install", "update", "dash"}
 				foundKeyword := false
 				for _, kw := range keywords {
 					if strings.Contains(strings.ToLower(lastLine), kw) {

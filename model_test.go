@@ -31,9 +31,9 @@ func TestInitialModel(t *testing.T) {
 		},
 		{
 			name:        "installed mode",
-			mode:        modeInstalled,
-			placeholder: "View installed packages",
-			status:      "Loading installed packages...",
+			mode:        modeDashboard,
+			placeholder: "View system dashboard",
+			status:      "Loading system statistics...",
 		},
 	}
 

@@ -13,23 +13,23 @@ func TestStateResetOnModeSwitch(t *testing.T) {
 	// 1. Simulate user state in modeInstall
 	m.textInput.SetValue("vim")
 	m.lastQuery = "vim"
-	m.packageInfo = "Some details about vim"
-	m.infoForPackage = "vim"
+	m.packageDash = "Some dashboard about vim"
+	m.dashForPackage = "vim"
 	
 	// 2. Switch to Dashboard (n)
 	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(cfg.Keys.DashboardMode)})
 	m = newModel.(*model)
 	
-	if m.mode != modeInstalled {
-		t.Errorf("Expected modeInstalled, got %v", m.mode)
+	if m.mode != modeDashboard {
+		t.Errorf("Expected modeDashboard, got %v", m.mode)
 	}
 	
 	// Verify resets
 	if m.textInput.Value() != "" {
 		t.Error("Search input was not cleared after switching to dashboard")
 	}
-	if m.packageInfo != "" {
-		t.Error("Package info was not cleared after switching to dashboard")
+	if m.packageDash != "" {
+		t.Error("Package dash was not cleared after switching to dashboard")
 	}
 }
 
@@ -37,7 +37,7 @@ func TestStateResetTransitionToUninstall(t *testing.T) {
 	cfg := DefaultConfig()
 	m := initialModel(modeInstall, cfg)
 	m.textInput.SetValue("fzf")
-	m.packageInfo = "fzf details"
+	m.packageDash = "fzf dashboard"
 	
 	// Switch to Uninstall (r)
 	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(cfg.Keys.UninstallMode)})
@@ -50,8 +50,8 @@ func TestStateResetTransitionToUninstall(t *testing.T) {
 	if m.textInput.Value() != "" {
 		t.Error("Search input should be empty in new mode")
 	}
-	if m.packageInfo != "" {
-		t.Error("Package info should be cleared in new mode")
+	if m.packageDash != "" {
+		t.Error("Package dash should be cleared in new mode")
 	}
 }
 
@@ -61,7 +61,7 @@ func TestStateResetOnSelectiveExit(t *testing.T) {
 	m.mode = modeUpdateSelective
 	m.textInput.Focus()
 	m.textInput.SetValue("lib")
-	m.packageInfo = "lib details"
+	m.packageDash = "lib dashboard"
 	
 	// Exit via ESC
 	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyEsc})

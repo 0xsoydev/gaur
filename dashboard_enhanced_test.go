@@ -9,7 +9,7 @@ import (
 )
 
 func TestDashboardLoadingDimensions(t *testing.T) {
-	m_init := initialModel(modeInstalled, DefaultConfig())
+	m_init := initialModel(modeDashboard, DefaultConfig())
 	m_init.width = 80
 	m_init.height = 24
 	m_init.loading = true
@@ -33,7 +33,7 @@ func TestDashboardLoadingDimensions(t *testing.T) {
 }
 
 func TestDashboardRendering(t *testing.T) {
-	m_init := initialModel(modeInstalled, DefaultConfig())
+	m_init := initialModel(modeDashboard, DefaultConfig())
 	
 	// Crucial: Initialize layout constants via Update and use the result
 	new_m, _ := m_init.Update(tea.WindowSizeMsg{Width: 100, Height: 30})
@@ -121,15 +121,15 @@ func TestDashboardRendering(t *testing.T) {
 }
 
 func TestDashboardRefreshLogic(t *testing.T) {
-	m := initialModel(modeInstalled, DefaultConfig())
+	m := initialModel(modeDashboard, DefaultConfig())
 	m.textInput.Blur()
 
-	// Test 'n' key
-	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("n")}
+	// Test 'd' key
+	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("d")}
 	_, cmd := m.Update(msg)
 
 	if cmd == nil {
-		t.Fatal("Pressing 'n' in info mode did not return a command")
+		t.Fatal("Pressing 'd' in dashboard mode did not return a command")
 	}
 
 	// Test 'ctrl+r'
@@ -137,14 +137,14 @@ func TestDashboardRefreshLogic(t *testing.T) {
 	_, cmd = m.Update(msg)
 
 	if cmd == nil {
-		t.Fatal("Pressing 'ctrl+r' in info mode did not return a command")
+		t.Fatal("Pressing 'ctrl+r' in dashboard mode did not return a command")
 	}
 }
 
 func TestSizeColorCodingLogic(t *testing.T) {
 	// This tests the logic used inside renderDashboard indirectly
 	// by checking if the expected color sequences are present
-	m := initialModel(modeInstalled, DefaultConfig())
+	m := initialModel(modeDashboard, DefaultConfig())
 	m.width = 100
 	m.height = 30
 	m.loading = false

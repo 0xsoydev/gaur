@@ -49,8 +49,8 @@ func TestMarkedPackagesIsolationOnModeSwitch(t *testing.T) {
 	// 4. Switch to Dashboard (DashboardMode)
 	resModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("d")})
 	m = resModel.(*model)
-	if m.mode != modeInstalled {
-		t.Fatalf("Expected modeInstalled, got %v", m.mode)
+	if m.mode != modeDashboard {
+		t.Fatalf("Expected modeDashboard, got %v", m.mode)
 	}
 	if len(m.markedPackages) != 0 {
 		t.Error("markedPackages should be empty after switching to Dashboard")

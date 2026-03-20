@@ -42,7 +42,7 @@ func TestLoadingStateTransitions(t *testing.T) {
 		},
 		{
 			name:           "Dashboard data loaded",
-			initialMode:    modeInstalled,
+			initialMode:    modeDashboard,
 			triggerMsg:     dashboardMsg{data: DashboardData{}},
 			expectedLoaded: false,
 		},

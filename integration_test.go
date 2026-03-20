@@ -267,11 +267,11 @@ func TestModeSwitchingShortcuts(t *testing.T) {
 		t.Errorf("mode = %v, want modeUpdate", m.mode)
 	}
 
-	// 'n' -> Info/Dashboard
-	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("n")})
+	// 'd' -> Dashboard
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("d")})
 	m = newModel.(*model)
-	if m.mode != modeInstalled {
-		t.Errorf("mode = %v, want modeInstalled", m.mode)
+	if m.mode != modeDashboard {
+		t.Errorf("mode = %v, want modeDashboard", m.mode)
 	}
 
 	// 'i' -> Install

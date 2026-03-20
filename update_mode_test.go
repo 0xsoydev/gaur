@@ -58,11 +58,11 @@ func TestUpdateModeSwitching(t *testing.T) {
 		t.Errorf("Expected command (refreshing packages) when entering Uninstall mode, got nil")
 	}
 
-	// Switch to Dashboard/Installed mode ('n')
-	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("n")})
+	// Switch to Dashboard/Installed mode ('d')
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("d")})
 	m = newModel.(*model)
-	if m.mode != modeInstalled {
-		t.Errorf("mode = %v, want modeInstalled after 'n'", m.mode)
+	if m.mode != modeDashboard {
+		t.Errorf("mode = %v, want modeDashboard after 'd'", m.mode)
 	}
 
 	// Switch back to Install mode ('i')

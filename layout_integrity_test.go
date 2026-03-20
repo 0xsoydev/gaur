@@ -35,7 +35,7 @@ func TestGlobalLayoutIntegrity(t *testing.T) {
 			name:   "Dashboard - Loading State",
 			width:  80,
 			height: 24,
-			mode:   modeInstalled,
+			mode:   modeDashboard,
 			setup: func(m *model) {
 				m.loading = true
 			},
@@ -44,7 +44,7 @@ func TestGlobalLayoutIntegrity(t *testing.T) {
 			name:   "Dashboard - Fully Loaded",
 			width:  100,
 			height: 29,
-			mode:   modeInstalled,
+			mode:   modeDashboard,
 			setup: func(m *model) {
 				m.loading = false
 				m.dashboard = DashboardData{
@@ -103,7 +103,7 @@ func TestGlobalLayoutIntegrity(t *testing.T) {
 			name:   "Confirmation Overlay - Simple",
 			width:  80,
 			height: 24,
-			mode:   modeInstalled,
+			mode:   modeDashboard,
 			setup: func(m *model) {
 				m.showConfirmation = true
 				m.confirmType = confirmCleanKeep3
@@ -130,7 +130,7 @@ func TestGlobalLayoutIntegrity(t *testing.T) {
 			name:   "Large Terminal Workspace",
 			width:  150,
 			height: 50,
-			mode:   modeInstalled,
+			mode:   modeDashboard,
 		},
 	}
 
@@ -180,7 +180,7 @@ func TestGlobalLayoutIntegrity(t *testing.T) {
 }
 
 func TestSplitRatioIntegrity(t *testing.T) {
-	// Tests that the split between Info and List panels is sane
+	// Tests that the split between Dash and List panels is sane
 	m := initialModel(modeInstall, DefaultConfig())
 	m.width = 80
 	m.height = 24
