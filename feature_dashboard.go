@@ -957,7 +957,7 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 			count = 5
 		} // Cut down to 5
 
-		nameW := boxInnerW - 13 // rank(3) + space(1) + space(1) + size(~8)
+		nameW := boxInnerW - 15 // rank(3) + space(1) + space(1) + size(~10)
 		if nameW < 5 {
 			nameW = 5
 		}
@@ -979,7 +979,7 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 			line := fmt.Sprintf("%s %s %s",
 				rankStyle.Render(fmt.Sprintf("%2d.", i+1)),
 				lipgloss.NewStyle().Width(nameW).Render(nameStyle.Render(truncateWithAnsi(pkg.Name, nameW))),
-				sizeStyle.Render(fmt.Sprintf("%8s", pkg.Size)))
+				sizeStyle.Render(fmt.Sprintf("%10s", pkg.Size)))
 			topWeightLines = append(topWeightLines, line)
 		}
 	}
@@ -992,7 +992,7 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 			count = 5
 		}
 
-		nameW := boxInnerW - 13 // rank(3) + space(1) + space(1) + size(~8)
+		nameW := boxInnerW - 15 // rank(3) + space(1) + space(1) + size(~10)
 		if nameW < 5 {
 			nameW = 5
 		}
@@ -1006,7 +1006,7 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 			line := fmt.Sprintf("%s %s %s",
 				rankStyle.Render(fmt.Sprintf("%2d.", i+1)),
 				lipgloss.NewStyle().Width(nameW).Render(nameStyle.Render(truncateWithAnsi(pkg.Name, nameW))),
-				sizeStyle.Render(fmt.Sprintf("%8s", pkg.Size)))
+				sizeStyle.Render(fmt.Sprintf("%10s", pkg.Size)))
 			topCacheLines = append(topCacheLines, line)
 		}
 	}
