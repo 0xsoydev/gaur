@@ -117,7 +117,7 @@ func computeMatchIndices(pkg Package, query string) []int {
 	// Priority 2: Fuzzy match
 	pkgRunes := []rune(pkgLower)
 	queryRunes := []rune(queryLower)
-	
+
 	// Simple greedy forward match
 	currentPkgIdx := 0
 	for _, qr := range queryRunes {
@@ -231,13 +231,13 @@ var repoFilterChars = map[rune]string{
 	'a': "aur",
 }
 
-// uninstallFilterChars maps single characters to package filter types for uninstall mode
-var uninstallFilterChars = map[rune]string{
+// removeFilterChars maps single characters to package filter types for remove mode
+var removeFilterChars = map[rune]string{
 	't': "total",
 	'e': "explicit",
 	'l': "explicit", // Alias for local/explicit
 	'f': "foreign",
-	'a': "foreign",  // Alias for AUR/foreign
+	'a': "foreign", // Alias for AUR/foreign
 	'o': "orphan",
 }
 
@@ -284,9 +284,9 @@ func formatRepoFilters(filters map[string]bool) string {
 	return strings.Join(repos, "+")
 }
 
-// parseUninstallFilter extracts source filters and search query from input for uninstall mode
+// parseRemoveFilter extracts source filters and search query from input for remove mode
 // Supports 'a:' for AUR/foreign packages and 'l:' for local/official packages
-func parseUninstallFilter(input string) (map[string]bool, string) {
+func parseRemoveFilter(input string) (map[string]bool, string) {
 	input = strings.TrimSpace(input)
 
 	colonIdx := strings.Index(input, ":")
@@ -299,7 +299,7 @@ func parseUninstallFilter(input string) (map[string]bool, string) {
 
 	sourceFilters := make(map[string]bool)
 	for _, ch := range prefix {
-		if source, ok := uninstallFilterChars[ch]; ok {
+		if source, ok := removeFilterChars[ch]; ok {
 			sourceFilters[source] = true
 		}
 	}
@@ -311,8 +311,8 @@ func parseUninstallFilter(input string) (map[string]bool, string) {
 	return sourceFilters, searchQuery
 }
 
-// formatUninstallFilters returns a human-readable string of active uninstall filters
-func formatUninstallFilters(filters map[string]bool) string {
+// formatRemoveFilters returns a human-readable string of active remove filters
+func formatRemoveFilters(filters map[string]bool) string {
 	if len(filters) == 0 {
 		return ""
 	}
@@ -509,7 +509,7 @@ func truncateWithAnsi(s string, maxWidth int) string {
 	if maxWidth <= 0 {
 		return "\x1b[0m"
 	}
-	
+
 	var result strings.Builder
 	currentWidth := 0
 	inEscape := false
@@ -527,7 +527,7 @@ func truncateWithAnsi(s string, maxWidth int) string {
 			}
 			continue
 		}
-		
+
 		w := lipgloss.Width(string(r))
 		if currentWidth+w > maxWidth {
 			break
@@ -576,7 +576,7 @@ func substringAnsi(s string, skipWidth int) string {
 			}
 			continue
 		}
-		
+
 		w := lipgloss.Width(string(r))
 		if currentWidth >= skipWidth {
 			result.WriteRune(r)
@@ -605,7 +605,6 @@ func GetAURCacheDir(c *Config) (string, error) {
 	// Default to paru's clone path
 	return filepath.Join(cacheDir, "paru", "clone"), nil
 }
-
 
 // getKeyDisplay returns a string representing the primary key for a binding
 func getKeyDisplay(b key.Binding) string {
@@ -652,13 +651,13 @@ func renderKeyHint(label string, b key.Binding, style lipgloss.Style) string {
 			before := label[:idx]
 			letter := label[idx : idx+1]
 			after := label[idx+1:]
-			
+
 			// We only render non-empty parts to avoid any potential zero-width rendering artifacts
 			var result string
 			if before != "" {
 				result += segStyle.Render(before)
 			}
-			result += segStyle.Render("["+letter+"]")
+			result += segStyle.Render("[" + letter + "]")
 			if after != "" {
 				result += segStyle.Render(after)
 			}
