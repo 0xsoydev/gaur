@@ -36,8 +36,8 @@ func BuildAURCommand(c *Config, action string, args ...string) []string {
 		}
 	case "remove":
 		cmd = []string{helper}
-		if c.Commands.UninstallFlags != "" {
-			cmd = append(cmd, TokenizeFlags(c.Commands.UninstallFlags)...)
+		if c.Commands.RemoveFlags != "" {
+			cmd = append(cmd, TokenizeFlags(c.Commands.RemoveFlags)...)
 		} else {
 			cmd = append(cmd, "-Rns")
 		}
@@ -69,7 +69,7 @@ func getPackageDash(m *model, pkg Package) tea.Cmd {
 		}
 
 		// Use -Qi for purely local lookup if we explicitly want installed version dash.
-		// However, for updates/installs, we want -Si (remote dash). 
+		// However, for updates/installs, we want -Si (remote dash).
 		// We execute this with a timeout to prevent UI freezes on slow networks during rapid scrolling.
 		arg := "-Si"
 		if pkg.Installed && pkg.Source == "unknown" {
@@ -108,7 +108,7 @@ func checkDependencies() error {
 		}
 	}
 
-	// We don't check for aur_helper here yet because config is not loaded, 
+	// We don't check for aur_helper here yet because config is not loaded,
 	// main.go handles it by checking standard ones or we can check later.
 	// For now, let's keep it simple.
 
@@ -144,20 +144,20 @@ func contains(slice []string, val string) bool {
 	return false
 }
 
-// executeUninstallInTerminal runs the AUR helper interactively using tea.ExecProcess
-func executeUninstallInTerminal(m *model, packages []string) tea.Cmd {
+// executeRemoveInTerminal runs the AUR helper interactively using tea.ExecProcess
+func executeRemoveInTerminal(m *model, packages []string) tea.Cmd {
 
 	validNames, _ := sanitizePackageNames(packages)
 	if len(validNames) == 0 {
 		return func() tea.Msg {
-			return execCompleteMsg{operation: confirmUninstall, packages: packages, err: fmt.Errorf("no valid package names")}
+			return execCompleteMsg{operation: confirmRemove, packages: packages, err: fmt.Errorf("no valid package names")}
 		}
 	}
 
 	args := BuildAURCommand(&m.config, "remove", validNames...)
 
 	return runner.Interactive(func(err error) tea.Msg {
-		return execCompleteMsg{operation: confirmUninstall, packages: validNames, err: err}
+		return execCompleteMsg{operation: confirmRemove, packages: validNames, err: err}
 	}, args[0], args[1:]...)
 }
 
@@ -177,7 +177,7 @@ func executeCleanCache(m *model, op confirmationType, keep int, uninstalled bool
 	}
 
 	aurCache, _ := GetAURCacheDir(&m.config)
-	
+
 	// Check if AUR cache exists to avoid 'find' errors
 	aurCacheExists := false
 	if aurCache != "" {
@@ -196,7 +196,7 @@ func executeCleanCache(m *model, op confirmationType, keep int, uninstalled bool
 	if aurCacheExists {
 		// Use \; instead of + to ensure paccache is called for each subdirectory
 		// We use -q to suppress "no candidate packages" noise from empty subdirs
-		script += fmt.Sprintf("\necho 'Cleaning AUR helper cache...'\nfind %s -maxdepth 2 -type d -exec %s -q -r %s -k %d -c {} \\;\necho 'Done.'", 
+		script += fmt.Sprintf("\necho 'Cleaning AUR helper cache...'\nfind %s -maxdepth 2 -type d -exec %s -q -r %s -k %d -c {} \\;\necho 'Done.'",
 			aurCache, cacheTool, uninstalledFlag, keep)
 	}
 
