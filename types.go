@@ -42,10 +42,10 @@ type AdvancedConfig struct {
 
 type KeyConfig struct {
 	Quit           []string `toml:"quit"`
-	InstallMode    string   `toml:"install_mode"`
-	UninstallMode  string   `toml:"uninstall_mode"`
-	UpdateMode     string   `toml:"update_mode"`
-	DashboardMode  string   `toml:"dashboard_mode"`
+	InstallMode    []string `toml:"install_mode"`
+	UninstallMode  []string `toml:"uninstall_mode"`
+	UpdateMode     []string `toml:"update_mode"`
+	DashboardMode  []string `toml:"dashboard_mode"`
 	Search         string   `toml:"search"`
 	Mark           string   `toml:"mark"`
 	Selective      string   `toml:"selective"`
@@ -99,11 +99,11 @@ var runner CommandRunner = RealCommandRunner{}
 type viewMode int
 
 const (
-	modeInstall viewMode = iota
-	modeDashboard
-	modeUninstall
+	modeDashboard viewMode = iota
+	modeInstall
 	modeUpdate          // Viewing available updates
 	modeUpdateSelective // Selecting specific updates
+	modeUninstall
 	modeCacheMenu       // Menu for selecting cache clearing strategy
 	modeCacheSelective  // Selecting specific packages to clear from cache
 	modeSettings        // In-app settings overlay

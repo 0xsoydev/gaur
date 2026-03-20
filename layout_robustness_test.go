@@ -21,11 +21,11 @@ func TestLayoutRobustness(t *testing.T) {
 	}
 
 	modes := []viewMode{
-		modeInstall,
 		modeDashboard,
-		modeUninstall,
+		modeInstall,
 		modeUpdate,
 		modeUpdateSelective,
+		modeUninstall,
 		modeCacheMenu,
 		modeCacheSelective,
 		modeSettings,

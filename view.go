@@ -29,13 +29,6 @@ func (m *model) renderHelpText(activeColor lipgloss.Color) string {
 	parts = append(parts, renderKeyHint("mark", m.keys.Mark, dimStyle))
 	parts = append(parts, dimStyle.Render("  "))
 
-	installStyle := dimStyle
-	if m.mode == modeInstall {
-		installStyle = activeStyle
-	}
-	parts = append(parts, renderKeyHint("install", m.keys.InstallMode, installStyle))
-	parts = append(parts, dimStyle.Render("  "))
-
 	dashStyle := dimStyle
 	if m.mode == modeDashboard {
 		dashStyle = activeStyle
@@ -43,11 +36,11 @@ func (m *model) renderHelpText(activeColor lipgloss.Color) string {
 	parts = append(parts, renderKeyHint("dash", m.keys.DashboardMode, dashStyle))
 	parts = append(parts, dimStyle.Render("  "))
 
-	removeStyle := dimStyle
-	if m.mode == modeUninstall {
-		removeStyle = activeStyle
+	installStyle := dimStyle
+	if m.mode == modeInstall {
+		installStyle = activeStyle
 	}
-	parts = append(parts, renderKeyHint("remove", m.keys.UninstallMode, removeStyle))
+	parts = append(parts, renderKeyHint("install", m.keys.InstallMode, installStyle))
 	parts = append(parts, dimStyle.Render("  "))
 
 	updateStyle := dimStyle
@@ -55,6 +48,13 @@ func (m *model) renderHelpText(activeColor lipgloss.Color) string {
 		updateStyle = activeStyle
 	}
 	parts = append(parts, renderKeyHint("update", m.keys.UpdateMode, updateStyle))
+	parts = append(parts, dimStyle.Render("  "))
+
+	removeStyle := dimStyle
+	if m.mode == modeUninstall {
+		removeStyle = activeStyle
+	}
+	parts = append(parts, renderKeyHint("remove", m.keys.UninstallMode, removeStyle))
 	parts = append(parts, dimStyle.Render("  "))
 
 	settingsStyle := dimStyle

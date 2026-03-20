@@ -416,11 +416,11 @@ func listThemes() []string {
 // getModeColors returns the mode colors based on current theme
 func getModeColors() map[viewMode]lipgloss.Color {
 	return map[viewMode]lipgloss.Color{
-		modeInstall:         currentTheme.InstallColor,
 		modeDashboard:       currentTheme.DashboardColor,
-		modeUninstall:       currentTheme.UninstallColor,
+		modeInstall:         currentTheme.InstallColor,
 		modeUpdate:          currentTheme.UpdateColor,
 		modeUpdateSelective: currentTheme.UpdateColor,
+		modeUninstall:       currentTheme.UninstallColor,
 		modeCacheSelective:  lipgloss.Color("135"),
 	}
 }
