@@ -24,7 +24,7 @@ func TestLoadingStateTransitions(t *testing.T) {
 		},
 		{
 			name:           "Installed packages loaded",
-			initialMode:    modeUninstall,
+			initialMode:    modeRemove,
 			triggerMsg:     installedPackagesMsg{packages: []Package{}},
 			expectedLoaded: false,
 		},
@@ -102,7 +102,7 @@ func TestModeSwitchesSetLoading(t *testing.T) {
 	// Switch to Update Mode
 	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(cfg.Keys.UpdateMode[0])})
 	m = newModel.(*model)
-	
+
 	if !m.loading {
 		t.Error("expected switching to update mode to set loading = true")
 	}
@@ -118,19 +118,19 @@ func TestModeSwitchesSetLoading(t *testing.T) {
 		t.Error("expected switching to dashboard mode to set loading = true")
 	}
 
-	// Switch to Uninstall (r)
+	// Switch to Remove (r)
 	m.loading = false
-	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(cfg.Keys.UninstallMode[0])})
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(cfg.Keys.RemoveMode[0])})
 	m = newModel.(*model)
 	if !m.loading {
-		t.Error("expected switching to uninstall mode to set loading = true")
+		t.Error("expected switching to remove mode to set loading = true")
 	}
 }
 
 func TestSyncTransitionsLoading(t *testing.T) {
 	cfg := DefaultConfig()
 	m := initialModel(modeUpdate, cfg)
-	
+
 	// 1. Receive Sync Success
 	// case syncRepositoriesMsg: if msg.err == nil { m.loading = true; return m, checkUpdates() }
 	newModel, _ := m.Update(syncRepositoriesMsg{err: nil})

@@ -18,8 +18,8 @@ func TestInitialModel(t *testing.T) {
 			status:      "Loading package database...",
 		},
 		{
-			name:        "uninstall mode",
-			mode:        modeUninstall,
+			name:        "remove mode",
+			mode:        modeRemove,
 			placeholder: "Filter installed packages...",
 			status:      "Loading installed packages...",
 		},
@@ -66,11 +66,11 @@ func TestCurrentPackageList(t *testing.T) {
 		t.Errorf("currentPackageList (install) length = %d, want 2", len(list))
 	}
 
-	m.mode = modeUninstall
+	m.mode = modeRemove
 	m.filteredInstalled = []Package{{Name: "pkg3"}}
 	list = m.currentPackageList()
 	if len(list) != 1 {
-		t.Errorf("currentPackageList (uninstall) length = %d, want 1", len(list))
+		t.Errorf("currentPackageList (remove) length = %d, want 1", len(list))
 	}
 
 	m.mode = modeUpdate

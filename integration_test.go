@@ -179,7 +179,7 @@ func TestUpdateKeyboardNavigation(t *testing.T) {
 	m.selectedIndex = 0
 
 	// In this app, "up" (k) increases index, "down" (j) decreases index
-	
+
 	// Test 'k' (Up) -> index 1
 	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("k")})
 	m = newModel.(*model)
@@ -253,11 +253,11 @@ func TestModeSwitchingShortcuts(t *testing.T) {
 	m := initialModel(modeInstall, DefaultConfig())
 	m.loading = false
 
-	// 'r' -> Uninstall
+	// 'r' -> Remove
 	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("r")})
 	m = newModel.(*model)
-	if m.mode != modeUninstall {
-		t.Errorf("mode = %v, want modeUninstall", m.mode)
+	if m.mode != modeRemove {
+		t.Errorf("mode = %v, want modeRemove", m.mode)
 	}
 
 	// 'u' -> Update
@@ -338,7 +338,7 @@ func TestConfirmationFlow(t *testing.T) {
 	// Enter again
 	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m = newModel.(*model)
-	
+
 	// 'y' to confirm
 	newModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("y")})
 	m = newModel.(*model)

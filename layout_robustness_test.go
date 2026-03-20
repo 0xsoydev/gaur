@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-
 )
 
-// TestLayoutRobustness covers dimensions, borders, footers, search bar positioning, 
+// TestLayoutRobustness covers dimensions, borders, footers, search bar positioning,
 // and internal content integrity (like unit wrapping).
 func TestLayoutRobustness(t *testing.T) {
 	config := DefaultConfig()
-	
+
 	terminalSizes := []struct {
 		w, h int
 	}{
@@ -25,7 +24,7 @@ func TestLayoutRobustness(t *testing.T) {
 		modeInstall,
 		modeUpdate,
 		modeUpdateSelective,
-		modeUninstall,
+		modeRemove,
 		modeCacheMenu,
 		modeCacheSelective,
 		modeSettings,
@@ -34,7 +33,7 @@ func TestLayoutRobustness(t *testing.T) {
 	modeNames := map[viewMode]string{
 		modeInstall:         "Install",
 		modeDashboard:       "Dashboard",
-		modeUninstall:       "Uninstall",
+		modeRemove:          "Remove",
 		modeUpdate:          "Update",
 		modeUpdateSelective: "UpdateSelective",
 		modeCacheMenu:       "CacheMenu",
@@ -48,7 +47,7 @@ func TestLayoutRobustness(t *testing.T) {
 				m := initialModel(mode, config)
 				m.width = size.w
 				m.height = size.h
-				
+
 				// Inline Mock Data Setup
 				m.loading = false
 				m.packages = []Package{
@@ -61,17 +60,17 @@ func TestLayoutRobustness(t *testing.T) {
 				m.filteredInstalled = m.packages
 				m.pendingUpdates = m.packages
 				m.dashboard = DashboardData{
-					TotalPackages: 1000,
-					TotalSize: "5.20 GiB",
-					DiskTotal: "500.00 GiB",
-					DiskUsed: "200.00 GiB",
-					DiskUsedPercent: 0.4,
-					CleanerSize: "2.10 GiB",
+					TotalPackages:    1000,
+					TotalSize:        "5.20 GiB",
+					DiskTotal:        "500.00 GiB",
+					DiskUsed:         "200.00 GiB",
+					DiskUsedPercent:  0.4,
+					CleanerSize:      "2.10 GiB",
 					RepoDistribution: map[string]int{"core": 200, "extra": 500, "multilib": 50, "aur": 250},
-					TopPackages: []PackageSize{{Name: "test-heavy", Size: "1.20 GiB"}},
-					AllCacheHogs: []PackageSize{{Name: "hog1", Size: "50.00 MiB", SizeBytes: 50*1024*1024}},
+					TopPackages:      []PackageSize{{Name: "test-heavy", Size: "1.20 GiB"}},
+					AllCacheHogs:     []PackageSize{{Name: "hog1", Size: "50.00 MiB", SizeBytes: 50 * 1024 * 1024}},
 				}
-				
+
 				if mode == modeSettings {
 					m.previousMode = modeDashboard
 				}
@@ -85,7 +84,7 @@ func TestLayoutRobustness(t *testing.T) {
 				}
 
 				// 2. SEARCH BAR POSITIONING
-				if mode == modeInstall || mode == modeUninstall || mode == modeUpdateSelective || mode == modeCacheSelective {
+				if mode == modeInstall || mode == modeRemove || mode == modeUpdateSelective || mode == modeCacheSelective {
 					if !strings.Contains(view, "> ") {
 						t.Errorf("Search bar prompt ('> ') not found in %s mode", modeNames[mode])
 					}

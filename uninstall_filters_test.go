@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestUninstallFilters(t *testing.T) {
+func TestRemoveFilters(t *testing.T) {
 	installed := []Package{
 		{Source: "core", Name: "linux", Explicit: true, Orphan: false},
 		{Source: "extra", Name: "vim", Explicit: true, Orphan: false},
@@ -13,7 +13,7 @@ func TestUninstallFilters(t *testing.T) {
 		{Source: "aur", Name: "yay-git", Explicit: false, Orphan: true},
 	}
 
-	m := initialModel(modeUninstall, DefaultConfig())
+	m := initialModel(modeRemove, DefaultConfig())
 	m.installed = installed
 
 	tests := []struct {

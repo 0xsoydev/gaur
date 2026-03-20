@@ -153,8 +153,8 @@ func TestParseRepoFilter(t *testing.T) {
 	}
 }
 
-// TestParseUninstallFilter tests the uninstall filter parsing
-func TestParseUninstallFilter(t *testing.T) {
+// TestParseRemoveFilter tests the remove filter parsing
+func TestParseRemoveFilter(t *testing.T) {
 	tests := []struct {
 		name        string
 		input       string
@@ -201,12 +201,12 @@ func TestParseUninstallFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			filters, query := parseUninstallFilter(tt.input)
+			filters, query := parseRemoveFilter(tt.input)
 			if !mapsEqual(filters, tt.wantFilters) {
-				t.Errorf("parseUninstallFilter(%q) returned filters %v, want %v", tt.input, filters, tt.wantFilters)
+				t.Errorf("parseRemoveFilter(%q) returned filters %v, want %v", tt.input, filters, tt.wantFilters)
 			}
 			if query != tt.wantQuery {
-				t.Errorf("parseUninstallFilter(%q) returned query %q, want %q", tt.input, query, tt.wantQuery)
+				t.Errorf("parseRemoveFilter(%q) returned query %q, want %q", tt.input, query, tt.wantQuery)
 			}
 		})
 	}
@@ -236,8 +236,8 @@ func TestFormatRepoFilters(t *testing.T) {
 	}
 }
 
-// TestFormatUninstallFilters tests the uninstall filter formatting
-func TestFormatUninstallFilters(t *testing.T) {
+// TestFormatRemoveFilters tests the remove filter formatting
+func TestFormatRemoveFilters(t *testing.T) {
 	tests := []struct {
 		name     string
 		filters  map[string]bool
@@ -251,9 +251,9 @@ func TestFormatUninstallFilters(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := formatUninstallFilters(tt.filters)
+			result := formatRemoveFilters(tt.filters)
 			if result != tt.expected {
-				t.Errorf("formatUninstallFilters(%v) = %q, want %q", tt.filters, result, tt.expected)
+				t.Errorf("formatRemoveFilters(%v) = %q, want %q", tt.filters, result, tt.expected)
 			}
 		})
 	}

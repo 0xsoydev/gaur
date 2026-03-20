@@ -10,10 +10,10 @@ import (
 func TestUIStateIsolationOnModeSwitch(t *testing.T) {
 	// Start in Dashboard mode
 	m := initialModel(modeDashboard, DefaultConfig())
-	
+
 	// Set up keys for switching
 	m.keys.InstallMode = key.NewBinding(key.WithKeys("i"))
-	m.keys.UninstallMode = key.NewBinding(key.WithKeys("r"))
+	m.keys.RemoveMode = key.NewBinding(key.WithKeys("r"))
 	m.keys.DashboardMode = key.NewBinding(key.WithKeys("d"))
 	m.keys.UpdateMode = key.NewBinding(key.WithKeys("u"))
 
@@ -24,7 +24,7 @@ func TestUIStateIsolationOnModeSwitch(t *testing.T) {
 	// 1. Switch to Install mode
 	resModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("i")})
 	m = resModel.(*model)
-	
+
 	if m.mode != modeInstall {
 		t.Fatalf("Expected modeInstall, got %v", m.mode)
 	}
@@ -45,19 +45,19 @@ func TestUIStateIsolationOnModeSwitch(t *testing.T) {
 		t.Errorf("Dashboard mode: expected placeholder 'View system dashboard', got %q", m.textInput.Placeholder)
 	}
 
-	// 3. Switch to Uninstall mode
+	// 3. Switch to Remove mode
 	resModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("r")})
 	m = resModel.(*model)
-	if m.mode != modeUninstall {
-		t.Fatalf("Expected modeUninstall, got %v", m.mode)
+	if m.mode != modeRemove {
+		t.Fatalf("Expected modeRemove, got %v", m.mode)
 	}
 	if m.textInput.Placeholder != "Filter installed packages..." {
-		t.Errorf("Uninstall mode: expected placeholder 'Filter installed packages...', got %q", m.textInput.Placeholder)
+		t.Errorf("Remove mode: expected placeholder 'Filter installed packages...', got %q", m.textInput.Placeholder)
 	}
 
-	// Blur input (modeUninstall also focuses it via resetState -> updatePlaceholder? No, Uninstall switch focuses it manually if it wants)
-	// Wait, Uninstall switch doesn't focus it.
-	
+	// Blur input (modeRemove also focuses it via resetState -> updatePlaceholder? No, Remove switch focuses it manually if it wants)
+	// Wait, Remove switch doesn't focus it.
+
 	// 4. Switch to Update mode
 	resModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("u")})
 	m = resModel.(*model)

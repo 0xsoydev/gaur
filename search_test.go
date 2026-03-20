@@ -13,7 +13,7 @@ import (
 func TestSearchProgressIndicator(t *testing.T) {
 	// Initialize model in install mode
 	m := initialModel(modeInstall, DefaultConfig())
-	
+
 	// Initially no search
 	if m.searchingAUR {
 		t.Error("Initially searchingAUR should be false")
@@ -38,11 +38,11 @@ func TestSearchProgressIndicator(t *testing.T) {
 	// but updates the searchStatus text (the searchTerm)
 	m.textInput.SetValue("vim-git")
 	m.performFiltering()
-	
+
 	if !strings.Contains(m.searchStatus, "Searching AUR for \"vim-git\"") {
 		t.Errorf("Search status should update to new query: %q", m.searchStatus)
 	}
-	
+
 	// Set it back to "vim" to test completion for the current query
 	m.textInput.SetValue("vim")
 	m.performFiltering()
@@ -110,16 +110,16 @@ func TestSearchStateIsolationOnModeSwitch(t *testing.T) {
 		t.Fatal("Should be searching AUR")
 	}
 
-	// 1. Simulate switching to Uninstall mode via key press
-	msgUninstall := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("u")} // Assuming 'u' is UninstallMode in default keys
+	// 1. Simulate switching to Remove mode via key press
+	msgRemove := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("u")} // Assuming 'u' is RemoveMode in default keys
 	// Wait, I should use the actual key binding
-	m.keys.UninstallMode = key.NewBinding(key.WithKeys("u"))
-	
-	resModel, _ := m.Update(msgUninstall)
+	m.keys.RemoveMode = key.NewBinding(key.WithKeys("u"))
+
+	resModel, _ := m.Update(msgRemove)
 	m = resModel.(*model)
 
-	if m.mode != modeUninstall {
-		t.Fatalf("Expected modeUninstall, got %v", m.mode)
+	if m.mode != modeRemove {
+		t.Fatalf("Expected modeRemove, got %v", m.mode)
 	}
 	if m.searchingAUR {
 		t.Error("searchingAUR should be false after mode switch")
@@ -131,7 +131,7 @@ func TestSearchStateIsolationOnModeSwitch(t *testing.T) {
 	// 2. Switch back to Install mode
 	m.keys.InstallMode = key.NewBinding(key.WithKeys("i"))
 	msgInstall := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("i")}
-	
+
 	resModel, _ = m.Update(msgInstall)
 	m = resModel.(*model)
 

@@ -10,9 +10,9 @@ func TestViewNoCrash(t *testing.T) {
 	m.width = 100
 	m.height = 40
 	m.loading = false
-	
+
 	// Test all modes
-	modes := []viewMode{modeDashboard, modeInstall, modeUpdate, modeUninstall}
+	modes := []viewMode{modeDashboard, modeInstall, modeUpdate, modeRemove}
 	for _, mode := range modes {
 		m.mode = mode
 		t.Run("view mode "+string(rune(mode)), func(t *testing.T) {

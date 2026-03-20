@@ -103,9 +103,9 @@ func TestConfigKeyReflectionInView(t *testing.T) {
 			t.Errorf("Expected [v]:dash in help text, got %q", view)
 		}
 	}
-	
+
 	// Test a key that IS in the name
-	cfg.Keys.UninstallMode = []string{"r"} // 'r' is in 'remove'
+	cfg.Keys.RemoveMode = []string{"r"} // 'r' is in 'remove'
 	m = initialModel(modeInstall, cfg)
 	view = stripAnsi(m.renderHelpText(lipgloss.Color("7")))
 	if !strings.Contains(view, "[r]emove") {
@@ -120,13 +120,13 @@ func TestConfigKeyReflectionInView(t *testing.T) {
 func TestConfigKeyReflectionInConfirmation(t *testing.T) {
 	lipgloss.SetColorProfile(termenv.Ascii)
 	cfg := DefaultConfig()
-	cfg.Keys.Confirm = "y"  // 'y' in 'yes'
-	cfg.Keys.Cancel = "x"   // 'x' not in 'no'
+	cfg.Keys.Confirm = "y" // 'y' in 'yes'
+	cfg.Keys.Cancel = "x"  // 'x' not in 'no'
 
 	m := initialModel(modeInstall, cfg)
 	m.showConfirmation = true
 	m.confirmType = confirmInstall
-	
+
 	view := stripAnsi(m.renderConfirmationDialog(80, 24, lipgloss.Color("7")))
 
 	if !strings.Contains(view, "[y]es") {
@@ -140,12 +140,12 @@ func TestConfigKeyReflectionInConfirmation(t *testing.T) {
 func TestConfigKeyReflectionInSettings(t *testing.T) {
 	lipgloss.SetColorProfile(termenv.Ascii)
 	cfg := DefaultConfig()
-	cfg.Keys.Cancel = "c"  // 'c' in 'close'
-	cfg.Keys.Quit = []string{"q"}   // 'q' in 'quit'
+	cfg.Keys.Cancel = "c"         // 'c' in 'close'
+	cfg.Keys.Quit = []string{"q"} // 'q' in 'quit'
 
 	m := initialModel(modeInstall, cfg)
 	m.mode = modeSettings
-	
+
 	view := stripAnsi(m.renderSettings(80, 24))
 
 	if !strings.Contains(view, "[c]lose") {

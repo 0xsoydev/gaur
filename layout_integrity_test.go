@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/charmbracelet/lipgloss"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 // layoutScenario defines a specific state of the application to test
@@ -26,10 +26,10 @@ func TestGlobalLayoutIntegrity(t *testing.T) {
 			mode:   modeInstall,
 		},
 		{
-			name:   "Uninstall Mode - Standard",
+			name:   "Remove Mode - Standard",
 			width:  80,
 			height: 24,
-			mode:   modeUninstall,
+			mode:   modeRemove,
 		},
 		{
 			name:   "Dashboard - Loading State",
@@ -48,13 +48,13 @@ func TestGlobalLayoutIntegrity(t *testing.T) {
 			setup: func(m *model) {
 				m.loading = false
 				m.dashboard = DashboardData{
-					TotalPackages: 500,
-					TotalSize: "5.00 GiB",
-					DiskTotal: "100.00 GiB",
-					DiskUsed: "50.00 GiB",
-					DiskUsedPercent: 0.5,
+					TotalPackages:    500,
+					TotalSize:        "5.00 GiB",
+					DiskTotal:        "100.00 GiB",
+					DiskUsed:         "50.00 GiB",
+					DiskUsedPercent:  0.5,
 					RepoDistribution: map[string]int{"core": 100},
-					TopPackages: []PackageSize{{Name: "test", Size: "100.00 MiB"}},
+					TopPackages:      []PackageSize{{Name: "test", Size: "100.00 MiB"}},
 				}
 			},
 		},
@@ -137,10 +137,10 @@ func TestGlobalLayoutIntegrity(t *testing.T) {
 	for _, s := range scenarios {
 		t.Run(s.name, func(t *testing.T) {
 			m := initialModel(s.mode, DefaultConfig())
-			
+
 			// Initialize window size properly
 			m.Update(tea.WindowSizeMsg{Width: s.width, Height: s.height})
-			
+
 			if s.setup != nil {
 				s.setup(m)
 			}
@@ -185,9 +185,9 @@ func TestSplitRatioIntegrity(t *testing.T) {
 	m.width = 80
 	m.height = 24
 	m.loading = false
-	
+
 	view := m.View()
-	
+
 	// Count occurrences of top-left border corner "╭"
 	// In split layout, we expect exactly 2 panels, so 2 top borders
 	corners := strings.Count(view, "╭")

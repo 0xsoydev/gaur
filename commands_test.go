@@ -7,13 +7,13 @@ import (
 
 func TestBuildAURCommand(t *testing.T) {
 	tests := []struct {
-		name           string
-		helper         string
-		action         string
-		packages       []string
-		installFlags   string
-		uninstallFlags string
-		expected       []string
+		name         string
+		helper       string
+		action       string
+		packages     []string
+		installFlags string
+		removeFlags  string
+		expected     []string
 	}{
 		{
 			name:     "paru install single",
@@ -58,20 +58,20 @@ func TestBuildAURCommand(t *testing.T) {
 			expected: []string{"yay", "-Qu"},
 		},
 		{
-			name:           "custom install flags",
-			helper:         "yay",
-			action:         "install",
-			packages:       []string{"vim"},
-			installFlags:   "--needed --noconfirm",
-			expected:       []string{"yay", "-S", "--needed", "--noconfirm", "vim"},
+			name:         "custom install flags",
+			helper:       "yay",
+			action:       "install",
+			packages:     []string{"vim"},
+			installFlags: "--needed --noconfirm",
+			expected:     []string{"yay", "-S", "--needed", "--noconfirm", "vim"},
 		},
 		{
-			name:           "custom remove flags",
-			helper:         "paru",
-			action:         "remove",
-			packages:       []string{"vim"},
-			uninstallFlags: "-Rcns",
-			expected:       []string{"paru", "-Rcns", "vim"},
+			name:        "custom remove flags",
+			helper:      "paru",
+			action:      "remove",
+			packages:    []string{"vim"},
+			removeFlags: "-Rcns",
+			expected:    []string{"paru", "-Rcns", "vim"},
 		},
 		{
 			name:     "paru sync",
@@ -91,9 +91,9 @@ func TestBuildAURCommand(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			config := &Config{
 				Commands: CommandConfig{
-					AurHelper:      tt.helper,
-					InstallFlags:   tt.installFlags,
-					UninstallFlags: tt.uninstallFlags,
+					AurHelper:    tt.helper,
+					InstallFlags: tt.installFlags,
+					RemoveFlags:  tt.removeFlags,
 				},
 			}
 			got := BuildAURCommand(config, tt.action, tt.packages...)

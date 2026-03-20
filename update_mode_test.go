@@ -47,15 +47,15 @@ func TestUpdateModeSwitching(t *testing.T) {
 	m.loading = false
 	m.installed = []Package{{Name: "already-loaded"}}
 
-	// Switch to Uninstall mode ('r')
+	// Switch to Remove mode ('r')
 	// It should return a command even if m.installed is NOT empty
 	newModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("r")})
 	m = newModel.(*model)
-	if m.mode != modeUninstall {
-		t.Errorf("mode = %v, want modeUninstall after 'r'", m.mode)
+	if m.mode != modeRemove {
+		t.Errorf("mode = %v, want modeRemove after 'r'", m.mode)
 	}
 	if cmd == nil {
-		t.Errorf("Expected command (refreshing packages) when entering Uninstall mode, got nil")
+		t.Errorf("Expected command (refreshing packages) when entering Remove mode, got nil")
 	}
 
 	// Switch to Dashboard/Installed mode ('d')
