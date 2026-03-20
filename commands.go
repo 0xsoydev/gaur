@@ -11,9 +11,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// debouncePackageInfo returns a command that waits for the debounce duration
+// debouncePackageDash returns a command that waits for the debounce duration
 // then sends a tick message to trigger the actual fetch
-func debouncePackageInfo(m *model, pkgName string) tea.Cmd {
+func debouncePackageDash(m *model, pkgName string) tea.Cmd {
 	duration := time.Duration(m.config.Advanced.DebounceMs) * time.Millisecond
 	return tea.Tick(duration, func(t time.Time) tea.Msg {
 		return debounceTickMsg{packageName: pkgName}
@@ -46,7 +46,7 @@ func BuildAURCommand(c *Config, action string, args ...string) []string {
 		cmd = []string{helper, "-Qu"}
 	case "search":
 		cmd = []string{helper, "-Ss", "-a"}
-	case "info":
+	case "dash":
 		cmd = []string{helper, "-Si"}
 	case "check-updates":
 		cmd = []string{helper, "-Qu"}
@@ -61,15 +61,15 @@ func BuildAURCommand(c *Config, action string, args ...string) []string {
 	return append(cmd, args...)
 }
 
-func getPackageInfo(m *model, pkg Package) tea.Cmd {
+func getPackageDash(m *model, pkg Package) tea.Cmd {
 	return func() tea.Msg {
 
 		if !isValidPackageName(pkg.Name) {
-			return packageInfoMsg{info: "Invalid package name", packageName: pkg.Name, err: fmt.Errorf("invalid package name: %s", pkg.Name)}
+			return packageDashMsg{dash: "Invalid package name", packageName: pkg.Name, err: fmt.Errorf("invalid package name: %s", pkg.Name)}
 		}
 
-		// Use -Qi for purely local lookup if we explicitly want installed version info.
-		// However, for updates/installs, we want -Si (remote info). 
+		// Use -Qi for purely local lookup if we explicitly want installed version dash.
+		// However, for updates/installs, we want -Si (remote dash). 
 		// We execute this with a timeout to prevent UI freezes on slow networks during rapid scrolling.
 		arg := "-Si"
 		if pkg.Installed && pkg.Source == "unknown" {
@@ -80,10 +80,10 @@ func getPackageInfo(m *model, pkg Package) tea.Cmd {
 		args := []string{"--noconfirm", arg, pkg.Name}
 		out, err := runner.Run(m.config.Commands.AurHelper, args...)
 		if err != nil {
-			return packageInfoMsg{info: "Failed to get package info", packageName: pkg.Name, err: err}
+			return packageDashMsg{dash: "Failed to get package dashboard", packageName: pkg.Name, err: err}
 		}
 
-		return packageInfoMsg{info: string(out), packageName: pkg.Name}
+		return packageDashMsg{dash: string(out), packageName: pkg.Name}
 	}
 }
 

@@ -29,8 +29,8 @@ func main() {
 	removeFlagShort := flag.Bool("r", false, "Short flag for remove mode")
 	updateFlag := flag.Bool("update", false, "Start in update mode (system updates)")
 	updateFlagShort := flag.Bool("u", false, "Short flag for update mode")
-	infoFlag := flag.Bool("info", false, "Start in info mode (view installed packages)")
-	infoFlagShort := flag.Bool("I", false, "Short flag for info mode (dashboard)")
+	dashFlag := flag.Bool("dash", false, "Start in dashboard mode (view system stats)")
+	dashFlagShort := flag.Bool("d", false, "Short flag for dashboard mode")
 	flag.Parse()
 
 	if *listThemesFlag {
@@ -45,8 +45,8 @@ func main() {
 	var initialMode viewMode
 	modeFromConfig := modeInstall
 	switch cfg.Startup.DefaultMode {
-	case "dashboard", "installed", "info":
-		modeFromConfig = modeInstalled
+	case "dashboard", "dash":
+		modeFromConfig = modeDashboard
 	case "uninstall", "remove":
 		modeFromConfig = modeUninstall
 	case "update":
@@ -63,8 +63,8 @@ func main() {
 		initialMode = modeUninstall
 	case *updateFlag || *updateFlagShort:
 		initialMode = modeUpdate
-	case *infoFlag || *infoFlagShort:
-		initialMode = modeInstalled
+	case *dashFlag || *dashFlagShort:
+		initialMode = modeDashboard
 	}
 
 	// Theme resolution: Flag takes precedence, then config

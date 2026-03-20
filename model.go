@@ -28,13 +28,13 @@ type model struct {
 	selectionPanelFocused bool            // Whether selection panel is focused
 	selectionPanelIndex   int             // Selected index within selection panel
 	selectionScrollOffset int             // Scroll offset for the selection panel
-	packageInfo           string
-	infoCache             map[string]string // Cache for fetched package info
-	infoForPackage        string
-	pendingInfoPackage    string // Package waiting for debounce to complete
-	infoScrollOffset      int    // Scroll offset for the info/details pane
-	maxInfoScroll         int    // Maximum allowed scroll for info pane
-	loadingInfo           bool
+	packageDash           string
+	dashCache             map[string]string // Cache for fetched package details
+	dashForPackage        string
+	pendingDashPackage    string // Package waiting for debounce to complete
+	dashScrollOffset      int    // Scroll offset for the dash/details pane
+	maxDashScroll         int    // Maximum allowed scroll for dash pane
+	loadingDash           bool
 	mode                  viewMode
 	width                 int
 	height                int
@@ -94,9 +94,9 @@ func initialModel(initialMode viewMode, cfg Config) *model {
 	case modeUpdate:
 		placeholder = "Checking for updates..."
 		statusMsg = "Checking for updates..."
-	case modeInstalled:
-		placeholder = "View installed packages"
-		statusMsg = "Loading installed packages..."
+	case modeDashboard:
+		placeholder = "View system dashboard"
+		statusMsg = "Loading system statistics..."
 	}
 	ti.Placeholder = placeholder
 
@@ -114,7 +114,7 @@ func initialModel(initialMode viewMode, cfg Config) *model {
 		filtered:       []Package{},
 		installed:      []Package{},
 		markedPackages: make(map[string]bool),
-		infoCache:      make(map[string]string),
+		dashCache:      make(map[string]string),
 		selectedIndex:  0,
 		mode:           initialMode,
 		loading:        true,
@@ -123,8 +123,8 @@ func initialModel(initialMode viewMode, cfg Config) *model {
 	}
 
 	if initialMode == modeUninstall {
-		m.loadingInfo = true
-		m.infoForPackage = "..."
+		m.loadingDash = true
+		m.dashForPackage = "..."
 	}
 
 	m.initSettings()
@@ -139,7 +139,7 @@ func (m *model) Init() tea.Cmd {
 		getInstalledPackages(),
 		func() tea.Msg {
 			switch m.mode {
-			case modeInstalled:
+			case modeDashboard:
 				return getDashboardData(&m.config)()
 			case modeUpdate:
 				return checkUpdates(&m.config)()

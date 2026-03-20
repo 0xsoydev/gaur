@@ -100,7 +100,7 @@ type viewMode int
 
 const (
 	modeInstall viewMode = iota
-	modeInstalled
+	modeDashboard
 	modeUninstall
 	modeUpdate          // Viewing available updates
 	modeUpdateSelective // Selecting specific updates
@@ -168,8 +168,8 @@ type aurSearchMsg struct {
 	err       error
 }
 
-type packageInfoMsg struct {
-	info        string
+type packageDashMsg struct {
+	dash        string
 	packageName string
 	err         error
 }
@@ -206,7 +206,7 @@ type dashboardMsg struct {
 	err  error
 }
 
-// debounceTickMsg is sent after debounce timer expires to trigger package info fetch
+// debounceTickMsg is sent after debounce timer expires to trigger package dash fetch
 type debounceTickMsg struct {
 	packageName string
 }
@@ -239,7 +239,7 @@ type DashboardData struct {
 	CacheFreedPacman     map[confirmationType]string // Estimated savings for pacman
 	CacheFreedAur        map[confirmationType]string // Estimated savings for AUR helper
 	CacheFreedEstimates  map[confirmationType]string // Total estimated savings
-	// Disk usage info
+	// Disk usage dash
 	DiskTotal      string
 	DiskUsed       string
 	DiskFree       string

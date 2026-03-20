@@ -43,7 +43,7 @@ func DefaultConfig() Config {
 			InstallMode:    "i",
 			UninstallMode:  "r",
 			UpdateMode:     "u",
-			DashboardMode:  "n",
+			DashboardMode:  "d",
 			Search:         "/",
 			Mark:           "tab",
 			Selective:      "s",
