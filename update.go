@@ -38,6 +38,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case key.Matches(msg, m.keys.Cancel) || key.Matches(msg, m.keys.Settings):
 				m.saveSettingsToDisk()
 				m.mode = m.previousMode
+				if m.config.Commands.AurHelper != m.originalHelper {
+					return m, m.refreshAll()
+				}
 				return m, nil
 			case msg.String() == "up" || msg.String() == "k":
 				if m.settingsIndex > 0 {
@@ -152,6 +155,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.keys.Settings):
 			m.previousMode = m.mode
 			m.mode = modeSettings
+			m.originalHelper = m.config.Commands.AurHelper
 			return m, nil
 		case key.Matches(msg, m.keys.Search):
 			m.textInput.Focus()

@@ -55,7 +55,7 @@ func TestConfirmationCentering(t *testing.T) {
 	// We don't hardcode paths here because they are now dynamic
 	m.dashboard.PacmanCachePath = "/var/cache/pacman/pkg"
 	path, _ := GetAURCacheDir(&m.config)
-	m.dashboard.ParuCachePath = path
+	m.dashboard.AurCachePath = path
 	
 	width := 100
 	height := 30

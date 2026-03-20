@@ -224,9 +224,10 @@ type DashboardData struct {
 	PacmanCacheSize      string
 	PacmanCacheSizeBytes int64
 	PacmanCachePath      string
-	ParuCacheSize        string
-	ParuCacheSizeBytes   int64
-	ParuCachePath        string
+	ParuCacheSize        string `toml:"-"` // Deprecated: use AurCacheSize
+	AurCacheSize         string
+	AurCacheSizeBytes    int64
+	AurCachePath         string
 	Orphans              int
 	MissingFromAUR       int
 	TopPackages          []PackageSize // Top 10 packages by size
@@ -234,9 +235,9 @@ type DashboardData struct {
 	TopCacheHogs         []PackageSize // Top 5 packages taking up cache space
 	AllCacheHogs         []PackageSize // All packages taking up cache space
 	UninstalledPacmanCache []PackageSize // Uninstalled packages in pacman cache
-	UninstalledParuCache   []PackageSize // Uninstalled packages in paru cache
+	UninstalledAurCache    []PackageSize // Uninstalled packages in AUR helper cache
 	CacheFreedPacman     map[confirmationType]string // Estimated savings for pacman
-	CacheFreedParu       map[confirmationType]string // Estimated savings for paru
+	CacheFreedAur        map[confirmationType]string // Estimated savings for AUR helper
 	CacheFreedEstimates  map[confirmationType]string // Total estimated savings
 	// Disk usage info
 	DiskTotal      string

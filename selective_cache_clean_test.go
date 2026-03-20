@@ -15,7 +15,7 @@ func TestSelectiveCacheCleanFlow(t *testing.T) {
 		{Name: "pkg2", Size: "200 MiB", SizeBytes: 200 * 1024 * 1024},
 	}
 	m.dashboard.PacmanCachePath = "/tmp/pacman"
-	m.dashboard.ParuCachePath = "/tmp/paru"
+	m.dashboard.AurCachePath = "/tmp/paru"
 
 	// 2. Press 'c' to enter Cache Menu
 	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("c")})

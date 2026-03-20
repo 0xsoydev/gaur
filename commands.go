@@ -206,7 +206,7 @@ func executeCleanCache(m *model, op confirmationType, keep int, uninstalled bool
 }
 
 // executeSelectiveClean specifically deletes selected cache files
-func executeSelectiveClean(m *model, packages []string, pacmanCachePath string, paruCachePath string) tea.Cmd {
+func executeSelectiveClean(m *model, packages []string, pacmanCachePath string, aurCachePath string) tea.Cmd {
 	if len(packages) == 0 {
 		return func() tea.Msg {
 			return execCompleteMsg{operation: confirmCleanSelective, err: fmt.Errorf("no packages selected")}
@@ -245,7 +245,7 @@ func executeSelectiveClean(m *model, packages []string, pacmanCachePath string, 
 	}
 
 	findMatches(pacmanCachePath)
-	_ = filepath.WalkDir(paruCachePath, func(path string, d os.DirEntry, err error) error {
+	_ = filepath.WalkDir(aurCachePath, func(path string, d os.DirEntry, err error) error {
 		if err != nil || d.IsDir() {
 			return nil
 		}

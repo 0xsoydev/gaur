@@ -1057,8 +1057,8 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 				packages = append(packages, Package{Name: p.Name, Size: p.Size})
 			}
 		}
-		if len(m.dashboard.UninstalledParuCache) > 0 {
-			for _, p := range m.dashboard.UninstalledParuCache {
+		if len(m.dashboard.UninstalledAurCache) > 0 {
+			for _, p := range m.dashboard.UninstalledAurCache {
 				packages = append(packages, Package{Name: p.Name, Size: p.Size})
 			}
 		}
@@ -1129,7 +1129,7 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 			dialogContent = append(dialogContent, packageNameStyle.Render("System Cache:"))
 			dialogContent = append(dialogContent, fmt.Sprintf("  %s %s", labelStyle.Render("Path:"), scrollHintStyle.Render(m.dashboard.PacmanCachePath)))
 			dialogContent = append(dialogContent, packageNameStyle.Render("User Cache:"))
-			dialogContent = append(dialogContent, fmt.Sprintf("  %s %s", labelStyle.Render("Path:"), scrollHintStyle.Render(m.dashboard.ParuCachePath)))
+			dialogContent = append(dialogContent, fmt.Sprintf("  %s %s", labelStyle.Render("Path:"), scrollHintStyle.Render(m.dashboard.AurCachePath)))
 			dialogContent = append(dialogContent, "")
 		}
 
@@ -1137,13 +1137,13 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 		dialogContent = append(dialogContent, breakdownHeaderStyle.Render("Breakdown:"))
 
 		pacmanEstimate := m.dashboard.CacheFreedPacman[m.confirmType]
-		paruEstimate := m.dashboard.CacheFreedParu[m.confirmType]
+		aurEstimate := m.dashboard.CacheFreedAur[m.confirmType]
 		if m.confirmType == confirmCleanNuke {
 			pacmanEstimate = m.dashboard.PacmanCacheSize
-			paruEstimate = m.dashboard.ParuCacheSize
+			aurEstimate = m.dashboard.AurCacheSize
 		}
 		if pacmanEstimate == "" { pacmanEstimate = "calculating..." }
-		if paruEstimate == "" { paruEstimate = "calculating..." }
+		if aurEstimate == "" { aurEstimate = "calculating..." }
 
 		valStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
 		pacmanLabel := sourceStyle("core").Render("  pacman:")
@@ -1151,10 +1151,10 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 		if len(helperLabel) < 7 {
 			helperLabel += strings.Repeat(" ", 7-len(helperLabel))
 		}
-		paruLabel := sourceStyle("aur").Render("  " + helperLabel)
+		aurLabel := sourceStyle("aur").Render("  " + helperLabel)
 
 		dialogContent = append(dialogContent, lipgloss.PlaceHorizontal(contentWidth, lipgloss.Center, fmt.Sprintf("%s %s", pacmanLabel, valStyle.Render(pacmanEstimate))))
-		dialogContent = append(dialogContent, lipgloss.PlaceHorizontal(contentWidth, lipgloss.Center, fmt.Sprintf("%s %s", paruLabel, valStyle.Render(paruEstimate))))
+		dialogContent = append(dialogContent, lipgloss.PlaceHorizontal(contentWidth, lipgloss.Center, fmt.Sprintf("%s %s", aurLabel, valStyle.Render(aurEstimate))))
 		dialogContent = append(dialogContent, "")
 
 		estStyle := lipgloss.NewStyle().Width(contentWidth).Align(lipgloss.Center)

@@ -392,16 +392,16 @@ func getDashboardData(c *Config) tea.Cmd {
 			data.TopCacheHogs = topHogs
 			data.AllCacheHogs = toPkgSize(allSorted)
 			data.UninstalledPacmanCache = toPkgSize(sortEntries(uninstalledPacman))
-			data.UninstalledParuCache = toPkgSize(sortEntries(uninstalledAur))
+			data.UninstalledAurCache = toPkgSize(sortEntries(uninstalledAur))
 			data.CacheFreedPacman = estimatesPacman
-			data.CacheFreedParu = estimatesAur
+			data.CacheFreedAur = estimatesAur
 			data.CacheFreedEstimates = estimatesTotal
 			data.PacmanCachePath = pacmanCachePath
 			data.PacmanCacheSizeBytes = pacmanSize
 			data.PacmanCacheSize = formatBytes(pacmanSize)
-			data.ParuCachePath = aurBase
-			data.ParuCacheSizeBytes = aurBaseSize
-			data.ParuCacheSize = formatBytes(aurBaseSize)
+			data.AurCachePath = aurBase
+			data.AurCacheSizeBytes = aurBaseSize
+			data.AurCacheSize = formatBytes(aurBaseSize)
 			data.CleanerSizeBytes = totalCache
 			data.CleanerSize = formatBytes(totalCache)
 			dataMu.Unlock()
