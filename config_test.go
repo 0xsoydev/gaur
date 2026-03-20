@@ -77,6 +77,37 @@ func TestConfigLoadPersistence(t *testing.T) {
 	}
 }
 
+func TestConfigMultiKeyPersistence(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "gaur-test-multikey-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	configPath := filepath.Join(tmpDir, "config.toml")
+	
+	cfg := DefaultConfig()
+	// DefaultConfig now has multiple keys for modes
+	err = saveConfig(configPath, cfg)
+	if err != nil {
+		t.Errorf("Failed to save config: %v", err)
+	}
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	content := string(data)
+	// Check if arrays are present in the TOML
+	if !strings.Contains(content, `install_mode = ['i', 'alt+2']`) {
+		t.Errorf("Saved TOML does not contain expected install_mode array, got:\n%s", content)
+	}
+	if !strings.Contains(content, `dashboard_mode = ['d', 'alt+1']`) {
+		t.Errorf("Saved TOML does not contain expected dashboard_mode array, got:\n%s", content)
+	}
+}
+
 func containsString(s, substr string) bool {
 	return strings.Contains(s, substr)
 }

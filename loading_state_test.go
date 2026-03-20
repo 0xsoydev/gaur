@@ -100,7 +100,7 @@ func TestModeSwitchesSetLoading(t *testing.T) {
 	m.pendingUpdates = []Package{{Name: "old-pkg"}}
 
 	// Switch to Update Mode
-	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(cfg.Keys.UpdateMode)})
+	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(cfg.Keys.UpdateMode[0])})
 	m = newModel.(*model)
 	
 	if !m.loading {
@@ -112,7 +112,7 @@ func TestModeSwitchesSetLoading(t *testing.T) {
 
 	// Switch to Dashboard (n)
 	m.loading = false
-	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(cfg.Keys.DashboardMode)})
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(cfg.Keys.DashboardMode[0])})
 	m = newModel.(*model)
 	if !m.loading {
 		t.Error("expected switching to dashboard mode to set loading = true")
@@ -120,7 +120,7 @@ func TestModeSwitchesSetLoading(t *testing.T) {
 
 	// Switch to Uninstall (r)
 	m.loading = false
-	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(cfg.Keys.UninstallMode)})
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(cfg.Keys.UninstallMode[0])})
 	m = newModel.(*model)
 	if !m.loading {
 		t.Error("expected switching to uninstall mode to set loading = true")

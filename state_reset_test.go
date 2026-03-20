@@ -17,7 +17,7 @@ func TestStateResetOnModeSwitch(t *testing.T) {
 	m.dashForPackage = "vim"
 	
 	// 2. Switch to Dashboard (n)
-	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(cfg.Keys.DashboardMode)})
+	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(cfg.Keys.DashboardMode[0])})
 	m = newModel.(*model)
 	
 	if m.mode != modeDashboard {
@@ -40,7 +40,7 @@ func TestStateResetTransitionToUninstall(t *testing.T) {
 	m.packageDash = "fzf dashboard"
 	
 	// Switch to Uninstall (r)
-	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(cfg.Keys.UninstallMode)})
+	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(cfg.Keys.UninstallMode[0])})
 	m = newModel.(*model)
 	
 	if m.mode != modeUninstall {

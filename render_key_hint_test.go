@@ -87,8 +87,8 @@ func TestConfigKeyReflectionInView(t *testing.T) {
 	lipgloss.SetColorProfile(termenv.Ascii)
 	cfg := DefaultConfig()
 	// Change some keys
-	cfg.Keys.InstallMode = "x"
-	cfg.Keys.DashboardMode = "v" // 'v' is in 'dash'
+	cfg.Keys.InstallMode = []string{"x"}
+	cfg.Keys.DashboardMode = []string{"v"} // 'v' is in 'dash'
 	cfg.Keys.Quit = []string{"ctrl+q"}
 
 	m := initialModel(modeInstall, cfg)
@@ -105,7 +105,7 @@ func TestConfigKeyReflectionInView(t *testing.T) {
 	}
 	
 	// Test a key that IS in the name
-	cfg.Keys.UninstallMode = "r" // 'r' is in 'remove'
+	cfg.Keys.UninstallMode = []string{"r"} // 'r' is in 'remove'
 	m = initialModel(modeInstall, cfg)
 	view = stripAnsi(m.renderHelpText(lipgloss.Color("7")))
 	if !strings.Contains(view, "[r]emove") {
