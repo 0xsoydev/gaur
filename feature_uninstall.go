@@ -134,18 +134,26 @@ func (m *model) filterInstalledPackages(query string) {
 		return
 	}
 
-	filters, searchQuery := parseUninstallFilter(query)
-	
+	filters, searchQuery := parseRemoveFilter(query)
+
 	candidates := m.installed
 	if len(filters) > 0 {
 		var filtered []Package
 		for _, pkg := range m.installed {
 			match := false
-			if filters["total"] { match = true }
-			if filters["explicit"] && pkg.Explicit { match = true }
-			if filters["foreign"] && pkg.Source == "aur" { match = true }
-			if filters["orphan"] && pkg.Orphan { match = true }
-			
+			if filters["total"] {
+				match = true
+			}
+			if filters["explicit"] && pkg.Explicit {
+				match = true
+			}
+			if filters["foreign"] && pkg.Source == "aur" {
+				match = true
+			}
+			if filters["orphan"] && pkg.Orphan {
+				match = true
+			}
+
 			if match {
 				filtered = append(filtered, pkg)
 			}
@@ -163,7 +171,7 @@ func (m *model) filterInstalledPackages(query string) {
 	m.matchIndices = computeAllMatchIndices(m.filteredInstalled, searchQuery)
 }
 
-func uninstallPackage(c *Config, pkg Package) tea.Cmd {
+func removePackage(c *Config, pkg Package) tea.Cmd {
 	return func() tea.Msg {
 
 		if !isValidPackageName(pkg.Name) {
@@ -188,7 +196,7 @@ func uninstallPackage(c *Config, pkg Package) tea.Cmd {
 	}
 }
 
-func uninstallMultiplePackages(c *Config, pkgNames []string) tea.Cmd {
+func removeMultiplePackages(c *Config, pkgNames []string) tea.Cmd {
 	return func() tea.Msg {
 
 		validNames, allValid := sanitizePackageNames(pkgNames)
@@ -200,7 +208,7 @@ func uninstallMultiplePackages(c *Config, pkgNames []string) tea.Cmd {
 		}
 		if len(validNames) == 0 {
 			return actionCompleteMsg{
-				message: "No valid package names to uninstall",
+				message: "No valid package names to remove",
 				err:     fmt.Errorf("no valid packages"),
 			}
 		}
