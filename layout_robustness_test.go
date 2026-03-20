@@ -52,9 +52,9 @@ func TestLayoutRobustness(t *testing.T) {
 				// Inline Mock Data Setup
 				m.loading = false
 				m.packages = []Package{
-					{Name: "git", Source: "core", Version: "2.44.0", Size: "10 MiB"},
-					{Name: "vim", Source: "extra", Version: "9.1.0", Size: "20 MiB"},
-					{Name: "gaur-git", Source: "aur", Version: "1.0.0", Size: "1.5 MiB"},
+					{Name: "git", Source: "core", Version: "2.44.0", Size: "10.00 MiB"},
+					{Name: "vim", Source: "extra", Version: "9.1.0", Size: "20.00 MiB"},
+					{Name: "gaur-git", Source: "aur", Version: "1.0.0", Size: "1.50 MiB"},
 				}
 				m.filtered = m.packages
 				m.installed = m.packages
@@ -62,14 +62,14 @@ func TestLayoutRobustness(t *testing.T) {
 				m.pendingUpdates = m.packages
 				m.dashboard = DashboardData{
 					TotalPackages: 1000,
-					TotalSize: "5.2 GiB",
-					DiskTotal: "500 GiB",
-					DiskUsed: "200 GiB",
+					TotalSize: "5.20 GiB",
+					DiskTotal: "500.00 GiB",
+					DiskUsed: "200.00 GiB",
 					DiskUsedPercent: 0.4,
-					CleanerSize: "2.1 GiB",
+					CleanerSize: "2.10 GiB",
 					RepoDistribution: map[string]int{"core": 200, "extra": 500, "multilib": 50, "aur": 250},
-					TopPackages: []PackageSize{{Name: "test-heavy", Size: "1.2 GiB"}},
-					AllCacheHogs: []PackageSize{{Name: "hog1", Size: "50 MiB", SizeBytes: 50*1024*1024}},
+					TopPackages: []PackageSize{{Name: "test-heavy", Size: "1.20 GiB"}},
+					AllCacheHogs: []PackageSize{{Name: "hog1", Size: "50.00 MiB", SizeBytes: 50*1024*1024}},
 				}
 				
 				if mode == modeSettings {

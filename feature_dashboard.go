@@ -469,11 +469,13 @@ func parseParuStats(output string) (totalSize string, totalSizeBytes int64, miss
 			parts := strings.SplitN(line, ":", 2)
 			if len(parts) == 2 {
 				name := strings.TrimSpace(parts[0])
-				size := strings.TrimSpace(parts[1])
+				sizeStr := strings.TrimSpace(parts[1])
 				if name != "" {
+					sb := parseSizeToBytes(sizeStr)
 					topPackages = append(topPackages, PackageSize{
-						Name: name,
-						Size: size,
+						Name:      name,
+						Size:      formatBytes(sb),
+						SizeBytes: sb,
 					})
 				}
 			}
@@ -483,8 +485,9 @@ func parseParuStats(output string) (totalSize string, totalSizeBytes int64, miss
 		if strings.Contains(line, "Total Size occupied") || strings.Contains(line, "Total Installed Size") {
 			parts := strings.SplitN(line, ":", 2)
 			if len(parts) == 2 {
-				totalSize = strings.TrimSpace(parts[1])
-				totalSizeBytes = parseSizeToBytes(totalSize)
+				ts := strings.TrimSpace(parts[1])
+				totalSizeBytes = parseSizeToBytes(ts)
+				totalSize = formatBytes(totalSizeBytes)
 			}
 		}
 		if strings.Contains(line, "Missing") && strings.Contains(line, "AUR") {
@@ -513,7 +516,8 @@ func parsePaccacheDryRunDetailed(output string) (int, string) {
 	if len(parts) > 1 {
 		resParts := strings.Fields(parts[1])
 		if len(resParts) >= 2 {
-			return count, resParts[0] + " " + strings.TrimSuffix(resParts[1], ")")
+			sizeStr := resParts[0] + " " + strings.TrimSuffix(resParts[1], ")")
+			return count, formatBytes(parseSizeToBytes(sizeStr))
 		}
 	}
 	return count, "0 B"
@@ -530,7 +534,8 @@ func parsePaccacheDryRun(output string) string {
 		// Split by space or ")" to get the size part
 		resParts := strings.Fields(parts[1])
 		if len(resParts) >= 2 {
-			return resParts[0] + " " + strings.TrimSuffix(resParts[1], ")")
+			sizeStr := resParts[0] + " " + strings.TrimSuffix(resParts[1], ")")
+			return formatBytes(parseSizeToBytes(sizeStr))
 		}
 	}
 	return "0 B"

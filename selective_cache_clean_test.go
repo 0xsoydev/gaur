@@ -11,8 +11,8 @@ func TestSelectiveCacheCleanFlow(t *testing.T) {
 	m := initialModel(modeDashboard, DefaultConfig())
 	m.loading = false
 	m.dashboard.AllCacheHogs = []PackageSize{
-		{Name: "pkg1", Size: "100 MiB", SizeBytes: 100 * 1024 * 1024},
-		{Name: "pkg2", Size: "200 MiB", SizeBytes: 200 * 1024 * 1024},
+		{Name: "pkg1", Size: "100.00 MiB", SizeBytes: 100 * 1024 * 1024},
+		{Name: "pkg2", Size: "200.00 MiB", SizeBytes: 200 * 1024 * 1024},
 	}
 	m.dashboard.PacmanCachePath = "/tmp/pacman"
 	m.dashboard.AurCachePath = "/tmp/paru"
@@ -67,7 +67,7 @@ func TestSelectiveCacheCleanFlow(t *testing.T) {
 	// 7. Simulate dashboard data refresh
 	// This should update m.filtered with the new list
 	freshData := DashboardData{
-		AllCacheHogs: []PackageSize{{Name: "pkg2", Size: "200 MiB", SizeBytes: 200 * 1024 * 1024}},
+		AllCacheHogs: []PackageSize{{Name: "pkg2", Size: "200.00 MiB", SizeBytes: 200 * 1024 * 1024}},
 	}
 	m.mode = modeCacheSelective
 	newModel, _ = m.Update(dashboardMsg{data: freshData})

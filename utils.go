@@ -500,7 +500,7 @@ func formatBytes(bytes int64) string {
 		div *= unit
 		exp++
 	}
-	return fmt.Sprintf("%.1f %ciB", float64(bytes)/float64(div), "KMGTPE"[exp])
+	return fmt.Sprintf("%.2f %ciB", float64(bytes)/float64(div), "KMGTPE"[exp])
 }
 
 // truncateWithAnsi truncates a string to a visual width, preserving ANSI codes.

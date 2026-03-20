@@ -16,8 +16,8 @@ firefox: 250.0 MiB
 `
 	totalSize, totalSizeBytes, missingAUR, topPackages := parseParuStats(sampleOutput)
 	
-	if totalSize != "15.4 GiB" {
-		t.Errorf("totalSize = %q, want 15.4 GiB", totalSize)
+	if totalSize != "15.40 GiB" {
+		t.Errorf("totalSize = %q, want 15.40 GiB", totalSize)
 	}
 	
 	if totalSizeBytes <= 0 {
@@ -25,7 +25,7 @@ firefox: 250.0 MiB
 	}
 	// 15.4 GiB is 16,535,614,259 bytes approximately
 	if totalSizeBytes < 15*1024*1024*1024 || totalSizeBytes > 16*1024*1024*1024 {
-		t.Errorf("totalSizeBytes %d is outside expected range for 15.4 GiB", totalSizeBytes)
+		t.Errorf("totalSizeBytes %d is outside expected range for 15.40 GiB", totalSizeBytes)
 	}
 	
 	if missingAUR != 2 {
@@ -38,6 +38,9 @@ firefox: 250.0 MiB
 	
 	if len(topPackages) > 0 && topPackages[0].Name != "linux" {
 		t.Errorf("topPackages[0].Name = %q, want linux", topPackages[0].Name)
+	}
+	if len(topPackages) > 0 && topPackages[0].Size != "450.00 MiB" {
+		t.Errorf("topPackages[0].Size = %q, want 450.00 MiB", topPackages[0].Size)
 	}
 }
 

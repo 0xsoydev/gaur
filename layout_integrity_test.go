@@ -49,12 +49,12 @@ func TestGlobalLayoutIntegrity(t *testing.T) {
 				m.loading = false
 				m.dashboard = DashboardData{
 					TotalPackages: 500,
-					TotalSize: "5 GiB",
-					DiskTotal: "100 GiB",
-					DiskUsed: "50 GiB",
+					TotalSize: "5.00 GiB",
+					DiskTotal: "100.00 GiB",
+					DiskUsed: "50.00 GiB",
 					DiskUsedPercent: 0.5,
 					RepoDistribution: map[string]int{"core": 100},
-					TopPackages: []PackageSize{{Name: "test", Size: "100 MiB"}},
+					TopPackages: []PackageSize{{Name: "test", Size: "100.00 MiB"}},
 				}
 			},
 		},
