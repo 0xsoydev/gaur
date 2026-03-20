@@ -25,7 +25,7 @@ func main() {
 	listThemesFlag := flag.Bool("list-themes", false, "List available themes and exit")
 	installFlag := flag.Bool("install", false, "Start in install mode (search and install packages)")
 	installFlagShort := flag.Bool("i", false, "Short flag for install mode")
-	removeFlag := flag.Bool("remove", false, "Start in remove mode (uninstall packages)")
+	removeFlag := flag.Bool("remove", false, "Start in remove mode (remove packages)")
 	removeFlagShort := flag.Bool("r", false, "Short flag for remove mode")
 	updateFlag := flag.Bool("update", false, "Start in update mode (system updates)")
 	updateFlagShort := flag.Bool("u", false, "Short flag for update mode")
@@ -48,7 +48,7 @@ func main() {
 	case "dashboard", "dash":
 		modeFromConfig = modeDashboard
 	case "uninstall", "remove":
-		modeFromConfig = modeUninstall
+		modeFromConfig = modeRemove
 	case "update":
 		modeFromConfig = modeUpdate
 	case "install":
@@ -60,7 +60,7 @@ func main() {
 	case *installFlag || *installFlagShort:
 		initialMode = modeInstall
 	case *removeFlag || *removeFlagShort:
-		initialMode = modeUninstall
+		initialMode = modeRemove
 	case *updateFlag || *updateFlagShort:
 		initialMode = modeUpdate
 	case *dashFlag || *dashFlagShort:
