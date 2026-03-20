@@ -167,10 +167,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case msg.String() == "t", msg.String() == "e", msg.String() == "f", msg.String() == "o":
 			if m.mode == modeDashboard && !m.loading {
-				m.mode = modeUninstall
+				m.mode = modeRemove
 				m.resetState()
 				m.textInput.SetValue(msg.String() + ":")
-				
+
 				if len(m.installed) > 0 {
 					m.loading = false
 					return m, m.performFiltering()
@@ -183,9 +183,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.loading = true
 			m.resetState()
 			return m, getDashboardData(&m.config)
-		case key.Matches(msg, m.keys.UninstallMode):
-			if m.mode != modeUninstall {
-				m.mode = modeUninstall
+		case key.Matches(msg, m.keys.RemoveMode):
+			if m.mode != modeRemove {
+				m.mode = modeRemove
 				m.resetState()
 
 				m.loading = true
@@ -323,7 +323,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.loading = false
 		if msg.err == nil {
 			m.installed = msg.packages
-			// Always initialize the filtered list so it's ready even if we aren't in uninstall mode yet
+			// Always initialize the filtered list so it's ready even if we aren't in remove mode yet
 			m.filteredInstalled = m.installed
 			m.statusMessage = fmt.Sprintf("Loaded %d installed packages", len(msg.packages))
 			return m, m.performFiltering()
@@ -384,14 +384,22 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *model) handleNavigation(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	key := strings.ToLower(msg.String())
-	
+
 	// 1. Cache Menu Navigation
 	if m.mode == modeCacheMenu {
 		switch key {
-		case "up", "k": if m.cacheMenuIndex > 0 { m.cacheMenuIndex-- }
-		case "down", "j": if m.cacheMenuIndex < 4 { m.cacheMenuIndex++ }
-		case "pgup": m.cacheMenuIndex = 0
-		case "pgdown": m.cacheMenuIndex = 4
+		case "up", "k":
+			if m.cacheMenuIndex > 0 {
+				m.cacheMenuIndex--
+			}
+		case "down", "j":
+			if m.cacheMenuIndex < 4 {
+				m.cacheMenuIndex++
+			}
+		case "pgup":
+			m.cacheMenuIndex = 0
+		case "pgdown":
+			m.cacheMenuIndex = 4
 		}
 		return m, nil
 	}
@@ -399,17 +407,25 @@ func (m *model) handleNavigation(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	// 2. Mode Update Scroll
 	if m.mode == modeUpdate {
 		switch key {
-		case "up", "k": if m.updateScrollOffset > 0 { m.updateScrollOffset-- }
-		case "down", "j": if m.updateScrollOffset < len(m.pendingUpdates)-1 { m.updateScrollOffset++ }
-		case "pgup": m.updateScrollOffset = 0
-		case "pgdown": m.updateScrollOffset = len(m.pendingUpdates) - 1
+		case "up", "k":
+			if m.updateScrollOffset > 0 {
+				m.updateScrollOffset--
+			}
+		case "down", "j":
+			if m.updateScrollOffset < len(m.pendingUpdates)-1 {
+				m.updateScrollOffset++
+			}
+		case "pgup":
+			m.updateScrollOffset = 0
+		case "pgdown":
+			m.updateScrollOffset = len(m.pendingUpdates) - 1
 		}
 		return m, nil
 	}
 
 	// 3. Selection List Navigation
 	maxIndex := 0
-	if m.mode == modeUninstall {
+	if m.mode == modeRemove {
 		maxIndex = len(m.filteredInstalled) - 1
 	} else {
 		maxIndex = len(m.filtered) - 1
@@ -417,7 +433,9 @@ func (m *model) handleNavigation(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	oldIdx := m.selectedIndex
 	jump := 1
-	if key == "pgup" || key == "pgdown" { jump = 10 }
+	if key == "pgup" || key == "pgdown" {
+		jump = 10
+	}
 
 	if key == "up" || key == "k" || key == "pgup" {
 		m.selectedIndex += jump
@@ -426,8 +444,12 @@ func (m *model) handleNavigation(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 
 	// Clamp
-	if m.selectedIndex > maxIndex { m.selectedIndex = maxIndex }
-	if m.selectedIndex < 0 { m.selectedIndex = 0 }
+	if m.selectedIndex > maxIndex {
+		m.selectedIndex = maxIndex
+	}
+	if m.selectedIndex < 0 {
+		m.selectedIndex = 0
+	}
 
 	if m.selectedIndex != oldIdx {
 		m.dashScrollOffset = 0
@@ -443,7 +465,9 @@ func (m *model) handleNavigation(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 func (m *model) handleMarking() (tea.Model, tea.Cmd) {
 	pkg := m.getSelectedPkg()
-	if pkg == nil { return m, nil }
+	if pkg == nil {
+		return m, nil
+	}
 	if m.mode == modeCacheSelective {
 		if m.markedPackages[pkg.Name] {
 			m.cacheToFree -= pkg.SizeBytes
@@ -464,30 +488,46 @@ func (m *model) handleMarking() (tea.Model, tea.Cmd) {
 
 func (m *model) handleActionTrigger() (tea.Model, tea.Cmd) {
 	switch m.mode {
-	case modeInstall, modeUninstall, modeUpdateSelective:
+	case modeInstall, modeRemove, modeUpdateSelective:
 		var pkgs []string
-		for n := range m.markedPackages { pkgs = append(pkgs, n) }
+		for n := range m.markedPackages {
+			pkgs = append(pkgs, n)
+		}
 		if len(pkgs) == 0 {
 			p := m.getSelectedPkg()
-			if p != nil { pkgs = []string{p.Name} }
+			if p != nil {
+				pkgs = []string{p.Name}
+			}
 		}
 		if len(pkgs) > 0 {
-			sort.Strings(pkgs); m.showConfirmation = true; m.confirmPackages = pkgs
-			if m.mode == modeInstall { m.confirmType = confirmInstall }
-			if m.mode == modeUninstall { m.confirmType = confirmUninstall }
-			if m.mode == modeUpdateSelective { m.confirmType = confirmSelectiveUpdate }
+			sort.Strings(pkgs)
+			m.showConfirmation = true
+			m.confirmPackages = pkgs
+			if m.mode == modeInstall {
+				m.confirmType = confirmInstall
+			}
+			if m.mode == modeRemove {
+				m.confirmType = confirmRemove
+			}
+			if m.mode == modeUpdateSelective {
+				m.confirmType = confirmSelectiveUpdate
+			}
 		}
 	case modeCacheMenu:
 		switch m.cacheMenuIndex {
 		case 4:
-			m.mode = modeCacheSelective; m.selectedIndex = 0
-			m.textInput.SetValue(""); m.lastQuery = ""
+			m.mode = modeCacheSelective
+			m.selectedIndex = 0
+			m.textInput.SetValue("")
+			m.lastQuery = ""
 			m.packageDash = ""
 			m.dashForPackage = ""
 			m.dashScrollOffset = 0
 			m.resetState()
 			m.filtered = make([]Package, len(m.dashboard.AllCacheHogs))
-			for i, h := range m.dashboard.AllCacheHogs { m.filtered[i] = Package{Name: h.Name, Size: h.Size, SizeBytes: h.SizeBytes} }
+			for i, h := range m.dashboard.AllCacheHogs {
+				m.filtered[i] = Package{Name: h.Name, Size: h.Size, SizeBytes: h.SizeBytes}
+			}
 		default:
 			m.showConfirmation = true
 			types := []confirmationType{confirmCleanKeep3, confirmCleanKeep1, confirmCleanUninstalled, confirmCleanNuke}
@@ -496,14 +536,23 @@ func (m *model) handleActionTrigger() (tea.Model, tea.Cmd) {
 	case modeCacheSelective:
 		if len(m.markedPackages) > 0 {
 			var pkgs []string
-			for n := range m.markedPackages { pkgs = append(pkgs, n) }
-			sort.Strings(pkgs); m.showConfirmation = true; m.confirmType = confirmCleanSelective; m.confirmPackages = pkgs
+			for n := range m.markedPackages {
+				pkgs = append(pkgs, n)
+			}
+			sort.Strings(pkgs)
+			m.showConfirmation = true
+			m.confirmType = confirmCleanSelective
+			m.confirmPackages = pkgs
 		}
 	case modeUpdate:
 		if len(m.pendingUpdates) > 0 {
 			var pkgs []string
-			for _, p := range m.pendingUpdates { pkgs = append(pkgs, p.Name) }
-			m.showConfirmation = true; m.confirmType = confirmUpdate; m.confirmPackages = pkgs
+			for _, p := range m.pendingUpdates {
+				pkgs = append(pkgs, p.Name)
+			}
+			m.showConfirmation = true
+			m.confirmType = confirmUpdate
+			m.confirmPackages = pkgs
 			m.statusMessage = fmt.Sprintf("Confirm update for %d packages", len(m.pendingUpdates))
 		}
 	}
@@ -514,47 +563,77 @@ func (m *model) handleConfirmationKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if key.Matches(msg, m.keys.Confirm) || msg.String() == "y" || msg.String() == "Y" {
 		m.showConfirmation = false
 		switch m.confirmType {
-		case confirmInstall: return m, executeInstallInTerminal(m, m.confirmPackages)
-		case confirmUninstall: return m, executeUninstallInTerminal(m, m.confirmPackages)
-		case confirmUpdate: return m, executeUpdateInTerminal(m)
-		case confirmSelectiveUpdate: return m, executeSelectiveUpdateInTerminal(m, m.confirmPackages)
-		case confirmCleanKeep3: return m, executeCleanCache(m, confirmCleanKeep3, 3, false)
-		case confirmCleanKeep1: return m, executeCleanCache(m, confirmCleanKeep1, 1, false)
-		case confirmCleanUninstalled: return m, executeCleanCache(m, confirmCleanUninstalled, 0, true)
-		case confirmCleanNuke: return m, executeCleanCache(m, confirmCleanNuke, 0, false)
-		case confirmCleanSelective: return m, executeSelectiveClean(m, m.confirmPackages, m.dashboard.PacmanCachePath, m.dashboard.AurCachePath)
-		case confirmRemoveOrphans: return m, executeRemoveOrphansInTerminal(m, m.confirmPackages)
+		case confirmInstall:
+			return m, executeInstallInTerminal(m, m.confirmPackages)
+		case confirmRemove:
+			return m, executeRemoveInTerminal(m, m.confirmPackages)
+		case confirmUpdate:
+			return m, executeUpdateInTerminal(m)
+		case confirmSelectiveUpdate:
+			return m, executeSelectiveUpdateInTerminal(m, m.confirmPackages)
+		case confirmCleanKeep3:
+			return m, executeCleanCache(m, confirmCleanKeep3, 3, false)
+		case confirmCleanKeep1:
+			return m, executeCleanCache(m, confirmCleanKeep1, 1, false)
+		case confirmCleanUninstalled:
+			return m, executeCleanCache(m, confirmCleanUninstalled, 0, true)
+		case confirmCleanNuke:
+			return m, executeCleanCache(m, confirmCleanNuke, 0, false)
+		case confirmCleanSelective:
+			return m, executeSelectiveClean(m, m.confirmPackages, m.dashboard.PacmanCachePath, m.dashboard.AurCachePath)
+		case confirmRemoveOrphans:
+			return m, executeRemoveOrphansInTerminal(m, m.confirmPackages)
 		}
 	} else if key.Matches(msg, m.keys.Cancel) || msg.String() == "n" || msg.String() == "N" {
 		m.showConfirmation = false
 	}
-	
+
 	// Scrolling in confirmation
 	key := strings.ToLower(msg.String())
-	if key == "up" || key == "k" { if m.confirmScrollOffset > 0 { m.confirmScrollOffset-- } }
-	if key == "down" || key == "j" { if m.confirmScrollOffset < m.maxConfirmScroll { m.confirmScrollOffset++ } }
-	if key == "pgup" { m.confirmScrollOffset = 0 }
-	if key == "pgdown" { m.confirmScrollOffset = m.maxConfirmScroll }
+	if key == "up" || key == "k" {
+		if m.confirmScrollOffset > 0 {
+			m.confirmScrollOffset--
+		}
+	}
+	if key == "down" || key == "j" {
+		if m.confirmScrollOffset < m.maxConfirmScroll {
+			m.confirmScrollOffset++
+		}
+	}
+	if key == "pgup" {
+		m.confirmScrollOffset = 0
+	}
+	if key == "pgdown" {
+		m.confirmScrollOffset = m.maxConfirmScroll
+	}
 
 	return m, nil
 }
 
 func (m *model) handleSelectionPanelKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	var names []string
-	for n := range m.markedPackages { names = append(names, n) }
+	for n := range m.markedPackages {
+		names = append(names, n)
+	}
 	sort.Strings(names)
-	
+
 	switch {
 	case key.Matches(msg, m.keys.Cancel):
 		m.selectionPanelFocused = false
 	case msg.String() == "up", msg.String() == "k":
-		if m.selectionPanelIndex > 0 { m.selectionPanelIndex-- }
+		if m.selectionPanelIndex > 0 {
+			m.selectionPanelIndex--
+		}
 	case msg.String() == "down", msg.String() == "j":
-		if m.selectionPanelIndex < len(names)-1 { m.selectionPanelIndex++ }
+		if m.selectionPanelIndex < len(names)-1 {
+			m.selectionPanelIndex++
+		}
 	case key.Matches(msg, m.keys.Mark):
 		if m.selectionPanelIndex < len(names) {
 			delete(m.markedPackages, names[m.selectionPanelIndex])
-			if len(m.markedPackages) == 0 { m.selectionPanelFocused = false }
+			if len(m.markedPackages) == 0 {
+				m.selectionPanelFocused = false
+			}
 		}
 	case key.Matches(msg, m.keys.Confirm):
 		m.selectionPanelFocused = false
@@ -572,7 +651,7 @@ func (m *model) performFiltering() tea.Cmd {
 
 	if m.mode == modeInstall {
 		m.filterAllPackages(query)
-		
+
 		// Trigger AUR search if query is long enough and different from last AUR search
 		_, searchQuery := parseRepoFilter(query)
 
@@ -593,7 +672,9 @@ func (m *model) performFiltering() tea.Cmd {
 			cmds = append(cmds, m.spinner.Tick, searchAUR(&m.config, searchQuery))
 		}
 	}
-	if m.mode == modeUninstall { m.filterInstalledPackages(query) }
+	if m.mode == modeRemove {
+		m.filterInstalledPackages(query)
+	}
 	if m.mode == modeUpdateSelective {
 		if query == "" {
 			m.filtered = m.updatableAll
@@ -632,39 +713,77 @@ func (m *model) performFiltering() tea.Cmd {
 
 func (m *model) getSelectedPkg() *Package {
 	list := m.filtered
-	if m.mode == modeUninstall { list = m.filteredInstalled }
-	if m.selectedIndex >= 0 && m.selectedIndex < len(list) { return &list[m.selectedIndex] }
+	if m.mode == modeRemove {
+		list = m.filteredInstalled
+	}
+	if m.selectedIndex >= 0 && m.selectedIndex < len(list) {
+		return &list[m.selectedIndex]
+	}
 	return nil
 }
 
 func (m *model) getPackageByName(name string) *Package {
 	list := m.filtered
-	if m.mode == modeUninstall { list = m.filteredInstalled }
-	for i := range list { if list[i].Name == name { return &list[i] } }
+	if m.mode == modeRemove {
+		list = m.filteredInstalled
+	}
+	for i := range list {
+		if list[i].Name == name {
+			return &list[i]
+		}
+	}
 	return nil
 }
 
 func (m *model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	if m.showConfirmation {
-		if msg.Type == tea.MouseWheelUp { if m.confirmScrollOffset > 0 { m.confirmScrollOffset-- } }
-		if msg.Type == tea.MouseWheelDown { if m.confirmScrollOffset < m.maxConfirmScroll { m.confirmScrollOffset++ } }
+		if msg.Type == tea.MouseWheelUp {
+			if m.confirmScrollOffset > 0 {
+				m.confirmScrollOffset--
+			}
+		}
+		if msg.Type == tea.MouseWheelDown {
+			if m.confirmScrollOffset < m.maxConfirmScroll {
+				m.confirmScrollOffset++
+			}
+		}
 		return m, nil
 	}
 
-	if msg.Type != tea.MouseWheelUp && msg.Type != tea.MouseWheelDown { return m, nil }
-	
+	if msg.Type != tea.MouseWheelUp && msg.Type != tea.MouseWheelDown {
+		return m, nil
+	}
+
 	// Details pane scroll check
-	if (m.mode == modeInstall || m.mode == modeUninstall) && msg.Y < m.height/2 {
-		if msg.Type == tea.MouseWheelUp { if m.dashScrollOffset > 0 { m.dashScrollOffset-- } } else { if m.dashScrollOffset < m.maxDashScroll { m.dashScrollOffset++ } }
+	if (m.mode == modeInstall || m.mode == modeRemove) && msg.Y < m.height/2 {
+		if msg.Type == tea.MouseWheelUp {
+			if m.dashScrollOffset > 0 {
+				m.dashScrollOffset--
+			}
+		} else {
+			if m.dashScrollOffset < m.maxDashScroll {
+				m.dashScrollOffset++
+			}
+		}
 		return m, nil
 	}
 	if m.mode == modeUpdateSelective && msg.X >= m.width/2 {
-		if msg.Type == tea.MouseWheelUp { if m.dashScrollOffset > 0 { m.dashScrollOffset-- } } else { if m.dashScrollOffset < m.maxDashScroll { m.dashScrollOffset++ } }
+		if msg.Type == tea.MouseWheelUp {
+			if m.dashScrollOffset > 0 {
+				m.dashScrollOffset--
+			}
+		} else {
+			if m.dashScrollOffset < m.maxDashScroll {
+				m.dashScrollOffset++
+			}
+		}
 		return m, nil
 	}
 
 	fake := tea.KeyMsg{Type: tea.KeyUp}
-	if msg.Type == tea.MouseWheelDown { fake.Type = tea.KeyDown }
+	if msg.Type == tea.MouseWheelDown {
+		fake.Type = tea.KeyDown
+	}
 	return m.handleNavigation(fake)
 }
 
