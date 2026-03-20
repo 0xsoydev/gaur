@@ -443,7 +443,7 @@ func countLines(output string) int {
 	return len(lines)
 }
 
-// parseSizeToBytes converts a human-readable size (e.g., "10.5 GiB") to bytes
+// parseSizeToBytes converts a human-readable size (e.g., "10.5 GiB", "500 M") to bytes
 func parseSizeToBytes(size string) int64 {
 	size = strings.TrimSpace(size)
 	var value float64
@@ -452,14 +452,14 @@ func parseSizeToBytes(size string) int64 {
 
 	unit = strings.ToLower(unit)
 	switch {
-	case strings.HasPrefix(unit, "kib") || strings.HasPrefix(unit, "kb"):
-		return int64(value * 1024)
-	case strings.HasPrefix(unit, "mib") || strings.HasPrefix(unit, "mb"):
-		return int64(value * 1024 * 1024)
-	case strings.HasPrefix(unit, "gib") || strings.HasPrefix(unit, "gb"):
-		return int64(value * 1024 * 1024 * 1024)
-	case strings.HasPrefix(unit, "tib") || strings.HasPrefix(unit, "tb"):
+	case strings.HasPrefix(unit, "t"):
 		return int64(value * 1024 * 1024 * 1024 * 1024)
+	case strings.HasPrefix(unit, "g"):
+		return int64(value * 1024 * 1024 * 1024)
+	case strings.HasPrefix(unit, "m"):
+		return int64(value * 1024 * 1024)
+	case strings.HasPrefix(unit, "k"):
+		return int64(value * 1024)
 	default:
 		return int64(value)
 	}
