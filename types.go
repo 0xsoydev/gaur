@@ -168,8 +168,8 @@ type aurSearchMsg struct {
 	err       error
 }
 
-type packageDashMsg struct {
-	dash        string
+type packageDetailsMsg struct {
+	details     string
 	packageName string
 	err         error
 }
@@ -206,7 +206,7 @@ type dashboardMsg struct {
 	err  error
 }
 
-// debounceTickMsg is sent after debounce timer expires to trigger package dash fetch
+// debounceTickMsg is sent after debounce timer expires to trigger package details fetch
 type debounceTickMsg struct {
 	packageName string
 }
@@ -224,7 +224,6 @@ type DashboardData struct {
 	PacmanCacheSize        string
 	PacmanCacheSizeBytes   int64
 	PacmanCachePath        string
-	ParuCacheSize          string `toml:"-"` // Deprecated: use AurCacheSize
 	AurCacheSize           string
 	AurCacheSizeBytes      int64
 	AurCachePath           string

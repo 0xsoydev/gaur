@@ -28,13 +28,13 @@ type model struct {
 	selectionPanelFocused bool            // Whether selection panel is focused
 	selectionPanelIndex   int             // Selected index within selection panel
 	selectionScrollOffset int             // Scroll offset for the selection panel
-	packageDash           string
-	dashCache             map[string]string // Cache for fetched package details
-	dashForPackage        string
-	pendingDashPackage    string // Package waiting for debounce to complete
-	dashScrollOffset      int    // Scroll offset for the dash/details pane
-	maxDashScroll         int    // Maximum allowed scroll for dash pane
-	loadingDash           bool
+	packageDetails        string
+	detailsCache          map[string]string // Cache for fetched package details
+	detailsForPackage     string
+	pendingDetailsPackage string // Package waiting for debounce to complete
+	detailsScrollOffset   int    // Scroll offset for the dash/details pane
+	maxDetailsScroll      int    // Maximum allowed scroll for dash pane
+	loadingDetails        bool
 	mode                  viewMode
 	width                 int
 	height                int
@@ -99,7 +99,7 @@ func initialModel(initialMode viewMode, cfg Config) *model {
 		filtered:       []Package{},
 		installed:      []Package{},
 		markedPackages: make(map[string]bool),
-		dashCache:      make(map[string]string),
+		detailsCache:   make(map[string]string),
 		selectedIndex:  0,
 		mode:           initialMode,
 		loading:        true,
@@ -118,8 +118,8 @@ func initialModel(initialMode viewMode, cfg Config) *model {
 	}
 
 	if initialMode == modeRemove {
-		m.loadingDash = true
-		m.dashForPackage = "..."
+		m.loadingDetails = true
+		m.detailsForPackage = "..."
 	}
 
 	m.initSettings()
@@ -198,10 +198,10 @@ func (m *model) resetState() {
 	m.selectionPanelIndex = 0
 	m.selectionScrollOffset = 0
 	m.cacheToFree = 0
-	m.packageDash = ""
-	m.dashForPackage = ""
-	m.dashScrollOffset = 0
-	m.loadingDash = false
+	m.packageDetails = ""
+	m.detailsForPackage = ""
+	m.detailsScrollOffset = 0
+	m.loadingDetails = false
 	m.textInput.SetValue("")
 	m.lastQuery = ""
 	m.selectedIndex = 0

@@ -354,7 +354,7 @@ func setTheme(t themeType) {
 		normalStyle = lipgloss.NewStyle().
 			Foreground(currentTheme.TextColor)
 
-		packageDashStyle = lipgloss.NewStyle().
+		packageDetailsStyle = lipgloss.NewStyle().
 			Foreground(currentTheme.TextColor).
 			Padding(1)
 
@@ -373,19 +373,19 @@ func setTheme(t themeType) {
 			Foreground(currentTheme.HighlightColor).
 			Bold(true)
 
-		dashboardLabelStyle = lipgloss.NewStyle().
+		detailsLabelStyle = lipgloss.NewStyle().
 			Foreground(currentTheme.DashboardLabel).
 			Bold(true)
 
-		dashboardValueStyle = lipgloss.NewStyle().
+		detailsValueStyle = lipgloss.NewStyle().
 			Foreground(currentTheme.DashboardValue).
 			Bold(true)
 
-		dashboardWarningStyle = lipgloss.NewStyle().
+		detailsWarningStyle = lipgloss.NewStyle().
 			Foreground(currentTheme.DashboardWarning).
 			Bold(true)
 
-		dashboardDescStyle = lipgloss.NewStyle().
+		detailsDescStyle = lipgloss.NewStyle().
 			Foreground(currentTheme.DashboardDesc)
 	}
 }
@@ -461,7 +461,7 @@ var (
 	normalStyle = lipgloss.NewStyle().
 			Foreground(currentTheme.TextColor)
 
-	packageDashStyle = lipgloss.NewStyle().
+	packageDetailsStyle = lipgloss.NewStyle().
 				Foreground(currentTheme.TextColor).
 				Padding(1)
 
@@ -480,18 +480,18 @@ var (
 				Foreground(currentTheme.HighlightColor).
 				Bold(true)
 
-	dashboardLabelStyle = lipgloss.NewStyle().
+	detailsLabelStyle = lipgloss.NewStyle().
 				Foreground(currentTheme.DashboardLabel).
 				Bold(true)
 
-	dashboardValueStyle = lipgloss.NewStyle().
+	detailsValueStyle = lipgloss.NewStyle().
 				Foreground(currentTheme.DashboardValue).
 				Bold(true)
 
-	dashboardWarningStyle = lipgloss.NewStyle().
+	detailsWarningStyle = lipgloss.NewStyle().
 				Foreground(currentTheme.DashboardWarning).
 				Bold(true)
 
-	dashboardDescStyle = lipgloss.NewStyle().
+	detailsDescStyle = lipgloss.NewStyle().
 				Foreground(currentTheme.DashboardDesc)
 )
