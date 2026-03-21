@@ -179,27 +179,39 @@ func executeCleanCache(m *model, op confirmationType, keep int, removed bool) te
 
 	aurCache, _ := GetAURCacheDir(&m.config)
 
-	removedFlag := ""
+	var args []string
 	if removed {
-		removedFlag = "-u"
+		args = append(args, "-u")
 	}
+	args = append(args, "-k", fmt.Sprintf("%d", keep))
 
-	// We pass paths as arguments to the shell to avoid injection even if validation fails.
-	// $1 is cacheTool, $2 is aurCache, $3 is removedFlag, $4 is keep
-	script := `
-		tool="$1"; cache="$2"; flag="$3"; keep="$4"
-		echo "Cleaning system cache..."
-		sudo "$tool" -r $flag -k "$keep"
-		if [ -n "$cache" ] && [ -d "$cache" ]; then
-			echo "Cleaning AUR helper cache..."
-			find "$cache" -maxdepth 2 -type d -exec "$tool" -q -r $flag -k "$keep" -c {} \;
-		fi
-		echo "Done."
-	`
+	// System cache cleaning command
+	sysArgs := append([]string{"-r"}, args...)
 
 	return runner.Interactive(func(err error) tea.Msg {
-		return execCompleteMsg{operation: op, err: err}
-	}, "bash", "-c", script, "sh", cacheTool, aurCache, removedFlag, fmt.Sprintf("%d", keep))
+		if err != nil {
+			return execCompleteMsg{operation: op, err: err}
+		}
+
+		// If system cache cleaning succeeded, try to clean AUR cache if it exists
+		if aurCache != "" {
+			if _, statErr := os.Stat(aurCache); statErr == nil {
+				// We need to clean each subdirectory in AUR cache (e.g. ~/.cache/paru/clone/pkgname)
+				entries, _ := os.ReadDir(aurCache)
+				for _, entry := range entries {
+					if entry.IsDir() {
+						pkgPath := filepath.Join(aurCache, entry.Name())
+						cleanArgs := append([]string{"-q", "-r", "-c", pkgPath}, args...)
+						// We run these silently for now or we could chain them.
+						// To keep it simple and interactive-friendly, we'll just do it sequentially.
+						_, _ = runner.Run(cacheTool, cleanArgs...)
+					}
+				}
+			}
+		}
+
+		return execCompleteMsg{operation: op, err: nil}
+	}, "sudo", append([]string{cacheTool}, sysArgs...)...)
 }
 
 // executeSelectiveClean specifically deletes selected cache files

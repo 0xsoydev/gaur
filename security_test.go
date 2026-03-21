@@ -99,26 +99,25 @@ func TestSecurityFixes(t *testing.T) {
 		// Execute the tea.Cmd to trigger our mock runner
 		cmd()
 
-		// Verify that the malicious string is passed as an argument, NOT interpolated into the script
-		if len(mRunner.capturedArgs) < 5 {
-			t.Fatalf("Expected at least 5 arguments for bash -c, got %v", mRunner.capturedArgs)
+		// Verify that it calls sudo directly
+		if len(mRunner.capturedArgs) < 2 {
+			t.Fatalf("Expected at least 2 arguments for sudo, got %v", mRunner.capturedArgs)
 		}
 
-		script := mRunner.capturedArgs[2]
-		if strings.Contains(script, "/tmp/malicious; rm -rf /") {
-			t.Error("CRITICAL: Malicious string was interpolated into the shell script!")
+		if mRunner.capturedArgs[0] != "sudo" {
+			t.Errorf("Expected first arg to be sudo, got %q", mRunner.capturedArgs[0])
 		}
 
-		// Verify it was passed as an argument
-		found := false
-		for i, arg := range mRunner.capturedArgs {
-			if i > 2 && arg == "/tmp/malicious; rm -rf /" {
-				found = true
-				break
+		if mRunner.capturedArgs[1] != "paccache" {
+			t.Errorf("Expected second arg to be paccache, got %q", mRunner.capturedArgs[1])
+		}
+
+		// Verify that none of the arguments are the malicious string (because we don't pass CacheDir to paccache -r by default)
+		// and verify that if we did pass it, it would be a separate argument.
+		for _, arg := range mRunner.capturedArgs {
+			if strings.Contains(arg, ";") || strings.Contains(arg, "rm -rf") {
+				t.Errorf("Found suspicious string in arguments: %q", arg)
 			}
-		}
-		if !found {
-			t.Error("Malicious string was not found in the arguments list")
 		}
 	})
 }

@@ -123,6 +123,11 @@ func ValidateConfig(c *Config) {
 	// Clean and validate CacheDir if provided
 	if c.Advanced.CacheDir != "" {
 		c.Advanced.CacheDir = filepath.Clean(c.Advanced.CacheDir)
+		if !filepath.IsAbs(c.Advanced.CacheDir) {
+			// If it's relative, we could make it absolute or reset it. 
+			// For security, let's just reset it to default if it's not absolute or looks suspicious.
+			c.Advanced.CacheDir = ""
+		}
 	}
 }
 
