@@ -12,18 +12,18 @@ func TestMouseScrollStandardMode(t *testing.T) {
 	m.height = 24
 	m.loading = false
 	
-	// Setup with package dash and a list
-	m.packageDash = "Some dashboard"
-	m.maxDashScroll = 10
-	m.dashScrollOffset = 0
+	// Setup with package details and a list
+	m.packageDetails = "Some details"
+	m.maxDetailsScroll = 10
+	m.detailsScrollOffset = 0
 	m.filtered = []Package{{Name: "pkg1"}, {Name: "pkg2"}}
 	m.selectedIndex = 0
 
 	// 1. TOP HALF (Y < height/2) should scroll details
 	newModel, _ := m.Update(tea.MouseMsg{Type: tea.MouseWheelDown, Y: 5})
 	m = newModel.(*model)
-	if m.dashScrollOffset != 1 {
-		t.Errorf("Top half: expected dashScrollOffset 1, got %d", m.dashScrollOffset)
+	if m.detailsScrollOffset != 1 {
+		t.Errorf("Top half: expected detailsScrollOffset 1, got %d", m.detailsScrollOffset)
 	}
 	if m.selectedIndex != 0 {
 		t.Error("Top half: selectedIndex changed")
@@ -46,15 +46,15 @@ func TestMouseScrollSelectiveUpdateMode(t *testing.T) {
 	m.filtered = m.updatableAll
 	m.selectedIndex = 0
 	
-	m.packageDash = "Some dashboard"
-	m.maxDashScroll = 10
-	m.dashScrollOffset = 0
+	m.packageDetails = "Some details"
+	m.maxDetailsScroll = 10
+	m.detailsScrollOffset = 0
 
 	// 1. RIGHT SIDE (X >= width/2): scroll details
 	newModel, _ := m.Update(tea.MouseMsg{Type: tea.MouseWheelDown, X: 60, Y: 10})
 	m = newModel.(*model)
-	if m.dashScrollOffset != 1 {
-		t.Errorf("Right side: expected dashScrollOffset 1, got %d", m.dashScrollOffset)
+	if m.detailsScrollOffset != 1 {
+		t.Errorf("Right side: expected detailsScrollOffset 1, got %d", m.detailsScrollOffset)
 	}
 
 	// 2. LEFT SIDE (X < width/2): navigate list

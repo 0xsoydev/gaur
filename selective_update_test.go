@@ -81,7 +81,7 @@ func TestSelectiveUpdateFlow(t *testing.T) {
 	}
 }
 
-func TestSelectiveUpdateMouseScrollWithDash(t *testing.T) {
+func TestSelectiveUpdateMouseScrollWithDetails(t *testing.T) {
 	m := initialModel(modeUpdateSelective, DefaultConfig())
 	m.width = 80
 	m.height = 24
@@ -90,12 +90,12 @@ func TestSelectiveUpdateMouseScrollWithDash(t *testing.T) {
 	m.filtered = m.updatableAll
 	m.selectedIndex = 0
 	
-	// Set package dash - this SHOULD prevent list scrolling
-	m.packageDash = "Some multi-line\npackage dashboard\nto scroll through."
-	m.maxDashScroll = 5
-	m.dashScrollOffset = 0
+	// Set package details - this SHOULD prevent list scrolling
+	m.packageDetails = "Some multi-line\npackage details\nto scroll through."
+	m.maxDetailsScroll = 5
+	m.detailsScrollOffset = 0
 
-	// Scroll mouse wheel up - RIGHT SIDE (X=60) should scroll dash
+	// Scroll mouse wheel up - RIGHT SIDE (X=60) should scroll details
 	newModel, _ := m.Update(tea.MouseMsg{Type: tea.MouseWheelUp, X: 60})
 	m = newModel.(*model)
 	
@@ -103,19 +103,19 @@ func TestSelectiveUpdateMouseScrollWithDash(t *testing.T) {
 		t.Errorf("Expected selectedIndex 0, got %d (should NOT move list when scrolling on right side)", m.selectedIndex)
 	}
 	
-	// Scroll mouse wheel down - RIGHT SIDE (X=60) should scroll dash
+	// Scroll mouse wheel down - RIGHT SIDE (X=60) should scroll details
 	newModel, _ = m.Update(tea.MouseMsg{Type: tea.MouseWheelDown, X: 60})
 	m = newModel.(*model)
 	
 	if m.selectedIndex != 0 {
 		t.Errorf("Expected selectedIndex 0, got %d (should NOT move list when scrolling on right side)", m.selectedIndex)
 	}
-	if m.dashScrollOffset != 1 {
-		t.Errorf("Expected dashScrollOffset 1, got %d", m.dashScrollOffset)
+	if m.detailsScrollOffset != 1 {
+		t.Errorf("Expected detailsScrollOffset 1, got %d", m.detailsScrollOffset)
 	}
 }
 
-func TestSelectiveUpdateMouseScrollWithoutDash(t *testing.T) {
+func TestSelectiveUpdateMouseScrollWithoutDetails(t *testing.T) {
 	m := initialModel(modeUpdateSelective, DefaultConfig())
 	m.width = 80
 	m.height = 24
@@ -124,8 +124,8 @@ func TestSelectiveUpdateMouseScrollWithoutDash(t *testing.T) {
 	m.filtered = m.updatableAll
 	m.selectedIndex = 0
 	
-	// EMPTY package dash
-	m.packageDash = ""
+	// EMPTY package details
+	m.packageDetails = ""
 
 	// Scroll mouse wheel up - LEFT SIDE (X=10) should move list cursor
 	newModel, _ := m.Update(tea.MouseMsg{Type: tea.MouseWheelUp, X: 10})

@@ -35,7 +35,7 @@ Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea) • Powered 
 - **Repository Filtering** — Filter by source with prefixes: `c:` (core), `e:` (extra), `m:` (multilib), `a:` (aur)
 - **Batch Operations** — Mark multiple packages with `Tab` and install/remove them all at once
 - **Interactive Hand-off** — Correctly handles terminal prompts for password entry and conflict resolution
-- **Real-time Package Dash** — View detailed package dashboard with debounced loading
+- **Real-time Package Details** — View detailed package information with debounced loading
 
 ### 📊 System Dashboard
 
