@@ -1058,16 +1058,16 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 		title = "🧹 Confirm Cache Cleaning"
 		actionDesc = "clean"
 		simpleConfirm = true
-	case confirmCleanUninstalled:
+	case confirmCleanRemoved:
 		title = "🧹 Confirm Orphaned Cache Clean"
 		actionDesc = "clean orphaned packages from cache"
-		if len(m.dashboard.UninstalledPacmanCache) > 0 {
-			for _, p := range m.dashboard.UninstalledPacmanCache {
+		if len(m.dashboard.RemovedPacmanCache) > 0 {
+			for _, p := range m.dashboard.RemovedPacmanCache {
 				packages = append(packages, Package{Name: p.Name, Size: p.Size})
 			}
 		}
-		if len(m.dashboard.UninstalledAurCache) > 0 {
-			for _, p := range m.dashboard.UninstalledAurCache {
+		if len(m.dashboard.RemovedAurCache) > 0 {
+			for _, p := range m.dashboard.RemovedAurCache {
 				packages = append(packages, Package{Name: p.Name, Size: p.Size})
 			}
 		}
@@ -1093,7 +1093,7 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 		activeBorderColor = lipgloss.Color("39")
 	case confirmRemove:
 		activeBorderColor = lipgloss.Color("208")
-	case confirmCleanUninstalled:
+	case confirmCleanRemoved:
 		activeBorderColor = lipgloss.Color("42")
 	case confirmCleanNuke:
 		activeBorderColor = lipgloss.Color("196")
@@ -1185,7 +1185,7 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 		listTitleStyle := lipgloss.NewStyle().Width(contentWidth).Align(lipgloss.Center)
 		if m.confirmType == confirmUpdate {
 			dialogContent = append(dialogContent, listTitleStyle.Render(fmt.Sprintf("The following %s updates are available:", countStyle.Render(fmt.Sprintf("%d", len(packages))))))
-		} else if m.confirmType == confirmCleanUninstalled {
+		} else if m.confirmType == confirmCleanRemoved {
 			dialogContent = append(dialogContent, listTitleStyle.Render("This will remove cached packages that are no longer installed."))
 		} else {
 			dialogContent = append(dialogContent, listTitleStyle.Render(fmt.Sprintf("The following %s packages will be %sd:", countStyle.Render(fmt.Sprintf("%d", len(packages))), actionDesc)))
@@ -1210,7 +1210,7 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 				line = fmt.Sprintf("  • %s %s %s", sourceStyle(pkg.Source).Render(fmt.Sprintf("[%s]", pkg.Source)), packageNameStyle.Render(pkg.Name), packageVersionStyle.Render(pkg.Version))
 			} else if pkg.Version == "HEADER" {
 				line = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("229")).Render(pkg.Name)
-			} else if m.confirmType == confirmCleanUninstalled || m.confirmType == confirmCleanSelective {
+			} else if m.confirmType == confirmCleanRemoved || m.confirmType == confirmCleanSelective {
 				namePart := "  • " + packageNameStyle.Render(pkg.Name)
 				sizePart := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render(pkg.Size)
 				spacing := (dialogWidth - 10) - lipgloss.Width(namePart) - lipgloss.Width(sizePart)
@@ -1229,7 +1229,7 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 			dialogContent = append(dialogContent, lipgloss.PlaceHorizontal(contentWidth, lipgloss.Center, scrollHintStyle.Render("  Use [↑/↓] or [j/k] to scroll")))
 		}
 
-		if m.confirmType == confirmCleanUninstalled {
+		if m.confirmType == confirmCleanRemoved {
 			dialogContent = append(dialogContent, "")
 			breakdownHeaderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Bold(true).Width(contentWidth).Align(lipgloss.Center)
 			dialogContent = append(dialogContent, breakdownHeaderStyle.Render("Breakdown:"))
@@ -1250,7 +1250,7 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 			dialogContent = append(dialogContent, lipgloss.PlaceHorizontal(contentWidth, lipgloss.Center, fmt.Sprintf("%s %s", sourceStyle("aur").Render("  "+helperLabel), lipgloss.NewStyle().Foreground(lipgloss.Color("252")).Render(aurEst))))
 		}
 
-		if m.confirmType == confirmCleanUninstalled || m.confirmType == confirmCleanSelective {
+		if m.confirmType == confirmCleanRemoved || m.confirmType == confirmCleanSelective {
 			dialogContent = append(dialogContent, "")
 			est := m.dashboard.CacheFreedEstimates[m.confirmType]
 			if m.confirmType == confirmCleanSelective {
