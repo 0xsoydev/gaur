@@ -127,7 +127,7 @@ const (
 	confirmSelectiveUpdate
 	confirmCleanKeep3       // paccache -r
 	confirmCleanKeep1       // paccache -rk1
-	confirmCleanUninstalled // paccache -ruk0
+	confirmCleanRemoved     // paccache -ruk0
 	confirmCleanNuke        // paccache -rk0
 	confirmCleanSelective   // Custom selective clean
 	confirmRemoveOrphans
@@ -234,8 +234,8 @@ type DashboardData struct {
 	RecentlyInstalled      []RecentPackage             // Details of 5 recently installed packages
 	TopCacheHogs           []PackageSize               // Top 5 packages taking up cache space
 	AllCacheHogs           []PackageSize               // All packages taking up cache space
-	UninstalledPacmanCache []PackageSize               // Uninstalled packages in pacman cache
-	UninstalledAurCache    []PackageSize               // Uninstalled packages in AUR helper cache
+	RemovedPacmanCache     []PackageSize               // Removed packages in pacman cache
+	RemovedAurCache        []PackageSize               // Removed packages in AUR helper cache
 	CacheFreedPacman       map[confirmationType]string // Estimated savings for pacman
 	CacheFreedAur          map[confirmationType]string // Estimated savings for AUR helper
 	CacheFreedEstimates    map[confirmationType]string // Total estimated savings
