@@ -169,7 +169,8 @@ func executeUpdateInTerminal(m *model) tea.Cmd {
 	}, args[0], args[1:]...)
 }
 
-// executeCleanCache cleans both pacman and AUR helper caches
+// executeCleanCache cleans both pacman and AUR helper caches.
+// It executes commands directly instead of using a shell string to prevent injection.
 func executeCleanCache(m *model, op confirmationType, keep int, removed bool) tea.Cmd {
 	cacheTool := m.config.Commands.CacheTool
 	if cacheTool == "" {
@@ -178,31 +179,27 @@ func executeCleanCache(m *model, op confirmationType, keep int, removed bool) te
 
 	aurCache, _ := GetAURCacheDir(&m.config)
 
-	// Check if AUR cache exists to avoid 'find' errors
-	aurCacheExists := false
-	if aurCache != "" {
-		if _, err := os.Stat(aurCache); err == nil {
-			aurCacheExists = true
-		}
-	}
-
 	removedFlag := ""
 	if removed {
 		removedFlag = "-u"
 	}
 
-	// Build a script that provides feedback and handles subdirectories correctly
-	script := fmt.Sprintf("echo 'Cleaning system cache...'\nsudo %s -r %s -k %d || true", cacheTool, removedFlag, keep)
-	if aurCacheExists {
-		// Use \; instead of + to ensure paccache is called for each subdirectory
-		// We use -q to suppress "no candidate packages" noise from empty subdirs
-		script += fmt.Sprintf("\necho 'Cleaning AUR helper cache...'\nfind %s -maxdepth 2 -type d -exec %s -q -r %s -k %d -c {} \\;\necho 'Done.'",
-			aurCache, cacheTool, removedFlag, keep)
-	}
+	// We pass paths as arguments to the shell to avoid injection even if validation fails.
+	// $1 is cacheTool, $2 is aurCache, $3 is removedFlag, $4 is keep
+	script := `
+		tool="$1"; cache="$2"; flag="$3"; keep="$4"
+		echo "Cleaning system cache..."
+		sudo "$tool" -r $flag -k "$keep"
+		if [ -n "$cache" ] && [ -d "$cache" ]; then
+			echo "Cleaning AUR helper cache..."
+			find "$cache" -maxdepth 2 -type d -exec "$tool" -q -r $flag -k "$keep" -c {} \;
+		fi
+		echo "Done."
+	`
 
 	return runner.Interactive(func(err error) tea.Msg {
 		return execCompleteMsg{operation: op, err: err}
-	}, "bash", "-c", script)
+	}, "bash", "-c", script, "sh", cacheTool, aurCache, removedFlag, fmt.Sprintf("%d", keep))
 }
 
 // executeSelectiveClean specifically deletes selected cache files
