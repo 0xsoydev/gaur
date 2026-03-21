@@ -47,7 +47,7 @@ func main() {
 	switch cfg.Startup.DefaultMode {
 	case "dashboard", "dash":
 		modeFromConfig = modeDashboard
-	case "uninstall", "remove":
+	case "remove":
 		modeFromConfig = modeRemove
 	case "update":
 		modeFromConfig = modeUpdate
