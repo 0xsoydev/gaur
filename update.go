@@ -530,7 +530,7 @@ func (m *model) handleActionTrigger() (tea.Model, tea.Cmd) {
 			}
 		default:
 			m.showConfirmation = true
-			types := []confirmationType{confirmCleanKeep3, confirmCleanKeep1, confirmCleanUninstalled, confirmCleanNuke}
+			types := []confirmationType{confirmCleanKeep3, confirmCleanKeep1, confirmCleanRemoved, confirmCleanNuke}
 			m.confirmType = types[m.cacheMenuIndex]
 		}
 	case modeCacheSelective:
@@ -575,8 +575,8 @@ func (m *model) handleConfirmationKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, executeCleanCache(m, confirmCleanKeep3, 3, false)
 		case confirmCleanKeep1:
 			return m, executeCleanCache(m, confirmCleanKeep1, 1, false)
-		case confirmCleanUninstalled:
-			return m, executeCleanCache(m, confirmCleanUninstalled, 0, true)
+		case confirmCleanRemoved:
+			return m, executeCleanCache(m, confirmCleanRemoved, 0, true)
 		case confirmCleanNuke:
 			return m, executeCleanCache(m, confirmCleanNuke, 0, false)
 		case confirmCleanSelective:
