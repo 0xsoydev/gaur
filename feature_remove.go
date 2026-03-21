@@ -185,13 +185,13 @@ func removePackage(c *Config, pkg Package) tea.Cmd {
 		out, err := runner.Run(args[0], args[1:]...)
 		if err != nil {
 			return actionCompleteMsg{
-				message: fmt.Sprintf("Failed to uninstall %s: %s", pkg.Name, string(out)),
+				message: fmt.Sprintf("Failed to remove %s: %s", pkg.Name, string(out)),
 				err:     err,
 			}
 		}
 
 		return actionCompleteMsg{
-			message: fmt.Sprintf("Successfully uninstalled %s", pkg.Name),
+			message: fmt.Sprintf("Successfully removed %s", pkg.Name),
 		}
 	}
 }
@@ -217,13 +217,13 @@ func removeMultiplePackages(c *Config, pkgNames []string) tea.Cmd {
 		out, err := runner.Run(args[0], args[1:]...)
 		if err != nil {
 			return actionCompleteMsg{
-				message: fmt.Sprintf("Failed to uninstall packages: %s", string(out)),
+				message: fmt.Sprintf("Failed to remove packages: %s", string(out)),
 				err:     err,
 			}
 		}
 
 		return actionCompleteMsg{
-			message: fmt.Sprintf("Successfully uninstalled %d packages", len(validNames)),
+			message: fmt.Sprintf("Successfully removed %d packages", len(validNames)),
 		}
 	}
 }
