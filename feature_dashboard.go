@@ -328,14 +328,14 @@ func getDashboardData(c *Config) tea.Cmd {
 
 			allSorted := sortEntries(combinedHogs)
 			
-			// Filter uninstalled
-			uninstalledPacman := make(map[string]int64)
+			// Filter removed packages from cache
+			removedPacman := make(map[string]int64)
 			for k, v := range pacmanHogs {
-				if !installed[k] { uninstalledPacman[k] = v }
+				if !installed[k] { removedPacman[k] = v }
 			}
-			uninstalledAur := make(map[string]int64)
+			removedAur := make(map[string]int64)
 			for k, v := range aurHogs {
-				if !installed[k] { uninstalledAur[k] = v }
+				if !installed[k] { removedAur[k] = v }
 			}
 
 			var topHogs []PackageSize
@@ -382,7 +382,7 @@ func getDashboardData(c *Config) tea.Cmd {
 
 			fetchDetailedEstimate(confirmCleanKeep3, aurKeep3Count, aurKeep3Saved, "-k3")
 			fetchDetailedEstimate(confirmCleanKeep1, aurKeep1Count, aurKeep1Saved, "-k1")
-			fetchDetailedEstimate(confirmCleanUninstalled, aurOrphanCount, aurOrphanSaved, "-uk0")
+			fetchDetailedEstimate(confirmCleanRemoved, aurOrphanCount, aurOrphanSaved, "-uk0")
 			
 			estimatesPacman[confirmCleanNuke] = formatBytes(pacmanSize)
 			estimatesAur[confirmCleanNuke] = formatBytes(aurBaseSize)
@@ -391,8 +391,8 @@ func getDashboardData(c *Config) tea.Cmd {
 			dataMu.Lock()
 			data.TopCacheHogs = topHogs
 			data.AllCacheHogs = toPkgSize(allSorted)
-			data.UninstalledPacmanCache = toPkgSize(sortEntries(uninstalledPacman))
-			data.UninstalledAurCache = toPkgSize(sortEntries(uninstalledAur))
+			data.RemovedPacmanCache = toPkgSize(sortEntries(removedPacman))
+			data.RemovedAurCache = toPkgSize(sortEntries(removedAur))
 			data.CacheFreedPacman = estimatesPacman
 			data.CacheFreedAur = estimatesAur
 			data.CacheFreedEstimates = estimatesTotal
