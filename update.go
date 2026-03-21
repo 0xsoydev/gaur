@@ -103,9 +103,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.resetState()
 					m.textInput.SetValue("")
 					m.lastQuery = ""
-					m.packageDash = ""
-					m.dashForPackage = ""
-					m.dashScrollOffset = 0
+					m.packageDetails = ""
+					m.detailsForPackage = ""
+					m.detailsScrollOffset = 0
 				}
 				m.textInput.Blur()
 				return m, nil
@@ -206,9 +206,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.textInput.Focus()
 				if len(m.pendingUpdates) > 0 {
 					m.filtered = m.pendingUpdates
-					m.loadingDash = true
-					m.dashForPackage = m.filtered[0].Name
-					return m, getPackageDash(m, m.filtered[0])
+					m.loadingDetails = true
+					m.detailsForPackage = m.filtered[0].Name
+					return m, getPackageDetails(m, m.filtered[0])
 				}
 			}
 		case key.Matches(msg, m.keys.Confirm):
@@ -302,20 +302,20 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
 
-	case packageDashMsg:
-		if msg.packageName == m.dashForPackage {
-			m.loadingDash = false
-			m.packageDash = msg.dash
-			m.dashCache[msg.packageName] = msg.dash
+	case packageDetailsMsg:
+		if msg.packageName == m.detailsForPackage {
+			m.loadingDetails = false
+			m.packageDetails = msg.details
+			m.detailsCache[msg.packageName] = msg.details
 		}
 
 	case debounceTickMsg:
-		if msg.packageName == m.pendingDashPackage {
-			m.dashForPackage = msg.packageName
+		if msg.packageName == m.pendingDetailsPackage {
+			m.detailsForPackage = msg.packageName
 			pkg := m.getPackageByName(msg.packageName)
 			if pkg != nil {
-				m.dashScrollOffset = 0
-				return m, getPackageDash(m, *pkg)
+				m.detailsScrollOffset = 0
+				return m, getPackageDetails(m, *pkg)
 			}
 		}
 
@@ -451,13 +451,13 @@ func (m *model) handleNavigation(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.selectedIndex = 0
 	}
 
-	if m.selectedIndex != oldIdx {
-		m.dashScrollOffset = 0
+		if m.selectedIndex != oldIdx {
+		m.detailsScrollOffset = 0
 		pkg := m.getSelectedPkg()
 		if pkg != nil && m.mode != modeCacheSelective {
-			m.loadingDash = true
-			m.pendingDashPackage = pkg.Name
-			return m, debouncePackageDash(m, m.pendingDashPackage)
+			m.loadingDetails = true
+			m.pendingDetailsPackage = pkg.Name
+			return m, debouncePackageDetails(m, m.pendingDetailsPackage)
 		}
 	}
 	return m, nil
@@ -520,9 +520,9 @@ func (m *model) handleActionTrigger() (tea.Model, tea.Cmd) {
 			m.selectedIndex = 0
 			m.textInput.SetValue("")
 			m.lastQuery = ""
-			m.packageDash = ""
-			m.dashForPackage = ""
-			m.dashScrollOffset = 0
+			m.packageDetails = ""
+			m.detailsForPackage = ""
+			m.detailsScrollOffset = 0
 			m.resetState()
 			m.filtered = make([]Package, len(m.dashboard.AllCacheHogs))
 			for i, h := range m.dashboard.AllCacheHogs {
@@ -700,13 +700,13 @@ func (m *model) performFiltering() tea.Cmd {
 	// Fetch dash for the first item automatically if list is not empty
 	pkg := m.getSelectedPkg()
 	if pkg != nil && m.mode != modeCacheSelective {
-		m.loadingDash = true
-		m.pendingDashPackage = pkg.Name
-		cmds = append(cmds, debouncePackageDash(m, m.pendingDashPackage))
+		m.loadingDetails = true
+		m.pendingDetailsPackage = pkg.Name
+		cmds = append(cmds, debouncePackageDetails(m, m.pendingDetailsPackage))
 	} else {
-		m.loadingDash = false
-		m.packageDash = ""
-		m.dashForPackage = ""
+		m.loadingDetails = false
+		m.packageDetails = ""
+		m.detailsForPackage = ""
 	}
 	return tea.Batch(cmds...)
 }
@@ -757,24 +757,24 @@ func (m *model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	// Details pane scroll check
 	if (m.mode == modeInstall || m.mode == modeRemove) && msg.Y < m.height/2 {
 		if msg.Type == tea.MouseWheelUp {
-			if m.dashScrollOffset > 0 {
-				m.dashScrollOffset--
+			if m.detailsScrollOffset > 0 {
+				m.detailsScrollOffset--
 			}
 		} else {
-			if m.dashScrollOffset < m.maxDashScroll {
-				m.dashScrollOffset++
+			if m.detailsScrollOffset < m.maxDetailsScroll {
+				m.detailsScrollOffset++
 			}
 		}
 		return m, nil
 	}
 	if m.mode == modeUpdateSelective && msg.X >= m.width/2 {
 		if msg.Type == tea.MouseWheelUp {
-			if m.dashScrollOffset > 0 {
-				m.dashScrollOffset--
+			if m.detailsScrollOffset > 0 {
+				m.detailsScrollOffset--
 			}
 		} else {
-			if m.dashScrollOffset < m.maxDashScroll {
-				m.dashScrollOffset++
+			if m.detailsScrollOffset < m.maxDetailsScroll {
+				m.detailsScrollOffset++
 			}
 		}
 		return m, nil

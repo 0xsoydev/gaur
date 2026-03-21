@@ -11,9 +11,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// debouncePackageDash returns a command that waits for the debounce duration
+// debouncePackageDetails returns a command that waits for the debounce duration
 // then sends a tick message to trigger the actual fetch
-func debouncePackageDash(m *model, pkgName string) tea.Cmd {
+func debouncePackageDetails(m *model, pkgName string) tea.Cmd {
 	duration := time.Duration(m.config.Advanced.DebounceMs) * time.Millisecond
 	return tea.Tick(duration, func(t time.Time) tea.Msg {
 		return debounceTickMsg{packageName: pkgName}
@@ -61,11 +61,11 @@ func BuildAURCommand(c *Config, action string, args ...string) []string {
 	return append(cmd, args...)
 }
 
-func getPackageDash(m *model, pkg Package) tea.Cmd {
+func getPackageDetails(m *model, pkg Package) tea.Cmd {
 	return func() tea.Msg {
 
 		if !isValidPackageName(pkg.Name) {
-			return packageDashMsg{dash: "Invalid package name", packageName: pkg.Name, err: fmt.Errorf("invalid package name: %s", pkg.Name)}
+			return packageDetailsMsg{details: "Invalid package name", packageName: pkg.Name, err: fmt.Errorf("invalid package name: %s", pkg.Name)}
 		}
 
 		// Use -Qi for purely local lookup if we explicitly want installed version dash.
@@ -80,10 +80,10 @@ func getPackageDash(m *model, pkg Package) tea.Cmd {
 		args := []string{"--noconfirm", arg, pkg.Name}
 		out, err := runner.Run(m.config.Commands.AurHelper, args...)
 		if err != nil {
-			return packageDashMsg{dash: "Failed to get package dashboard", packageName: pkg.Name, err: err}
+			return packageDetailsMsg{details: "Failed to get package details", packageName: pkg.Name, err: err}
 		}
 
-		return packageDashMsg{dash: string(out), packageName: pkg.Name}
+		return packageDetailsMsg{details: string(out), packageName: pkg.Name}
 	}
 }
 
