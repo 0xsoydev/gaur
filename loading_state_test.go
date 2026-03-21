@@ -47,7 +47,7 @@ func TestLoadingStateTransitions(t *testing.T) {
 			expectedLoaded: false,
 		},
 		{
-			name:           "Action complete (background install/uninstall)",
+			name:           "Action complete (background install/remove)",
 			initialMode:    modeInstall,
 			triggerMsg:     actionCompleteMsg{message: "done"},
 			expectedLoaded: true, // triggers refreshAll
