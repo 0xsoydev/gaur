@@ -591,7 +591,7 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 
 	if m.loading {
 		// Total height is innerHeight. Footer is 1 line.
-		// dashPanel Total Height = innerHeight - 1.
+		// dashboardPanel Total Height = innerHeight - 1.
 		panelTotalHeight := innerHeight - 1
 		if panelTotalHeight < 3 {
 			panelTotalHeight = 3
@@ -607,7 +607,7 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 	// ═══════════════════════════════════════════════════════
 	// Bar Layout Constants - ensures all bars align perfectly
 	// ═══════════════════════════════════════════════════════
-	// availableContentWidth accounts for dashPanel borders (-2) and dashContent padding (-4 total)
+	// availableDashboardWidth accounts for dashboardPanel borders (-2) and dashboardContent padding (-4 total)
 	safeWidth := innerWidth - 6
 	if safeWidth < 60 {
 		safeWidth = 60
@@ -1035,22 +1035,22 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 	dashboard.WriteString(bottomRow)
 
 	// Total height = innerHeight. Footer = 1 line.
-	// dashPanel Total Height = innerHeight - 1.
+	// dashboardPanel Total Height = innerHeight - 1.
 	panelTotalHeight := innerHeight - 1
 	if panelTotalHeight < 5 {
 		panelTotalHeight = 5
 	}
 	panelInnerHeight := panelTotalHeight - 2
 
-	dashContent := lipgloss.NewStyle().
+	dashboardContent := lipgloss.NewStyle().
 		Width(innerWidth - 4). // account for Padding(0, 1)
 		Padding(0, 1).
 		Render(truncateHeight(dashboard.String(), panelInnerHeight))
 
-	dashPanel := borderStyle.
+	dashboardPanel := borderStyle.
 		Width(innerWidth - 2).
 		Height(max(0, panelTotalHeight-2)).
-		Render(dashContent)
+		Render(dashboardContent)
 
-	return SafeJoinVertical(innerWidth, innerHeight, "", []string{dashPanel}, footerLine)
+	return SafeJoinVertical(innerWidth, innerHeight, "", []string{dashboardPanel}, footerLine)
 }
