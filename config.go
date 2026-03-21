@@ -90,7 +90,7 @@ func LoadConfig() (Config, error) {
 	if err := toml.Unmarshal(data, &cfg); err != nil {
 		// Log error and fallback
 		logFile := filepath.Join(fullDir, defaultLogFile)
-		f, _ := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		f, _ := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 		if f != nil {
 			defer f.Close()
 			logger := log.New(f, "CONFIG ERROR: ", log.LstdFlags)
@@ -112,6 +112,18 @@ func ValidateConfig(c *Config) {
 	} else {
 		c.Commands.AurHelper = helper
 	}
+
+	// Validate CacheTool - only allow known safe tools
+	tool := strings.TrimSpace(c.Commands.CacheTool)
+	if tool != "" && tool != "paccache" {
+		log.Printf("Warning: unsupported cache tool '%s'. Resetting to 'paccache'.", c.Commands.CacheTool)
+		c.Commands.CacheTool = "paccache"
+	}
+
+	// Clean and validate CacheDir if provided
+	if c.Advanced.CacheDir != "" {
+		c.Advanced.CacheDir = filepath.Clean(c.Advanced.CacheDir)
+	}
 }
 
 func saveConfig(path string, cfg Config) error {
@@ -119,7 +131,8 @@ func saveConfig(path string, cfg Config) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, data, 0644)
+	// Use 0600 for configuration files (user read/write only)
+	return os.WriteFile(path, data, 0600)
 }
 
 // NewKeyMap creates a KeyMap from the configuration
