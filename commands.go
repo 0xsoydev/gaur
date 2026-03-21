@@ -170,7 +170,7 @@ func executeUpdateInTerminal(m *model) tea.Cmd {
 }
 
 // executeCleanCache cleans both pacman and AUR helper caches
-func executeCleanCache(m *model, op confirmationType, keep int, uninstalled bool) tea.Cmd {
+func executeCleanCache(m *model, op confirmationType, keep int, removed bool) tea.Cmd {
 	cacheTool := m.config.Commands.CacheTool
 	if cacheTool == "" {
 		cacheTool = "paccache"
@@ -186,18 +186,18 @@ func executeCleanCache(m *model, op confirmationType, keep int, uninstalled bool
 		}
 	}
 
-	uninstalledFlag := ""
-	if uninstalled {
-		uninstalledFlag = "-u"
+	removedFlag := ""
+	if removed {
+		removedFlag = "-u"
 	}
 
 	// Build a script that provides feedback and handles subdirectories correctly
-	script := fmt.Sprintf("echo 'Cleaning system cache...'\nsudo %s -r %s -k %d || true", cacheTool, uninstalledFlag, keep)
+	script := fmt.Sprintf("echo 'Cleaning system cache...'\nsudo %s -r %s -k %d || true", cacheTool, removedFlag, keep)
 	if aurCacheExists {
 		// Use \; instead of + to ensure paccache is called for each subdirectory
 		// We use -q to suppress "no candidate packages" noise from empty subdirs
 		script += fmt.Sprintf("\necho 'Cleaning AUR helper cache...'\nfind %s -maxdepth 2 -type d -exec %s -q -r %s -k %d -c {} \\;\necho 'Done.'",
-			aurCache, cacheTool, uninstalledFlag, keep)
+			aurCache, cacheTool, removedFlag, keep)
 	}
 
 	return runner.Interactive(func(err error) tea.Msg {

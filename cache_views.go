@@ -57,9 +57,9 @@ func (m *model) renderCacheMenu(helpText string, innerWidth, innerHeight int) st
 	}{
 		{"Safe Clean (Keep 3)", "Leaves the installed version and 2 fallbacks (paccache -r)"},
 		{"Aggressive (Keep 1)", "Keeps only the currently installed version (paccache -rk1)"},
-		{"Orphaned Cache", "Removes cached tarballs for uninstalled packages (paccache -ruk0)"},
+		{"Orphaned Cache", "Removes cached tarballs for removed packages (paccache -ruk0)"},
 		{"Nuke Everything", "Empties the entire cache directory (paccache -rk0)"},
-		{"Selective Clean", "Manually select specific packages to delete"},
+		{"Selective Clean", "Manually select specific packages to remove"},
 	}
 
 	var menuContent strings.Builder
