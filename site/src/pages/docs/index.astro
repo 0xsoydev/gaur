@@ -10,7 +10,7 @@ const docsEntries = await getCollection('docs');
 	<ul class="docs-list">
 		{docsEntries.map(entry => (
 			<li>
-				<a href={`/docs/${entry.slug}`}>
+				<a href={`/gaur/docs/${entry.slug}`}>
 					<h2>{entry.data.title}</h2>
 					<p>{entry.data.description}</p>
 				</a>

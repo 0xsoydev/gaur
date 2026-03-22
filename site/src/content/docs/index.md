@@ -27,6 +27,6 @@ Gaur is designed for "terminal purists" who demand speed and total control witho
 
 Explore the documentation to learn how to install, configure, and master Gaur.
 
-- [**Installation**](/docs/installation) — Get Gaur running on your system.
-- [**Configuration**](/docs/configuration) — Customize Gaur to fit your workflow.
-- [**Usage**](/docs/usage) — Master the keybindings and features.
+- [**Installation**](/gaur/docs/installation) — Get Gaur running on your system.
+- [**Configuration**](/gaur/docs/configuration) — Customize Gaur to fit your workflow.
+- [**Usage**](/gaur/docs/usage) — Master the keybindings and features.
