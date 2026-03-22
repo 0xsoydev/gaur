@@ -821,21 +821,28 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 			}
 			
 			hints := strings.Join(hintParts, " ")
-			hintsWidth := lipgloss.Width(hints)
 			
 			// Total width for content inside the panel is innerWidth-2
 			availableWidth := innerWidth - 2
 			
-			// JoinHorizontal will put them side by side. 
-			// We wrap the input in a style with the remaining width to push hints to the right.
-			inputWidth := availableWidth - hintsWidth - 2
-			if inputWidth < 20 {
-				inputWidth = 20
+			// Hints are 11 chars + 2 padding on right = 13 chars
+			// We give it a bit more for safety or flexibility
+			hintsPaneWidth := lipgloss.Width(hints) + 2 
+			inputPaneWidth := availableWidth - hintsPaneWidth
+			
+			if inputPaneWidth < 20 {
+				inputPaneWidth = 20
 			}
 			
+			hintsView := lipgloss.NewStyle().
+				Width(hintsPaneWidth).
+				Align(lipgloss.Right).
+				PaddingRight(2).
+				Render(hints)
+				
 			inputLine = lipgloss.JoinHorizontal(lipgloss.Bottom,
-				lipgloss.NewStyle().Width(inputWidth).Render(m.textInput.View()),
-				lipgloss.NewStyle().PaddingLeft(2).Render(hints),
+				lipgloss.NewStyle().Width(inputPaneWidth).Render(m.textInput.View()),
+				hintsView,
 			)
 		}
 
