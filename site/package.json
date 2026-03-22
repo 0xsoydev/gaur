@@ -1,0 +1,19 @@
+{
+  "name": "gaur-docs",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/check": "^0.9.4",
+    "@astrojs/tailwind": "^6.0.2",
+    "astro": "^4.16.1",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^5.6.3"
+  }
+}
