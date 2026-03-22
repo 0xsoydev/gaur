@@ -286,6 +286,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.searchError = false
 			if shouldSearchAUR && searchQuery == msg.query {
 				m.aurPackages = msg.packages
+				m.searchTerm = msg.query // Mark this query as complete/current
 				if len(msg.packages) == 0 {
 					m.searchStatus = fmt.Sprintf("No AUR packages found. Took %.2f seconds.", msg.timeTaken.Seconds())
 				} else {
@@ -296,6 +297,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			if shouldSearchAUR && searchQuery == msg.query {
 				m.searchError = true
+				m.searchTerm = msg.query // Mark this query as complete (even if failed)
 				errMsg := msg.err.Error()
 				if strings.Contains(errMsg, "Too many package results") {
 					m.searchStatus = "Search term too broad (too many results)."
@@ -303,6 +305,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.searchStatus = fmt.Sprintf("AUR search failed: %s", simplifyErrorMessage(errMsg))
 				}
 			}
+			return m, m.performFiltering()
 		}
 
 	case spinner.TickMsg:
@@ -668,7 +671,10 @@ func (m *model) performFiltering() tea.Cmd {
 
 		// Always update the status display if the user is typing a new query
 		if shouldSearchAUR && len(searchQuery) >= minSearchQueryLen {
-			if m.searchingAUR || searchQuery != m.lastAURQuery {
+			// Only show "Searching..." if:
+			// 1. We ARE searching and the in-flight query is NOT this one
+			// 2. OR we NEED to search (query changed)
+			if (m.searchingAUR && searchQuery != m.searchTerm) || searchQuery != m.lastAURQuery {
 				m.searchError = false // Reset error state
 				m.searchTerm = searchQuery
 				m.searchStatus = fmt.Sprintf("Searching AUR for \"%s\"...", searchQuery)

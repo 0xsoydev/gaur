@@ -144,3 +144,44 @@ func TestAurSearchResponseHandling(t *testing.T) {
 		t.Errorf("searchStatus should NOT have been updated")
 	}
 }
+
+func TestAurSearchRaceCondition(t *testing.T) {
+	m := initialModel(modeInstall, DefaultConfig())
+	
+	// User types "hel", search 1 triggers
+	m.textInput.SetValue("hel")
+	m.performFiltering()
+	if !m.searchingAUR || m.lastAURQuery != "hel" {
+		t.Fatalf("Search 1 for 'hel' should have triggered")
+	}
+	
+	// User quickly types "hello", search 2 is NOT triggered yet because searchingAUR is true
+	m.textInput.SetValue("hello")
+	m.performFiltering()
+	if m.lastAURQuery != "hel" {
+		t.Errorf("lastAURQuery should still be 'hel' until a new search is actually sent")
+	}
+	if !strings.Contains(m.searchStatus, "hello") {
+		t.Errorf("Status should mention 'hello', got: %q", m.searchStatus)
+	}
+
+	// Now Search 1 for "hel" returns
+	msg := aurSearchMsg{
+		packages: []Package{{Name: "hel-pkg", Source: "aur"}},
+		query:    "hel",
+		timeTaken: 100 * time.Millisecond,
+	}
+	
+	m.Update(msg)
+	
+	// THE FIX: m.searchingAUR should be true NOW because it should have triggered a new search for "hello"
+	if !m.searchingAUR {
+		t.Errorf("searchingAUR should be true after update because a pending query was waiting")
+	}
+	if m.lastAURQuery != "hello" {
+		t.Errorf("lastAURQuery should now be 'hello', got %q", m.lastAURQuery)
+	}
+	if !strings.Contains(m.searchStatus, "hello") {
+		t.Errorf("Status should now mention 'hello', got: %q", m.searchStatus)
+	}
+}
