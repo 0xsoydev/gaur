@@ -790,6 +790,52 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 	if displayMode == modeInstall || displayMode == modeRemove || displayMode == modeUpdateSelective {
 		inputLine = m.textInput.View()
 
+		// Add repository filter hints to the right side of the search bar in install mode
+		if displayMode == modeInstall {
+			repoFilters, _ := parseRepoFilter(m.textInput.Value())
+			
+			dimStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+			
+			var hintParts []string
+			filters := []struct {
+				char rune
+				repo string
+			}{
+				{'c', "core"},
+				{'e', "extra"},
+				{'m', "multilib"},
+				{'a', "aur"},
+			}
+			
+			for _, f := range filters {
+				text := string(f.char) + ":"
+				if repoFilters[f.repo] {
+					color, ok := sourceColors[f.repo]
+					if !ok {
+						color = lipgloss.Color("252")
+					}
+					hintParts = append(hintParts, lipgloss.NewStyle().Foreground(color).Bold(true).Render(text))
+				} else {
+					hintParts = append(hintParts, dimStyle.Render(text))
+				}
+			}
+			
+			hints := strings.Join(hintParts, " ")
+			inputWidth := lipgloss.Width(inputLine)
+			hintsWidth := lipgloss.Width(hints)
+			
+			// Total width for content inside the panel is innerWidth-2
+			// The input itself has some internal padding/margin from bubbletea
+			availableWidth := innerWidth - 2
+			paddingWidth := availableWidth - inputWidth - hintsWidth
+			if paddingWidth > 0 {
+				inputLine = inputLine + strings.Repeat(" ", paddingWidth) + hints
+			} else {
+				// If no space, just append with a single space or skip
+				inputLine = inputLine + " " + hints
+			}
+		}
+
 		if m.searchStatus != "" {
 			style := lipgloss.NewStyle().
 				Foreground(lipgloss.Color("244")).
