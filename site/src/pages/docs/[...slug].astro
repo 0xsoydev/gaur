@@ -1,0 +1,29 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+
+export async function getStaticPaths() {
+	const docsEntries = await getCollection('docs');
+	return docsEntries.map(entry => ({
+		params: { slug: entry.slug }, props: { entry },
+	}));
+}
+
+const { entry } = Astro.props;
+const { Content } = await entry.render();
+---
+
+<Layout title={entry.data.title}>
+	<div class="docs-content">
+		<Content />
+	</div>
+</Layout>
+
+<style is:global>
+	.docs-content h1 { font-size: 2.5rem; border-bottom: 2px solid #333; padding-bottom: 0.5rem; }
+	.docs-content h2 { font-size: 1.8rem; margin-top: 2rem; border-bottom: 1px solid #333; }
+	.docs-content code { background: #1b1d23; padding: 0.2rem 0.4rem; border-radius: 4px; color: #ff79c6; }
+	.docs-content pre { background: #1b1d23; padding: 1rem; border-radius: 8px; overflow-x: auto; border: 1px solid #333; }
+    .docs-content pre code { background: none; color: inherit; padding: 0; }
+    .docs-content p { line-height: 1.6; color: #ddd; }
+</style>

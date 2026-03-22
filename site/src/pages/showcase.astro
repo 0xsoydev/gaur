@@ -1,0 +1,69 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const themes = [
+    { name: 'Catppuccin Frappe', img: '/screenshots/catppuccin-frappe.png' },
+    { name: 'Catppuccin Macchiato', img: '/screenshots/catppuccin-macchiato.png' },
+    { name: 'Catppuccin Mocha', img: '/screenshots/catppuccin-mocha.png' },
+    { name: 'Dracula', img: '/screenshots/dracula.png' },
+    { name: 'Gruvbox Dark', img: '/screenshots/gruvbox-dark.png' },
+    { name: 'Monokai Pro', img: '/screenshots/monokai-pro.png' },
+    { name: 'One Dark', img: '/screenshots/one-dark.png' },
+    { name: 'Rose Pine', img: '/screenshots/rose-pine.png' },
+    { name: 'Solarized Dark', img: '/screenshots/solarized-dark.png' },
+    { name: 'Tokyo Night Night', img: '/screenshots/tokyonight-night.png' },
+    { name: 'Tokyo Night Storm', img: '/screenshots/tokyonight-storm.png' },
+];
+---
+
+<Layout title="Gaur - Showcase">
+	<h1>Theme Showcase</h1>
+    <p>Gaur supports many popular terminal themes out of the box.</p>
+	<div class="grid">
+		{themes.map((theme) => (
+			<div class="card">
+				<h3>{theme.name}</h3>
+				<img src={theme.img} alt={theme.name} loading="lazy" />
+			</div>
+		))}
+	</div>
+</Layout>
+
+<style>
+	.grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+		gap: 2rem;
+		margin-top: 2rem;
+        max-width: 1200px;
+        margin-left: auto;
+        margin-right: auto;
+	}
+	.card {
+		background: #1b1d23;
+		border-radius: 8px;
+		padding: 1rem;
+		border: 1px solid #333;
+        transition: transform 0.2s;
+	}
+    .card:hover {
+        transform: scale(1.02);
+        border-color: rgb(var(--accent-light));
+    }
+	.card h3 {
+		margin-top: 0;
+        font-size: 1rem;
+        color: #aaa;
+	}
+	.card img {
+		width: 100%;
+		border-radius: 4px;
+	}
+    h1 {
+        text-align: center;
+    }
+    p {
+        text-align: center;
+        color: #888;
+    }
+</style>
