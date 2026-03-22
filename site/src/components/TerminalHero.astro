@@ -59,19 +59,21 @@
               </div>
               
               <!-- Search Status -->
-              <div id="search-status" class="text-[10px] text-subtext0 pb-2 pl-3 opacity-0 transition-opacity flex items-center gap-2">
-                <span id="search-indicator" class="text-blue min-w-[1ch]"></span>
-                <span id="search-text" class="italic"></span>
+              <div id="search-status" class="text-[10px] text-subtext0 pb-2 pl-3 opacity-0 transition-opacity flex items-center gap-4">
+                <div id="repo-summary" class="flex gap-2">
+                    <!-- Populated by JS -->
+                </div>
+                <div class="flex items-center gap-2">
+                  <span id="search-indicator" class="text-blue min-w-[1ch]"></span>
+                  <span id="search-text" class="italic"></span>
+                </div>
               </div>
           </div>
         </div>
       </div>
 
       <!-- Shortcuts Bar -->
-      <div class="flex justify-between items-center px-4 py-2 text-[9px] md:text-[10px] text-overlay2 tracking-tight">
-        <div id="repo-summary" class="flex gap-2">
-            <!-- Populated by JS -->
-        </div>
+      <div class="flex justify-end items-center px-4 py-2 text-[9px] md:text-[10px] text-overlay2 tracking-tight">
         <div class="flex gap-4">
             <span>[/]:search</span>
             <span>[tab]:mark</span>
