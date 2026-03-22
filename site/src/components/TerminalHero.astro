@@ -11,16 +11,16 @@
       <!-- TUI Content Area (STRICT NO-PADDING AT BASE) -->
       <div class="aspect-[16/10] flex flex-col gap-0 text-[11px] md:text-xs overflow-hidden relative text-text">
         
-        <!-- Selection Pane (ABSOLUTE OVERLAY - Top Right of Terminal Border) -->
-        <div id="selection-pane" class="absolute top-0 right-0 w-44 border border-pink/40 rounded-sm p-3 bg-mantle/95 backdrop-blur-md z-20 transform translate-x-4 opacity-0 transition-all duration-500 shadow-2xl">
-          <div class="text-pink font-bold mb-2 uppercase tracking-wider">Selected (<span id="select-count">0</span>) [*]</div>
-          <div id="selected-items" class="space-y-1 text-subtext0 leading-tight">
-            <!-- Populated by JS -->
-          </div>
-        </div>
-
         <!-- Top Section: Details Pane (MANUAL MARGINS) -->
         <div class="mx-3 mt-3 h-[42%] border border-blue/30 rounded-sm p-4 relative bg-surface0/20">
+          <!-- Selection Pane (ABSOLUTE OVERLAY - Anchored to Details Pane) -->
+          <div id="selection-pane" class="absolute top-0 right-0 w-48 border border-pink/40 rounded-sm p-3 bg-mantle/95 backdrop-blur-md z-20 transform translate-x-4 opacity-0 transition-all duration-500 shadow-2xl">
+            <div class="text-pink font-bold mb-2 uppercase tracking-wider">Selected (<span id="select-count">0</span>) [*]</div>
+            <div id="selected-items" class="space-y-1 text-subtext0 leading-tight">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
           <div id="details-pane" class="opacity-0 transition-opacity duration-300 text-left">
             <div class="grid grid-cols-[100px_1fr] gap-x-2 gap-y-0.5">
               <span class="text-subtext0">Repository</span> <span id="detail-repo" class="text-blue"></span>
