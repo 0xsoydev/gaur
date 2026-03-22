@@ -1,0 +1,286 @@
+---
+---
+<div class="w-full max-w-4xl mx-auto px-4 mt-12 mb-20">
+  <div id="terminal-container" class="relative group">
+    <!-- Elevated Border Shadow Effect -->
+    <div class="absolute -inset-0.5 bg-highlight/20 rounded-gaur blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
+    
+    <!-- Main Terminal Window -->
+    <div class="relative bg-background border border-muted/30 rounded-gaur overflow-hidden shadow-2xl transition-all duration-300 hover:border-highlight/50 hover:shadow-glow">
+      
+      <!-- ASCII Style Title Bar -->
+      <div class="flex items-center justify-between px-4 py-2 border-b border-muted/10 bg-surface/50">
+        <div class="flex items-center gap-1.5 text-xs text-muted">
+          <span class="text-highlight">╭─</span>
+          <span class="font-bold">gaur</span>
+          <span class="text-highlight">─╮</span>
+        </div>
+        <div class="flex gap-2">
+          <div class="w-2.5 h-2.5 rounded-full border border-muted/30"></div>
+          <div class="w-2.5 h-2.5 rounded-full border border-muted/30"></div>
+          <div class="w-2.5 h-2.5 rounded-full border border-muted/30"></div>
+        </div>
+      </div>
+
+      <!-- TUI Content Area -->
+      <div class="p-4 md:p-6 aspect-[16/10] flex flex-col gap-4 text-sm md:text-base overflow-hidden">
+        
+        <!-- Top Row: Details and Selection -->
+        <div class="flex gap-4 h-[45%]">
+          <!-- Details Pane -->
+          <div class="flex-grow border border-blue/40 rounded-sm p-3 relative overflow-hidden bg-surface/30">
+            <div id="details-pane" class="space-y-1 opacity-0 transition-opacity duration-300">
+              <div class="grid grid-cols-[100px_1fr] gap-2">
+                <span class="text-muted">Repository</span> <span id="detail-repo" class="text-blue"></span>
+                <span class="text-muted">Name</span> <span id="detail-name" class="font-bold"></span>
+                <span class="text-muted">Version</span> <span id="detail-muted" class="text-muted"></span>
+                <span class="text-muted">Description</span> <span id="detail-desc" class="italic text-text/80"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Selection Pane (Overlay style but side-by-side for hero) -->
+          <div id="selection-pane" class="w-1/3 border border-pink/40 rounded-sm p-3 bg-surface/30 transform translate-x-full opacity-0 transition-all duration-500">
+            <div class="text-pink font-bold mb-2 text-sm">Selected (<span id="select-count">0</span>) [*]</div>
+            <div id="selected-items" class="space-y-1 text-xs text-muted">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Panel: Package List -->
+        <div class="flex-grow border border-highlight/40 rounded-sm p-4 bg-surface/30 flex flex-col justify-end relative">
+          <!-- Scrolling List (Renders bottom-up like Gaur) -->
+          <div id="package-list" class="flex flex-col-reverse gap-1 mb-4 overflow-hidden">
+            <!-- Populated by JS -->
+          </div>
+          
+          <!-- Input Line -->
+          <div class="flex items-center gap-2 border-t border-muted/10 pt-3">
+            <span class="text-accent font-bold">&gt;</span>
+            <span id="typing-input" class="text-text font-bold min-w-[1px]"></span>
+            <span id="cursor" class="w-2 h-5 bg-text/50 animate-pulse"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Install Command Bar (The Tabs) -->
+  <div class="mt-8 max-w-2xl mx-auto">
+    <div class="flex gap-1 px-4 mb-[-1px]">
+        <button class="tab-btn active px-4 py-1 text-xs font-bold border border-muted/30 border-b-background rounded-t-sm transition-colors hover:text-primary" data-cmd="yay -S gaur-bin">
+            [ yay ]
+        </button>
+        <button class="tab-btn px-4 py-1 text-xs font-bold border border-transparent transition-colors hover:text-primary" data-cmd="paru -S gaur-bin">
+            [ paru ]
+        </button>
+        <button class="tab-btn px-4 py-1 text-xs font-bold border border-transparent transition-colors hover:text-primary" data-cmd="go install github.com/prbhtkumr/gaur@latest">
+            [ go ]
+        </button>
+    </div>
+    <div class="bg-crust border border-muted/30 rounded-gaur p-4 flex items-center justify-between group shadow-lg">
+        <div class="flex items-center gap-3">
+            <span class="text-accent font-bold">$</span>
+            <code id="install-cmd" class="text-accent/90 font-mono">yay -S gaur-bin</code>
+        </div>
+        <button id="copy-btn" class="px-4 py-1 text-xs font-bold border border-primary text-primary hover:bg-primary/10 transition-all rounded-sm">
+            [COPY]
+        </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Package Data for Animation
+  const allPackages = [
+    { source: 'extra', name: 'firefox', version: '133.0-1', desc: 'Fast, Private & Safe Web Browser' },
+    { source: 'extra', name: 'firefox-i18n-af', version: '133.0-1', desc: 'Afrikaans language pack for Firefox' },
+    { source: 'extra', name: 'firefox-i18n-an', version: '133.0-1', desc: 'Aragonese language pack for Firefox' },
+    { source: 'extra', name: 'firefox-i18n-ar', version: '133.0-1', desc: 'Arabic language pack for Firefox' },
+    { source: 'extra', name: 'firefox-i18n-az', version: '133.0-1', desc: 'Azerbaijani language pack for Firefox' },
+    { source: 'aur', name: 'firefoxpwa', version: '2.18.0.1', desc: 'A system to use Firefox as a PWA' },
+    { source: 'extra', name: 'librewolf', version: '132.0-1', desc: 'Community-maintained fork of Firefox' },
+    { source: 'extra', name: 'chromium', version: '131.0-1', desc: 'A web browser built for speed' }
+  ];
+
+  const wait = (ms: number) => new Promise(res => setTimeout(res, ms));
+
+  async function runAnimation() {
+    const inputEl = document.getElementById('typing-input');
+    const listEl = document.getElementById('package-list');
+    const detailPane = document.getElementById('details-pane');
+    const selectionPane = document.getElementById('selection-pane');
+    const selectedItems = document.getElementById('selected-items');
+    const selectCount = document.getElementById('select-count');
+
+    // Reset
+    if (!inputEl || !listEl || !detailPane || !selectionPane || !selectedItems || !selectCount) return;
+    
+    // Stage 1: Initial State (Empty)
+    await wait(800);
+
+    // Stage 2: Typing "firefox"
+    const query = "firefox";
+    for (let i = 0; i <= query.length; i++) {
+      inputEl.textContent = query.slice(0, i);
+      updateList(query.slice(0, i));
+      await wait(100 + Math.random() * 150);
+    }
+
+    await wait(500);
+
+    // Stage 3: Scroll & Focus
+    // We'll highlight 'firefox' (the first match in our filtered list)
+    focusPackage(0); 
+
+    await wait(800);
+
+    // Stage 4: Marking packages
+    // Mark firefox
+    markPackage(0);
+    await wait(600);
+    
+    // Move to firefoxpwa and mark it
+    focusPackage(1);
+    await wait(400);
+    markPackage(1);
+
+    // Final State Resting
+  }
+
+  function updateList(q: string) {
+    const listEl = document.getElementById('package-list');
+    if (!listEl) return;
+    
+    const filtered = allPackages.filter(p => p.name.includes(q)).slice(0, 6);
+    listEl.innerHTML = '';
+    
+    filtered.forEach((pkg, idx) => {
+      const div = document.createElement('div');
+      div.className = 'pkg-item flex items-center gap-2 transition-all duration-200';
+      div.innerHTML = `
+        <span class="cursor-marker opacity-0 text-highlight font-bold">&gt;</span>
+        <span class="mark-marker text-muted"> </span>
+        <span class="text-${pkg.source === 'aur' ? 'pink' : 'blue'}">${pkg.source}</span><span class="text-text/40">/</span><span class="text-text font-semibold">${pkg.name}</span>
+        <span class="text-muted text-xs ml-auto">${pkg.version}</span>
+      `;
+      div.id = `pkg-${idx}`;
+      listEl.appendChild(div);
+    });
+  }
+
+  function focusPackage(idx: number) {
+    const items = document.querySelectorAll('.pkg-item');
+    items.forEach((item, i) => {
+      const marker = item.querySelector('.cursor-marker');
+      if (i === idx) {
+        item.classList.add('bg-highlight/10', 'translate-x-1');
+        if (marker) marker.classList.remove('opacity-0');
+        updateDetails(idx);
+      } else {
+        item.classList.remove('bg-highlight/10', 'translate-x-1');
+        if (marker) marker.classList.add('opacity-0');
+      }
+    });
+  }
+
+  function updateDetails(idx: number) {
+    const q = document.getElementById('typing-input')?.textContent || "";
+    const filtered = allPackages.filter(p => p.name.includes(q));
+    const pkg = filtered[idx];
+    const pane = document.getElementById('details-pane');
+    if (!pkg || !pane) return;
+
+    pane.classList.add('opacity-100');
+    document.getElementById('detail-repo')!.textContent = pkg.source;
+    document.getElementById('detail-name')!.textContent = pkg.name;
+    document.getElementById('detail-muted')!.textContent = pkg.version;
+    document.getElementById('detail-desc')!.textContent = pkg.desc;
+  }
+
+  const marked = new Set();
+  function markPackage(idx: number) {
+    const q = document.getElementById('typing-input')?.textContent || "";
+    const filtered = allPackages.filter(p => p.name.includes(q));
+    const pkg = filtered[idx];
+    if (!pkg) return;
+
+    const item = document.getElementById(`pkg-${idx}`);
+    const markMarker = item?.querySelector('.mark-marker');
+    if (markMarker) markMarker.textContent = '*';
+    marked.add(pkg.name);
+
+    updateSelectionPane();
+  }
+
+  function updateSelectionPane() {
+    const pane = document.getElementById('selection-pane');
+    const list = document.getElementById('selected-items');
+    const count = document.getElementById('select-count');
+    if (!pane || !list || !count) return;
+
+    pane.classList.remove('translate-x-full', 'opacity-0');
+    count.textContent = marked.size.toString();
+    list.innerHTML = Array.from(marked).map(name => `<div>${name}</div>`).join('');
+  }
+
+  // Handle Tab Commands
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        const target = e.currentTarget as HTMLButtonElement;
+        const cmd = target.dataset.cmd;
+        
+        // UI
+        document.querySelectorAll('.tab-btn').forEach(b => {
+            b.classList.remove('active', 'border-muted/30', 'border-b-background', 'text-primary');
+            b.classList.add('border-transparent');
+        });
+        target.classList.add('active', 'border-muted/30', 'border-b-background', 'text-primary');
+        target.classList.remove('border-transparent');
+
+        // Command
+        const cmdEl = document.getElementById('install-cmd');
+        if (cmdEl && cmd) cmdEl.textContent = cmd;
+    });
+  });
+
+  // Copy Logic
+  const copyBtn = document.getElementById('copy-btn');
+  copyBtn?.addEventListener('click', () => {
+      const cmd = document.getElementById('install-cmd')?.textContent;
+      if (cmd) {
+          navigator.clipboard.writeText(cmd);
+          copyBtn.textContent = '[DONE]';
+          copyBtn.classList.replace('border-primary', 'border-accent');
+          copyBtn.classList.replace('text-primary', 'text-accent');
+          
+          setTimeout(() => {
+              copyBtn.textContent = '[COPY]';
+              copyBtn.classList.replace('border-accent', 'border-primary');
+              copyBtn.classList.replace('text-accent', 'text-primary');
+          }, 2000);
+      }
+  });
+
+  // Intersection Observer to trigger animation
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        runAnimation();
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.5 });
+
+  const container = document.getElementById('terminal-container');
+  if (container) observer.observe(container);
+
+</script>
+
+<style>
+  .tab-btn.active {
+    position: relative;
+    z-index: 10;
+  }
+</style>
