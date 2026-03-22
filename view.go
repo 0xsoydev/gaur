@@ -974,7 +974,7 @@ func (m *model) overlaySelectionsPanel(content string, innerWidth int, headerHei
 
 	lines := strings.Split(content, "\n")
 
-	startRow := headerHeight // Anchor exactly on the top border
+	startRow := 0 // Anchor exactly on the top terminal border
 	startCol := innerWidth - panelWidth
 	if startCol < 0 {
 		startCol = 0
