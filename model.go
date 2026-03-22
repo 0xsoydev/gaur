@@ -123,6 +123,7 @@ func initialModel(initialMode viewMode, cfg Config) *model {
 	}
 
 	m.initSettings()
+	m.recalculateTextInputWidth()
 	return m
 }
 
@@ -209,6 +210,7 @@ func (m *model) resetState() {
 	m.filtered = nil
 	m.filteredInstalled = nil
 	m.updatePlaceholder()
+	m.recalculateTextInputWidth()
 }
 
 // updatePlaceholder sets the text input placeholder based on the current mode

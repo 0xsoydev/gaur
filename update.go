@@ -236,7 +236,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		m.textInput.Width = msg.Width - 6
+		m.recalculateTextInputWidth()
 
 	case repoPackagesMsg:
 		m.loading = false
@@ -816,4 +816,13 @@ func (m *model) handleExecComplete(msg execCompleteMsg) (tea.Model, tea.Cmd) {
 
 	m.statusMessage = "Operation completed successfully"
 	return m, m.refreshAll()
-}
+	}
+
+	func (m *model) recalculateTextInputWidth() {
+	if m.mode == modeInstall {
+	// Leave room for hints "c: e: m: a:" (11 chars) + padding (3 chars)
+	m.textInput.Width = max(20, m.width-20)
+	} else {
+	m.textInput.Width = max(20, m.width-6)
+	}
+	}

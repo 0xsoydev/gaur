@@ -821,19 +821,22 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 			}
 			
 			hints := strings.Join(hintParts, " ")
-			inputWidth := lipgloss.Width(inputLine)
 			hintsWidth := lipgloss.Width(hints)
 			
 			// Total width for content inside the panel is innerWidth-2
-			// The input itself has some internal padding/margin from bubbletea
 			availableWidth := innerWidth - 2
-			paddingWidth := availableWidth - inputWidth - hintsWidth
-			if paddingWidth > 0 {
-				inputLine = inputLine + strings.Repeat(" ", paddingWidth) + hints
-			} else {
-				// If no space, just append with a single space or skip
-				inputLine = inputLine + " " + hints
+			
+			// JoinHorizontal will put them side by side. 
+			// We wrap the input in a style with the remaining width to push hints to the right.
+			inputWidth := availableWidth - hintsWidth - 2
+			if inputWidth < 20 {
+				inputWidth = 20
 			}
+			
+			inputLine = lipgloss.JoinHorizontal(lipgloss.Bottom,
+				lipgloss.NewStyle().Width(inputWidth).Render(m.textInput.View()),
+				lipgloss.NewStyle().PaddingLeft(2).Render(hints),
+			)
 		}
 
 		if m.searchStatus != "" {
