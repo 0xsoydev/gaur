@@ -8,21 +8,21 @@
     <!-- Main Terminal Window -->
     <div class="relative bg-base border border-surface1/60 rounded-gaur overflow-hidden shadow-2xl transition-all duration-300 hover:border-sapphire/30">
       
-      <!-- TUI Content Area (Reduced padding) -->
-      <div class="p-3 md:p-5 aspect-[16/10] flex flex-col gap-0 text-[11px] md:text-xs overflow-hidden relative text-text">
+      <!-- TUI Content Area (STRICT NO-PADDING AT BASE) -->
+      <div class="aspect-[16/10] flex flex-col gap-0 text-[11px] md:text-xs overflow-hidden relative text-text">
         
         <!-- Selection Pane (ABSOLUTE OVERLAY - Same Font Size) -->
-        <div id="selection-pane" class="absolute top-5 right-5 w-44 border border-pink/40 rounded-sm p-3 bg-mantle/95 backdrop-blur-md z-20 transform translate-x-4 opacity-0 transition-all duration-500 shadow-2xl">
+        <div id="selection-pane" class="absolute top-0 right-0 w-48 border border-pink/40 rounded-sm p-3 bg-mantle/95 backdrop-blur-md z-20 transform translate-x-4 opacity-0 transition-all duration-500 shadow-2xl">
           <div class="text-pink font-bold mb-2 uppercase tracking-wider">Selected (<span id="select-count">0</span>) [*]</div>
           <div id="selected-items" class="space-y-1 text-subtext0 leading-tight">
             <!-- Populated by JS -->
           </div>
         </div>
 
-        <!-- Top Section: Details Pane (Reduced Outer Gap) -->
-        <div class="h-[42%] border border-blue/30 rounded-sm p-4 relative bg-surface0/20 mb-3">
+        <!-- Top Section: Details Pane (MANUAL MARGINS) -->
+        <div class="mx-3 mt-3 h-[42%] border border-blue/30 rounded-sm p-4 relative bg-surface0/20">
           <div id="details-pane" class="opacity-0 transition-opacity duration-300 text-left">
-            <div class="grid grid-cols-[100px_1fr] gap-x-2 gap-y-1">
+            <div class="grid grid-cols-[100px_1fr] gap-x-2 gap-y-0.5">
               <span class="text-subtext0">Repository</span> <span id="detail-repo" class="text-blue"></span>
               <span class="text-subtext0">Name</span> <span id="detail-name" class="font-bold"></span>
               <span class="text-subtext0">Version</span> <span id="detail-version" class="text-subtext1"></span>
@@ -33,30 +33,28 @@
           </div>
         </div>
 
-        <!-- Bottom Section: Package List (No Left Padding) -->
-        <div class="flex-grow border border-sapphire/30 rounded-sm p-0 flex flex-col justify-end relative bg-surface0/10">
-          <div class="py-4 pr-4 pl-0 flex flex-col justify-end h-full">
-              <!-- Scrolling List -->
-              <div id="package-list" class="flex flex-col-reverse gap-1 mb-2 overflow-hidden">
-                <!-- Populated by JS -->
-              </div>
-              
-              <!-- Search Progress / Status -->
-              <div id="search-status" class="text-[10px] text-subtext0 mb-2 px-4 opacity-0 transition-opacity">
-                Found <span id="pkg-count">0</span> packages (<span id="aur-count">0</span> from AUR)
-              </div>
+        <!-- Bottom Section: Package List (STRICT LEFT ALIGNMENT) -->
+        <div class="mx-3 mb-3 flex-grow border border-sapphire/30 rounded-sm flex flex-col justify-end relative bg-surface0/10 mt-3">
+          <!-- Scrolling List (NO PADDING ON LEFT OF CONTAINER) -->
+          <div id="package-list" class="flex flex-col-reverse gap-0.5 mb-2 overflow-hidden w-full">
+            <!-- Populated by JS -->
+          </div>
+          
+          <!-- Search Progress / Status (Offset to match text) -->
+          <div id="search-status" class="text-[10px] text-subtext0 mb-2 pl-3 opacity-0 transition-opacity">
+            Found <span id="pkg-count">0</span> packages (<span id="aur-count">0</span> from AUR)
+          </div>
 
-              <!-- Input Line -->
-              <div class="flex items-center gap-2 border-t border-surface1/40 pt-3 px-4">
-                <span class="text-green font-bold">&gt;</span>
-                <span id="typing-input" class="text-text font-bold min-w-[1px]"></span>
-                <span id="cursor" class="w-1.5 h-4 bg-text/50 animate-pulse"></span>
-              </div>
+          <!-- Input Line (Offset to match text) -->
+          <div class="flex items-center gap-2 border-t border-surface1/40 pt-2 pb-1 pl-3 mr-3">
+            <span class="text-green font-bold">&gt;</span>
+            <span id="typing-input" class="text-text font-bold min-w-[1px]"></span>
+            <span id="cursor" class="w-1.5 h-4 bg-text/50 animate-pulse"></span>
           </div>
         </div>
 
         <!-- Shortcuts Bar -->
-        <div class="flex justify-center gap-4 mt-4 text-[10px] text-overlay2 tracking-tight">
+        <div class="flex justify-center gap-4 mb-3 text-[9px] md:text-[10px] text-overlay2 tracking-tight">
           <span>[/] search</span>
           <span>[tab] mark</span>
           <span class="text-blue font-bold">[i]nstall</span>
@@ -71,7 +69,7 @@
 
   <!-- Install Command Bar (The Tabs) -->
   <div class="mt-8 max-w-2xl mx-auto">
-    <div class="flex gap-2 px-4 mb-2">
+    <div class="flex gap-4 px-4 mb-2">
         <button class="tab-btn active text-[10px] font-bold text-mauve tracking-widest uppercase transition-all hover:text-mauve" data-cmd="yay -S gaur-bin">
             [ yay ]
         </button>
@@ -151,10 +149,15 @@
     
     filtered.forEach((pkg, idx) => {
       const div = document.createElement('div');
-      div.className = 'pkg-item flex items-center px-0 py-0.5 rounded-sm transition-all duration-150';
+      div.className = 'pkg-item flex items-center px-0 py-0 transition-all duration-150 w-full';
+      // Pointer touch logic: 
+      // Unselected: "  extra/package" (2 spaces)
+      // Selected:   "> extra/package" (pointer + 1 space)
+      // Marked:     " *extra/package" (space + *)
+      // Sel+Mark:   ">*extra/package" (pointer + *)
       div.innerHTML = `
-        <span class="cursor-marker opacity-0 text-sapphire font-bold">&gt;</span><span class="mark-marker text-subtext0 whitespace-pre"> </span><span class="text-${pkg.source === 'aur' ? 'pink' : 'blue'}">${pkg.source}</span><span class="text-overlay1">/</span><span class="text-text font-semibold">${pkg.name}</span>
-        <span class="text-subtext1 ml-auto">${pkg.version}</span>
+        <span class="pointer text-sapphire font-bold w-3 inline-block"> </span><span class="marker text-subtext0 w-2 inline-block"> </span><span class="text-${pkg.source === 'aur' ? 'pink' : 'blue'}">${pkg.source}</span><span class="text-overlay1">/</span><span class="text-text font-semibold">${pkg.name}</span>
+        <span class="text-subtext1 ml-auto mr-3">${pkg.version}</span>
       `;
       div.id = `pkg-${idx}`;
       listEl.appendChild(div);
@@ -167,13 +170,19 @@
   function focusPackage(idx: number) {
     const items = document.querySelectorAll('.pkg-item');
     items.forEach((item, i) => {
-      const marker = item.querySelector('.cursor-marker');
+      const pointer = item.querySelector('.pointer');
+      const marker = item.querySelector('.marker');
       if (i === idx) {
         item.classList.add('bg-surface0');
-        if (marker) marker.classList.remove('opacity-0');
+        if (pointer) pointer.textContent = '>';
+        // Space management: if marker is *, pointer and * touch. If marker is space, we need one space.
+        if (marker && marker.textContent === ' ') {
+            marker.classList.add('w-2');
+            marker.textContent = ' ';
+        }
       } else {
         item.classList.remove('bg-surface0');
-        if (marker) marker.classList.add('opacity-0');
+        if (pointer) pointer.textContent = ' ';
       }
     });
     updateDetails(idx);
@@ -201,13 +210,16 @@
     if (!pkg) return;
 
     const item = document.getElementById(`pkg-${idx}`);
-    const markMarker = item?.querySelector('.mark-marker');
-    if (markMarker) {
-        markMarker.textContent = '*';
-        markMarker.classList.remove('whitespace-pre'); // Remove space if * is present
+    const pointer = item?.querySelector('.pointer');
+    const marker = item?.querySelector('.marker');
+    
+    if (marker) {
+        marker.textContent = '*';
+        marker.classList.remove('w-2');
+        marker.classList.add('w-auto');
     }
+    
     marked.add(pkg.name);
-
     updateSelectionPane();
   }
 
