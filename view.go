@@ -942,7 +942,7 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 
 	bottomParts := []string{
 		resultsBox,
-		lipgloss.NewStyle().Foreground(lipgloss.Color("236")).Render(strings.Repeat("─", innerWidth-4)),
+		lipgloss.NewStyle().Foreground(lipgloss.Color("236")).Render(strings.Repeat("─", innerWidth-2)),
 		inputLine,
 	}
 	if statusLine != "" {
