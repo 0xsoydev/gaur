@@ -534,11 +534,6 @@ func (m *model) renderSelectionBox(maxWidth int) string {
 	}
 	sort.Strings(pkgNames)
 
-	panelWidth := maxWidth
-	if panelWidth < 20 {
-		panelWidth = 20
-	}
-
 	maxVisible := 8
 	startIdx := m.selectionScrollOffset
 	if m.selectionPanelFocused {
@@ -555,6 +550,28 @@ func (m *model) renderSelectionBox(maxWidth int) string {
 		endIdx = len(pkgNames)
 	}
 
+	// Determine dynamic width
+	titleStr := fmt.Sprintf(" Selected (%d) [*] ", len(pkgNames))
+	maxContentWidth := lipgloss.Width(titleStr)
+	
+	for i := startIdx; i < endIdx; i++ {
+		nameWidth := lipgloss.Width(pkgNames[i]) + 4 // +2 for prefix/marker, +2 for inner padding
+		if nameWidth > maxContentWidth {
+			maxContentWidth = nameWidth
+		}
+	}
+	
+	panelWidth := 15
+	if maxContentWidth + 2 > 20 { // +2 for borders
+		panelWidth = 25
+	} else if maxContentWidth + 2 > 15 {
+		panelWidth = 20
+	}
+	
+	if panelWidth > maxWidth {
+		panelWidth = maxWidth
+	}
+
 	panelStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("205")).
@@ -564,13 +581,13 @@ func (m *model) renderSelectionBox(maxWidth int) string {
 		panelStyle = panelStyle.BorderForeground(lipgloss.Color("214"))
 	}
 
-	titleText := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("205")).Render(fmt.Sprintf(" Selected (%d) [*] ", len(pkgNames)))
+	titleText := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("205")).Render(titleStr)
 
 	itemStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
 	selectedItemStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Bold(true)
 
 	var listBuilder strings.Builder
-	nameMaxWidth := panelWidth - 6
+	nameMaxWidth := panelWidth - 6 // 2 for border, 2 for padding, 2 for prefix
 
 	for i := startIdx; i < endIdx; i++ {
 		name := pkgNames[i]
