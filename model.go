@@ -205,6 +205,7 @@ func (m *model) resetState() {
 	m.textInput.SetValue("")
 	m.lastQuery = ""
 	m.selectedIndex = 0
+	m.aurPackages = nil
 	m.filtered = nil
 	m.filteredInstalled = nil
 	m.updatePlaceholder()

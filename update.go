@@ -278,22 +278,30 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case aurSearchMsg:
 		m.searchingAUR = false
+		query := m.textInput.Value()
+		repoFilters, searchQuery := parseRepoFilter(query)
+		shouldSearchAUR := len(repoFilters) == 0 || repoFilters["aur"]
+
 		if msg.err == nil {
 			m.searchError = false
-			m.aurPackages = msg.packages
-			if len(msg.packages) == 0 {
-				m.searchStatus = fmt.Sprintf("No AUR packages found. Took %.2f seconds.", msg.timeTaken.Seconds())
-			} else {
-				m.searchStatus = fmt.Sprintf("AUR search complete. Took %.2f seconds.", msg.timeTaken.Seconds())
+			if shouldSearchAUR && searchQuery == msg.query {
+				m.aurPackages = msg.packages
+				if len(msg.packages) == 0 {
+					m.searchStatus = fmt.Sprintf("No AUR packages found. Took %.2f seconds.", msg.timeTaken.Seconds())
+				} else {
+					m.searchStatus = fmt.Sprintf("AUR search complete. Took %.2f seconds.", msg.timeTaken.Seconds())
+				}
 			}
 			return m, m.performFiltering()
 		} else {
-			m.searchError = true
-			errMsg := msg.err.Error()
-			if strings.Contains(errMsg, "Too many package results") {
-				m.searchStatus = "Search term too broad (too many results)."
-			} else {
-				m.searchStatus = fmt.Sprintf("AUR search failed: %s", simplifyErrorMessage(errMsg))
+			if shouldSearchAUR && searchQuery == msg.query {
+				m.searchError = true
+				errMsg := msg.err.Error()
+				if strings.Contains(errMsg, "Too many package results") {
+					m.searchStatus = "Search term too broad (too many results)."
+				} else {
+					m.searchStatus = fmt.Sprintf("AUR search failed: %s", simplifyErrorMessage(errMsg))
+				}
 			}
 		}
 
@@ -650,27 +658,33 @@ func (m *model) performFiltering() tea.Cmd {
 	var cmds []tea.Cmd
 
 	if m.mode == modeInstall {
-		m.filterAllPackages(query)
-
 		// Trigger AUR search if query is long enough and different from last AUR search
-		_, searchQuery := parseRepoFilter(query)
+		repoFilters, searchQuery := parseRepoFilter(query)
+
+		// Check if we should search AUR:
+		// 1. No repo filters are applied (global search)
+		// 2. OR the 'aur' filter is explicitly requested
+		shouldSearchAUR := len(repoFilters) == 0 || repoFilters["aur"]
 
 		// Always update the status display if the user is typing a new query
-		if len(searchQuery) >= minSearchQueryLen {
+		if shouldSearchAUR && len(searchQuery) >= minSearchQueryLen {
 			if m.searchingAUR || searchQuery != m.lastAURQuery {
 				m.searchError = false // Reset error state
 				m.searchTerm = searchQuery
 				m.searchStatus = fmt.Sprintf("Searching AUR for \"%s\"...", searchQuery)
 			}
-		} else if searchQuery == "" {
+		} else if searchQuery == "" || !shouldSearchAUR {
 			m.searchStatus = ""
+			m.aurPackages = nil // Clear results if query is empty or filter doesn't include AUR
 		}
 
-		if len(searchQuery) >= minSearchQueryLen && searchQuery != m.lastAURQuery && !m.searchingAUR {
+		if shouldSearchAUR && len(searchQuery) >= minSearchQueryLen && searchQuery != m.lastAURQuery && !m.searchingAUR {
 			m.searchingAUR = true
 			m.lastAURQuery = searchQuery
 			cmds = append(cmds, m.spinner.Tick, searchAUR(&m.config, searchQuery))
 		}
+
+		m.filterAllPackages(query)
 	}
 	if m.mode == modeRemove {
 		m.filterInstalledPackages(query)

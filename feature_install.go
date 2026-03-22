@@ -63,10 +63,13 @@ func (m *model) filterAllPackages(query string) {
 	}
 
 	repoFilters, searchQuery := parseRepoFilter(query)
+	shouldIncludeAUR := len(repoFilters) == 0 || repoFilters["aur"]
 
-	allPackages := make([]Package, 0, len(m.repoPackages)+len(m.aurPackages))
+	allPackages := make([]Package, 0, len(m.repoPackages))
 	allPackages = append(allPackages, m.repoPackages...)
-	allPackages = append(allPackages, m.aurPackages...)
+	if shouldIncludeAUR {
+		allPackages = append(allPackages, m.aurPackages...)
+	}
 
 	if len(repoFilters) > 0 {
 		var filtered []Package
