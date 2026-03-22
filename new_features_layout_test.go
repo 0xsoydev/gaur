@@ -54,7 +54,7 @@ func TestRepoFilterHintsLayout(t *testing.T) {
 
 	// Case 1: No filters applied - hints should be dim
 	view := m.View()
-	if !strings.Contains(view, "c: e: m: a:") {
+	if !strings.Contains(stripAnsiLoc(view), "c: e: m: a:") {
 		t.Errorf("Filter hints 'c: e: m: a:' not found in view")
 	}
 
@@ -72,7 +72,7 @@ func TestRepoFilterHintsLayout(t *testing.T) {
 	foundLine := ""
 	lines := strings.Split(view, "\n")
 	for _, line := range lines {
-		if strings.Contains(line, "c: e: m: a:") {
+		if strings.Contains(stripAnsiLoc(line), "c: e: m: a:") {
 			foundLine = line
 			break
 		}
