@@ -41,7 +41,13 @@ export default {
 				highlight: '#74c7ec',
 			},
 			fontFamily: {
-			        mono: ['"Cascadia Cove Nerd Font"', '"Cascadia Code"', 'monospace'],
+				mono: [
+					'"CaskaydiaCove Nerd Font"',
+					'"Caskaydia Cove Nerd Font"',
+					'"CaskaydiaCove NF"',
+					'"Cascadia Code"',
+					'monospace'
+				],
 			},
 
 			borderRadius: {
