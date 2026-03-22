@@ -35,19 +35,19 @@
 
         <!-- Bottom Section: Package List (No Left Padding) -->
         <div class="flex-grow border border-sapphire/30 rounded-sm p-0 flex flex-col justify-end relative bg-surface0/10">
-          <div class="p-4 flex flex-col justify-end h-full">
+          <div class="py-4 pr-4 pl-0 flex flex-col justify-end h-full">
               <!-- Scrolling List -->
               <div id="package-list" class="flex flex-col-reverse gap-1 mb-2 overflow-hidden">
                 <!-- Populated by JS -->
               </div>
               
               <!-- Search Progress / Status -->
-              <div id="search-status" class="text-[10px] text-subtext0 mb-2 opacity-0 transition-opacity">
+              <div id="search-status" class="text-[10px] text-subtext0 mb-2 px-4 opacity-0 transition-opacity">
                 Found <span id="pkg-count">0</span> packages (<span id="aur-count">0</span> from AUR)
               </div>
 
               <!-- Input Line -->
-              <div class="flex items-center gap-2 border-t border-surface1/40 pt-3">
+              <div class="flex items-center gap-2 border-t border-surface1/40 pt-3 px-4">
                 <span class="text-green font-bold">&gt;</span>
                 <span id="typing-input" class="text-text font-bold min-w-[1px]"></span>
                 <span id="cursor" class="w-1.5 h-4 bg-text/50 animate-pulse"></span>
@@ -151,11 +151,9 @@
     
     filtered.forEach((pkg, idx) => {
       const div = document.createElement('div');
-      div.className = 'pkg-item flex items-center gap-2 px-0 py-0.5 rounded-sm transition-all duration-150';
+      div.className = 'pkg-item flex items-center px-0 py-0.5 rounded-sm transition-all duration-150';
       div.innerHTML = `
-        <span class="cursor-marker opacity-0 text-sapphire font-bold">&gt;</span>
-        <span class="mark-marker text-subtext0 w-2"> </span>
-        <span class="text-${pkg.source === 'aur' ? 'pink' : 'blue'}">${pkg.source}</span><span class="text-overlay1">/</span><span class="text-text font-semibold">${pkg.name}</span>
+        <span class="cursor-marker opacity-0 text-sapphire font-bold">&gt;</span><span class="mark-marker text-subtext0 whitespace-pre"> </span><span class="text-${pkg.source === 'aur' ? 'pink' : 'blue'}">${pkg.source}</span><span class="text-overlay1">/</span><span class="text-text font-semibold">${pkg.name}</span>
         <span class="text-subtext1 ml-auto">${pkg.version}</span>
       `;
       div.id = `pkg-${idx}`;
@@ -173,12 +171,12 @@
       if (i === idx) {
         item.classList.add('bg-surface0');
         if (marker) marker.classList.remove('opacity-0');
-        updateDetails(idx);
       } else {
         item.classList.remove('bg-surface0');
         if (marker) marker.classList.add('opacity-0');
       }
     });
+    updateDetails(idx);
   }
 
   function updateDetails(idx: number) {
@@ -204,7 +202,10 @@
 
     const item = document.getElementById(`pkg-${idx}`);
     const markMarker = item?.querySelector('.mark-marker');
-    if (markMarker) markMarker.textContent = '*';
+    if (markMarker) {
+        markMarker.textContent = '*';
+        markMarker.classList.remove('whitespace-pre'); // Remove space if * is present
+    }
     marked.add(pkg.name);
 
     updateSelectionPane();
