@@ -16,54 +16,51 @@ const themes = [
 ];
 ---
 
-<Layout title="Gaur - Showcase">
-	<h1>Theme Showcase</h1>
-    <p>Gaur supports many popular terminal themes out of the box.</p>
-	<div class="grid">
-		{themes.map((theme) => (
-			<div class="card">
-				<h3>{theme.name}</h3>
-				<img src={theme.img} alt={theme.name} loading="lazy" />
-			</div>
-		))}
+<Layout title="Gaur - Theme Showcase">
+	<div class="max-w-6xl mx-auto px-4 py-20">
+		<header class="text-center mb-20">
+			<h1 class="text-4xl md:text-6xl font-bold mb-4">
+				<span class="text-primary">Theme</span> Showcase
+			</h1>
+			<p class="text-muted text-lg max-w-2xl mx-auto">
+				Gaur supports many popular terminal themes out of the box. 
+				Configure your terminal to match for the ultimate ricing experience.
+			</p>
+		</header>
+
+		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-12">
+			{themes.map((theme) => (
+				<div class="group relative">
+					<!-- Hover Effect Background -->
+					<div class="absolute -inset-1 bg-highlight/20 rounded-gaur blur opacity-0 group-hover:opacity-40 transition duration-500"></div>
+					
+					<div class="relative bg-surface border border-muted/20 rounded-gaur overflow-hidden transition-all duration-300 group-hover:border-highlight/50 shadow-xl group-hover:shadow-glow">
+						<!-- Custom ASCII Header for Card -->
+						<div class="px-4 py-2 border-b border-muted/10 bg-crust/50 flex items-center justify-between">
+							<span class="text-[10px] text-muted font-bold tracking-widest uppercase">{theme.name}</span>
+							<div class="flex gap-1">
+								<div class="w-1.5 h-1.5 rounded-full bg-muted/20"></div>
+								<div class="w-1.5 h-1.5 rounded-full bg-muted/20"></div>
+							</div>
+						</div>
+						
+						<div class="p-2">
+							<img 
+								src={theme.img} 
+								alt={`${theme.name} theme in Gaur`} 
+								class="w-full h-auto rounded-sm shadow-inner"
+								loading="lazy"
+							/>
+						</div>
+					</div>
+				</div>
+			))}
+		</div>
+
+		<div class="mt-20 text-center border-t border-muted/10 pt-12">
+			<p class="text-muted text-sm italic">
+				&gt; Missing your favorite theme? Feel free to open a PR!
+			</p>
+		</div>
 	</div>
 </Layout>
-
-<style>
-	.grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-		gap: 2rem;
-		margin-top: 2rem;
-        max-width: 1200px;
-        margin-left: auto;
-        margin-right: auto;
-	}
-	.card {
-		background: #1b1d23;
-		border-radius: 8px;
-		padding: 1rem;
-		border: 1px solid #333;
-        transition: transform 0.2s;
-	}
-    .card:hover {
-        transform: scale(1.02);
-        border-color: rgb(var(--accent-light));
-    }
-	.card h3 {
-		margin-top: 0;
-        font-size: 1rem;
-        color: #aaa;
-	}
-	.card img {
-		width: 100%;
-		border-radius: 4px;
-	}
-    h1 {
-        text-align: center;
-    }
-    p {
-        text-align: center;
-        color: #888;
-    }
-</style>
