@@ -673,9 +673,11 @@ func (m *model) performFiltering() tea.Cmd {
 				m.searchTerm = searchQuery
 				m.searchStatus = fmt.Sprintf("Searching AUR for \"%s\"...", searchQuery)
 			}
-		} else if searchQuery == "" || !shouldSearchAUR {
+		} else {
 			m.searchStatus = ""
-			m.aurPackages = nil // Clear results if query is empty or filter doesn't include AUR
+			if searchQuery == "" || !shouldSearchAUR || len(searchQuery) < minSearchQueryLen {
+				m.aurPackages = nil // Clear results if query is empty, filtered out, or too short
+			}
 		}
 
 		if shouldSearchAUR && len(searchQuery) >= minSearchQueryLen && searchQuery != m.lastAURQuery && !m.searchingAUR {
