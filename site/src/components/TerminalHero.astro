@@ -2,18 +2,18 @@
 ---
 <div class="w-full max-w-4xl mx-auto px-4 mt-12 mb-20 font-mono text-[11px] md:text-xs">
   <div id="terminal-container" class="relative group">
-    <!-- Elevated Border Shadow Effect (SHARP) -->
-    <div class="absolute -inset-0.5 bg-sapphire/10 rounded-none blur opacity-10 group-hover:opacity-30 transition duration-1000 group-hover:duration-200"></div>
+    <!-- Elevated Border Shadow Effect (ROUNDED) -->
+    <div class="absolute -inset-0.5 bg-sapphire/10 rounded-xl blur opacity-10 group-hover:opacity-30 transition duration-1000 group-hover:duration-200"></div>
     
-    <!-- Main Terminal Window (SHARP BORDERS) -->
-    <div class="relative bg-base border border-surface1/60 rounded-none overflow-hidden shadow-2xl transition-all duration-300 hover:border-sapphire/30 min-h-[500px] flex flex-col">
+    <!-- Main Terminal Window -->
+    <div class="relative bg-base border border-surface1/60 rounded-xl overflow-hidden shadow-2xl min-h-[500px] flex flex-col">
       
       <!-- TUI Content Area -->
       <div class="grow flex flex-col gap-0 overflow-hidden relative text-text">
         
         <!-- Top Section: Details Pane (ROUNDED) -->
-        <div class="mx-3 mt-3 h-[42%] border border-blue/30 rounded-gaur p-4 relative bg-surface0/20">
-          <!-- Selection Pane (ABSOLUTE OVERLAY - Same border color as details) -->
+        <div class="mx-3 mt-3 h-[42%] border border-blue/30 rounded-gaur p-4 relative">
+          <!-- Selection Pane (ABSOLUTE OVERLAY - Anchored to border) -->
           <div id="selection-pane" class="absolute -top-[1px] -right-[1px] w-48 border border-pink/40 rounded-gaur p-3 bg-base z-20 opacity-0 transition-opacity duration-500">
             <div class="text-pink font-bold mb-2 uppercase tracking-wider">Selected (<span id="select-count">0</span>) [*]</div>
             <div id="selected-items" class="space-y-1 text-subtext0 leading-tight">
@@ -33,15 +33,15 @@
           </div>
         </div>
 
-        <!-- Bottom Section: Package List (MATCHING BORDER COLOR) -->
-        <div class="mx-3 mb-1 flex-grow border border-blue/30 rounded-gaur flex flex-col justify-end relative bg-surface0/10 mt-3 overflow-hidden">
+        <!-- Bottom Section: Package List (ROUNDED) -->
+        <div class="mx-3 mb-1 flex-grow border border-blue/30 rounded-gaur flex flex-col justify-end relative mt-3 overflow-hidden">
           <!-- Scrolling List -->
           <div id="package-list" class="flex flex-col-reverse gap-0.5 mb-2 overflow-hidden w-full">
             <!-- Populated by JS -->
           </div>
           
           <!-- Input Area -->
-          <div class="border-t border-surface1/40 bg-surface0/5">
+          <div class="border-t border-surface1/40">
               <!-- Input Line -->
               <div class="flex items-center justify-between pt-2 pl-3 pr-3">
                 <div class="flex items-center gap-2">
@@ -67,7 +67,7 @@
       </div>
 
       <!-- Shortcuts Bar -->
-      <div class="flex justify-between items-center px-4 py-2 text-[9px] md:text-[10px] text-overlay2 tracking-tight border-t border-surface1/20 bg-mantle/30">
+      <div class="flex justify-between items-center px-4 py-2 text-[9px] md:text-[10px] text-overlay2 tracking-tight border-t border-surface1/20">
         <div id="repo-summary" class="flex gap-2">
             <!-- Populated by JS -->
         </div>
