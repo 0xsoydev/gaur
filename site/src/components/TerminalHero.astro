@@ -3,61 +3,61 @@
 <div class="w-full max-w-4xl mx-auto px-4 mt-12 mb-20 font-mono">
   <div id="terminal-container" class="relative group">
     <!-- Elevated Border Shadow Effect -->
-    <div class="absolute -inset-0.5 bg-highlight/10 rounded-gaur blur opacity-10 group-hover:opacity-30 transition duration-1000 group-hover:duration-200"></div>
+    <div class="absolute -inset-0.5 bg-sapphire/10 rounded-gaur blur opacity-10 group-hover:opacity-30 transition duration-1000 group-hover:duration-200"></div>
     
     <!-- Main Terminal Window -->
-    <div class="relative bg-background border border-muted/20 rounded-gaur overflow-hidden shadow-2xl transition-all duration-300 hover:border-highlight/30">
+    <div class="relative bg-base border border-surface1/60 rounded-gaur overflow-hidden shadow-2xl transition-all duration-300 hover:border-sapphire/30">
       
       <!-- TUI Content Area -->
-      <div class="p-4 md:p-8 aspect-[16/10] flex flex-col gap-0 text-sm md:text-base overflow-hidden relative">
+      <div class="p-4 md:p-8 aspect-[16/10] flex flex-col gap-0 text-[13px] md:text-sm overflow-hidden relative text-text">
         
         <!-- Selection Pane (ABSOLUTE OVERLAY) -->
-        <div id="selection-pane" class="absolute top-8 right-8 w-48 border border-pink/40 rounded-sm p-3 bg-surface/95 backdrop-blur-md z-20 transform translate-x-4 opacity-0 transition-all duration-500 shadow-2xl">
+        <div id="selection-pane" class="absolute top-8 right-8 w-48 border border-pink/40 rounded-sm p-3 bg-mantle/95 backdrop-blur-md z-20 transform translate-x-4 opacity-0 transition-all duration-500 shadow-2xl">
           <div class="text-pink font-bold mb-2 text-[11px] uppercase tracking-wider">Selected (<span id="select-count">0</span>) [*]</div>
-          <div id="selected-items" class="space-y-1 text-[11px] text-muted leading-tight">
+          <div id="selected-items" class="space-y-1 text-[11px] text-subtext0 leading-tight">
             <!-- Populated by JS -->
           </div>
         </div>
 
         <!-- Top Section: Details Pane -->
-        <div class="h-[45%] border border-blue/30 rounded-sm p-5 relative bg-surface/20 mb-6">
+        <div class="h-[45%] border border-blue/30 rounded-sm p-5 relative bg-surface0/20 mb-6">
           <div id="details-pane" class="opacity-0 transition-opacity duration-300 text-left">
-            <div class="grid grid-cols-[120px_1fr] gap-x-3 gap-y-1.5 text-[13px] md:text-sm">
-              <span class="text-muted">Repository</span> <span id="detail-repo" class="text-blue"></span>
-              <span class="text-muted">Name</span> <span id="detail-name" class="font-bold"></span>
-              <span class="text-muted">Version</span> <span id="detail-version" class="text-muted"></span>
-              <span class="text-muted">Description</span> <span id="detail-desc" class="text-text/90"></span>
-              <span class="text-muted">Architecture</span> <span class="text-text/70">x86_64</span>
-              <span class="text-muted">URL</span> <span class="text-highlight underline decoration-highlight/30 truncate">https://www.mozilla.org/firefox/</span>
+            <div class="grid grid-cols-[120px_1fr] gap-x-3 gap-y-1.5">
+              <span class="text-subtext0">Repository</span> <span id="detail-repo" class="text-blue"></span>
+              <span class="text-subtext0">Name</span> <span id="detail-name" class="font-bold"></span>
+              <span class="text-subtext0">Version</span> <span id="detail-version" class="text-subtext1"></span>
+              <span class="text-subtext0">Description</span> <span id="detail-desc" class="text-text/90"></span>
+              <span class="text-subtext0">Architecture</span> <span class="text-subtext1/70">x86_64</span>
+              <span class="text-subtext0">URL</span> <span class="text-sapphire underline decoration-sapphire/30 truncate">https://www.mozilla.org/firefox/</span>
             </div>
           </div>
         </div>
 
         <!-- Bottom Section: Package List -->
-        <div class="flex-grow border border-highlight/30 rounded-sm p-5 bg-surface/20 flex flex-col justify-end relative">
+        <div class="flex-grow border border-sapphire/30 rounded-sm p-5 bg-surface0/20 flex flex-col justify-end relative">
           <!-- Scrolling List -->
           <div id="package-list" class="flex flex-col-reverse gap-1.5 mb-3 overflow-hidden">
             <!-- Populated by JS -->
           </div>
           
-          <!-- Search Progress / Status (Fixed logic) -->
-          <div id="search-status" class="text-[11px] text-muted mb-3 opacity-0 transition-opacity">
+          <!-- Search Progress / Status -->
+          <div id="search-status" class="text-[11px] text-subtext0 mb-3 opacity-0 transition-opacity">
             Found <span id="pkg-count">0</span> packages (<span id="aur-count">0</span> from AUR)
           </div>
 
           <!-- Input Line -->
-          <div class="flex items-center gap-2 border-t border-muted/10 pt-4">
-            <span class="text-accent font-bold">&gt;</span>
-            <span id="typing-input" class="text-text font-bold min-w-[1px] text-[13px] md:text-sm"></span>
+          <div class="flex items-center gap-2 border-t border-surface1/40 pt-4">
+            <span class="text-green font-bold">&gt;</span>
+            <span id="typing-input" class="text-text font-bold min-w-[1px]"></span>
             <span id="cursor" class="w-2 h-5 bg-text/50 animate-pulse"></span>
           </div>
         </div>
 
         <!-- Shortcuts Bar -->
-        <div class="flex justify-center gap-6 mt-6 text-[11px] text-muted/60 tracking-tight">
+        <div class="flex justify-center gap-6 mt-6 text-[11px] text-overlay2 tracking-tight">
           <span>[/] search</span>
           <span>[tab] mark</span>
-          <span class="text-blue/80 font-bold">[i]nstall</span>
+          <span class="text-blue font-bold">[i]nstall</span>
           <span>[d]ash</span>
           <span>[r]emove</span>
           <span>[u]pdate</span>
@@ -70,22 +70,22 @@
   <!-- Install Command Bar -->
   <div class="mt-10 max-w-2xl mx-auto">
     <div class="flex gap-4 px-4 mb-3">
-        <button class="tab-btn active text-[11px] font-bold text-primary tracking-widest uppercase transition-all hover:text-primary" data-cmd="yay -S gaur-bin">
+        <button class="tab-btn active text-[11px] font-bold text-mauve tracking-widest uppercase transition-all hover:text-mauve" data-cmd="yay -S gaur-bin">
             [ yay ]
         </button>
-        <button class="tab-btn text-[11px] font-bold text-muted tracking-widest uppercase transition-all hover:text-primary" data-cmd="paru -S gaur-bin">
+        <button class="tab-btn text-[11px] font-bold text-subtext0 tracking-widest uppercase transition-all hover:text-mauve" data-cmd="paru -S gaur-bin">
             [ paru ]
         </button>
-        <button class="tab-btn text-[11px] font-bold text-muted tracking-widest uppercase transition-all hover:text-primary" data-cmd="go install github.com/prbhtkumr/gaur@latest">
+        <button class="tab-btn text-[11px] font-bold text-subtext0 tracking-widest uppercase transition-all hover:text-mauve" data-cmd="go install github.com/prbhtkumr/gaur@latest">
             [ go ]
         </button>
     </div>
-    <div class="bg-crust border border-muted/20 rounded-gaur p-5 flex items-center justify-between group shadow-xl">
+    <div class="bg-crust border border-surface0 rounded-gaur p-5 flex items-center justify-between group shadow-xl">
         <div class="flex items-center gap-4">
-            <span class="text-accent font-bold">$</span>
-            <code id="install-cmd" class="text-accent/90 text-sm">yay -S gaur-bin</code>
+            <span class="text-green font-bold">$</span>
+            <code id="install-cmd" class="text-green/90 text-sm">yay -S gaur-bin</code>
         </div>
-        <button id="copy-btn" class="px-5 py-1.5 text-[11px] font-bold border border-primary text-primary hover:bg-primary/10 transition-all rounded-sm uppercase tracking-widest">
+        <button id="copy-btn" class="px-5 py-1.5 text-[11px] font-bold border border-mauve text-mauve hover:bg-mauve/10 transition-all rounded-sm uppercase tracking-widest">
             COPY
         </button>
     </div>
@@ -124,7 +124,7 @@
       
       const filteredCount = updateList(currentQuery);
       pkgCountEl.textContent = filteredCount.toString();
-      aurCountEl.textContent = Math.floor(filteredCount * 0.8).toString(); // Make it make sense (AUR <= Total)
+      aurCountEl.textContent = Math.floor(filteredCount * 0.8).toString();
       
       if (i > 0) statusEl.classList.add('opacity-100');
       await wait(100 + Math.random() * 100);
@@ -151,16 +151,15 @@
       const div = document.createElement('div');
       div.className = 'pkg-item flex items-center gap-2 px-2 py-0.5 rounded-sm transition-all duration-150 text-[13px] md:text-sm';
       div.innerHTML = `
-        <span class="cursor-marker opacity-0 text-highlight font-bold">&gt;</span>
-        <span class="mark-marker text-muted w-2"> </span>
-        <span class="text-${pkg.source === 'aur' ? 'pink' : 'blue'}">${pkg.source}</span><span class="text-text/40">/</span><span class="text-text font-semibold">${pkg.name}</span>
-        <span class="text-muted ml-auto">${pkg.version}</span>
+        <span class="cursor-marker opacity-0 text-sapphire font-bold">&gt;</span>
+        <span class="mark-marker text-subtext0 w-2"> </span>
+        <span class="text-${pkg.source === 'aur' ? 'pink' : 'blue'}">${pkg.source}</span><span class="text-overlay1">/</span><span class="text-text font-semibold">${pkg.name}</span>
+        <span class="text-subtext1 ml-auto">${pkg.version}</span>
       `;
       div.id = `pkg-${idx}`;
       listEl.appendChild(div);
     });
 
-    // Logical count simulation
     const totalFound = filtered.length * 10 + Math.floor(Math.random() * 10);
     return totalFound;
   }
@@ -170,11 +169,11 @@
     items.forEach((item, i) => {
       const marker = item.querySelector('.cursor-marker');
       if (i === idx) {
-        item.classList.add('bg-white/5');
+        item.classList.add('bg-surface0');
         if (marker) marker.classList.remove('opacity-0');
         updateDetails(idx);
       } else {
-        item.classList.remove('bg-white/5');
+        item.classList.remove('bg-surface0');
         if (marker) marker.classList.add('opacity-0');
       }
     });
@@ -226,11 +225,11 @@
         const cmd = target.dataset.cmd;
         
         document.querySelectorAll('.tab-btn').forEach(b => {
-            b.classList.remove('active', 'text-primary');
-            b.classList.add('text-muted');
+            b.classList.remove('active', 'text-mauve');
+            b.classList.add('text-subtext0');
         });
-        target.classList.add('active', 'text-primary');
-        target.classList.remove('text-muted');
+        target.classList.add('active', 'text-mauve');
+        target.classList.remove('text-subtext0');
 
         const cmdEl = document.getElementById('install-cmd');
         if (cmdEl && cmd) cmdEl.textContent = cmd;
@@ -244,13 +243,13 @@
           navigator.clipboard.writeText(cmd);
           const originalText = copyBtn.textContent;
           copyBtn.textContent = 'DONE';
-          copyBtn.classList.replace('text-primary', 'text-accent');
-          copyBtn.classList.replace('border-primary', 'border-accent');
+          copyBtn.classList.replace('text-mauve', 'text-green');
+          copyBtn.classList.replace('border-mauve', 'border-green');
           
           setTimeout(() => {
               copyBtn.textContent = originalText;
-              copyBtn.classList.replace('text-accent', 'text-primary');
-              copyBtn.classList.replace('border-accent', 'border-primary');
+              copyBtn.classList.replace('text-green', 'text-mauve');
+              copyBtn.classList.replace('border-green', 'border-mauve');
           }, 2000);
       }
   });
