@@ -111,27 +111,12 @@ func (m *model) View() string {
 		content = m.renderUpdateSelectiveView(helpText, innerWidth, innerHeight, activeColor)
 	} else {
 		// Handle modeInstall and modeRemove
-		var pkgList []Package
-		if effectiveMode == modeInstall {
-			pkgList = m.filtered
-		} else if effectiveMode == modeRemove {
-			pkgList = m.filteredInstalled
-		} else if effectiveMode == modeUpdateSelective {
-			pkgList = m.filtered
-		}
-
-		repoSummary := m.renderRepoSummary(pkgList)
-		if repoSummary != "" {
-			repoSummary = " " + repoSummary + " "
-		}
-
 		helpWidth := lipgloss.Width(helpText)
-		summaryWidth := lipgloss.Width(repoSummary)
-		padding := innerWidth - helpWidth - summaryWidth
+		padding := innerWidth - helpWidth
 		if padding < 0 {
 			padding = 0
 		}
-		footer := repoSummary + strings.Repeat(" ", padding) + helpText
+		footer := strings.Repeat(" ", padding) + helpText
 		if lipgloss.Width(footer) > innerWidth {
 			footer = truncateWithAnsi(footer, innerWidth)
 		}
@@ -787,6 +772,16 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 		displayMode = m.previousMode
 	}
 
+	// Build results list
+	var pkgList []Package
+	if displayMode == modeInstall {
+		pkgList = m.filtered
+	} else if displayMode == modeRemove {
+		pkgList = m.filteredInstalled
+	} else if displayMode == modeUpdateSelective {
+		pkgList = m.filtered
+	}
+
 	if displayMode == modeInstall || displayMode == modeRemove || displayMode == modeUpdateSelective {
 		inputLine = m.textInput.View()
 
@@ -869,6 +864,24 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 				statusLine = "  " + renderedStatus
 			}
 		}
+
+		// Add repository summary to the right of the status line
+		repoSummary := m.renderRepoSummary(pkgList)
+		if repoSummary != "" {
+			if statusLine == "" {
+				statusLine = "  "
+			}
+			summaryWidth := lipgloss.Width(repoSummary)
+			statusWidth := lipgloss.Width(statusLine)
+			// Status line is inside a panel with width innerWidth-2
+			// Padding calculation to push repoSummary to the right
+			padding := (innerWidth - 2) - statusWidth - summaryWidth - 2
+			if padding > 0 {
+				statusLine = statusLine + strings.Repeat(" ", padding) + repoSummary
+			} else {
+				statusLine = statusLine + " " + repoSummary
+			}
+		}
 	} else {
 		inputLine = statusStyle.Render(m.statusMessage)
 	}
@@ -887,14 +900,6 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 	// Build results list
 	var results strings.Builder
 	var resultsStr string
-	var pkgList []Package
-	if m.mode == modeInstall {
-		pkgList = m.filtered
-	} else if m.mode == modeRemove {
-		pkgList = m.filteredInstalled
-	} else if m.mode == modeUpdateSelective {
-		pkgList = m.filtered
-	}
 
 	if m.loading {
 		results.WriteString("  Loading...")
