@@ -1,60 +1,50 @@
 ---
 ---
 <div class="w-full max-w-4xl mx-auto px-4 mt-12 mb-20">
-  <div id="terminal-container" class="relative group">
+  <div id="terminal-container" class="relative group font-mono">
     <!-- Elevated Border Shadow Effect -->
-    <div class="absolute -inset-0.5 bg-highlight/20 rounded-gaur blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
+    <div class="absolute -inset-0.5 bg-highlight/10 rounded-gaur blur opacity-10 group-hover:opacity-30 transition duration-1000 group-hover:duration-200"></div>
     
-    <!-- Main Terminal Window -->
-    <div class="relative bg-background border border-muted/30 rounded-gaur overflow-hidden shadow-2xl transition-all duration-300 hover:border-highlight/50 hover:shadow-glow">
+    <!-- Main Terminal Window (Minimal, no title bar decorations) -->
+    <div class="relative bg-background border border-muted/20 rounded-gaur overflow-hidden shadow-2xl transition-all duration-300 hover:border-highlight/30">
       
-      <!-- ASCII Style Title Bar -->
-      <div class="flex items-center justify-between px-4 py-2 border-b border-muted/10 bg-surface/50">
-        <div class="flex items-center gap-1.5 text-xs text-muted">
-          <span class="text-highlight">╭─</span>
-          <span class="font-bold">gaur</span>
-          <span class="text-highlight">─╮</span>
-        </div>
-        <div class="flex gap-2">
-          <div class="w-2.5 h-2.5 rounded-full border border-muted/30"></div>
-          <div class="w-2.5 h-2.5 rounded-full border border-muted/30"></div>
-          <div class="w-2.5 h-2.5 rounded-full border border-muted/30"></div>
-        </div>
-      </div>
-
       <!-- TUI Content Area -->
-      <div class="p-4 md:p-6 aspect-[16/10] flex flex-col gap-4 text-sm md:text-base overflow-hidden">
+      <div class="p-4 md:p-6 aspect-[16/10] flex flex-col gap-0 text-sm md:text-base overflow-hidden relative">
         
-        <!-- Top Row: Details and Selection -->
-        <div class="flex gap-4 h-[45%]">
-          <!-- Details Pane -->
-          <div class="flex-grow border border-blue/40 rounded-sm p-3 relative overflow-hidden bg-surface/30">
-            <div id="details-pane" class="space-y-1 opacity-0 transition-opacity duration-300">
-              <div class="grid grid-cols-[100px_1fr] gap-2">
-                <span class="text-muted">Repository</span> <span id="detail-repo" class="text-blue"></span>
-                <span class="text-muted">Name</span> <span id="detail-name" class="font-bold"></span>
-                <span class="text-muted">Version</span> <span id="detail-muted" class="text-muted"></span>
-                <span class="text-muted">Description</span> <span id="detail-desc" class="italic text-text/80"></span>
-              </div>
-            </div>
+        <!-- Selection Pane (ABSOLUTE OVERLAY - Top Right) -->
+        <div id="selection-pane" class="absolute top-6 right-6 w-48 border border-pink/40 rounded-sm p-3 bg-surface/90 backdrop-blur-sm z-20 transform translate-x-4 opacity-0 transition-all duration-500 shadow-xl">
+          <div class="text-pink font-bold mb-2 text-xs">Selected (<span id="select-count">0</span>) [*]</div>
+          <div id="selected-items" class="space-y-1 text-[10px] text-muted leading-tight">
+            <!-- Populated by JS -->
           </div>
+        </div>
 
-          <!-- Selection Pane (Overlay style but side-by-side for hero) -->
-          <div id="selection-pane" class="w-1/3 border border-pink/40 rounded-sm p-3 bg-surface/30 transform translate-x-full opacity-0 transition-all duration-500">
-            <div class="text-pink font-bold mb-2 text-sm">Selected (<span id="select-count">0</span>) [*]</div>
-            <div id="selected-items" class="space-y-1 text-xs text-muted">
-              <!-- Populated by JS -->
+        <!-- Top Section: Details Pane (Full Width) -->
+        <div class="h-[45%] border border-blue/30 rounded-sm p-4 relative bg-surface/20 mb-4">
+          <div id="details-pane" class="opacity-0 transition-opacity duration-300 text-left">
+            <div class="grid grid-cols-[110px_1fr] gap-x-2 gap-y-1 text-sm">
+              <span class="text-muted">Repository</span> <span id="detail-repo" class="text-blue"></span>
+              <span class="text-muted">Name</span> <span id="detail-name" class="font-bold"></span>
+              <span class="text-muted">Version</span> <span id="detail-version" class="text-muted"></span>
+              <span class="text-muted">Description</span> <span id="detail-desc" class="text-text/90"></span>
+              <span class="text-muted">Architecture</span> <span class="text-text/70">x86_64</span>
+              <span class="text-muted">URL</span> <span class="text-highlight underline decoration-highlight/30 truncate">https://www.mozilla.org/firefox/</span>
             </div>
           </div>
         </div>
 
-        <!-- Bottom Panel: Package List -->
-        <div class="flex-grow border border-highlight/40 rounded-sm p-4 bg-surface/30 flex flex-col justify-end relative">
-          <!-- Scrolling List (Renders bottom-up like Gaur) -->
-          <div id="package-list" class="flex flex-col-reverse gap-1 mb-4 overflow-hidden">
+        <!-- Bottom Section: Package List -->
+        <div class="flex-grow border border-highlight/30 rounded-sm p-4 bg-surface/20 flex flex-col justify-end relative">
+          <!-- Scrolling List (Renders bottom-up) -->
+          <div id="package-list" class="flex flex-col-reverse gap-1 mb-2 overflow-hidden">
             <!-- Populated by JS -->
           </div>
           
+          <!-- Search Progress / Status -->
+          <div id="search-status" class="text-[10px] text-muted mb-2 opacity-0 transition-opacity">
+            Found <span id="pkg-count">0</span> packages (492 from AUR)
+          </div>
+
           <!-- Input Line -->
           <div class="flex items-center gap-2 border-t border-muted/10 pt-3">
             <span class="text-accent font-bold">&gt;</span>
@@ -62,27 +52,38 @@
             <span id="cursor" class="w-2 h-5 bg-text/50 animate-pulse"></span>
           </div>
         </div>
+
+        <!-- Shortcuts Bar (Gaur specific) -->
+        <div class="flex justify-center gap-4 mt-4 text-[10px] md:text-xs text-muted/60 whitespace-nowrap overflow-hidden">
+          <span>[/] search</span>
+          <span>[tab] mark</span>
+          <span class="text-blue/80 font-bold">[i]nstall</span>
+          <span>[d]ash</span>
+          <span>[r]emove</span>
+          <span>[u]pdate</span>
+          <span>[q]uit</span>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- Install Command Bar (The Tabs) -->
-  <div class="mt-8 max-w-2xl mx-auto">
-    <div class="flex gap-1 px-4 mb-[-1px]">
-        <button class="tab-btn active px-4 py-1 text-xs font-bold border border-muted/30 border-b-background rounded-t-sm transition-colors hover:text-primary" data-cmd="yay -S gaur-bin">
+  <div class="mt-8 max-w-2xl mx-auto font-mono">
+    <div class="flex gap-2 px-4 mb-2">
+        <button class="tab-btn active text-[10px] font-bold text-primary transition-colors hover:text-primary" data-cmd="yay -S gaur-bin">
             [ yay ]
         </button>
-        <button class="tab-btn px-4 py-1 text-xs font-bold border border-transparent transition-colors hover:text-primary" data-cmd="paru -S gaur-bin">
+        <button class="tab-btn text-[10px] font-bold text-muted transition-colors hover:text-primary" data-cmd="paru -S gaur-bin">
             [ paru ]
         </button>
-        <button class="tab-btn px-4 py-1 text-xs font-bold border border-transparent transition-colors hover:text-primary" data-cmd="go install github.com/prbhtkumr/gaur@latest">
+        <button class="tab-btn text-[10px] font-bold text-muted transition-colors hover:text-primary" data-cmd="go install github.com/prbhtkumr/gaur@latest">
             [ go ]
         </button>
     </div>
-    <div class="bg-crust border border-muted/30 rounded-gaur p-4 flex items-center justify-between group shadow-lg">
+    <div class="bg-crust border border-muted/20 rounded-gaur p-4 flex items-center justify-between group shadow-lg">
         <div class="flex items-center gap-3">
             <span class="text-accent font-bold">$</span>
-            <code id="install-cmd" class="text-accent/90 font-mono">yay -S gaur-bin</code>
+            <code id="install-cmd" class="text-accent/90">yay -S gaur-bin</code>
         </div>
         <button id="copy-btn" class="px-4 py-1 text-xs font-bold border border-primary text-primary hover:bg-primary/10 transition-all rounded-sm">
             [COPY]
@@ -92,7 +93,6 @@
 </div>
 
 <script>
-  // Package Data for Animation
   const allPackages = [
     { source: 'extra', name: 'firefox', version: '133.0-1', desc: 'Fast, Private & Safe Web Browser' },
     { source: 'extra', name: 'firefox-i18n-af', version: '133.0-1', desc: 'Afrikaans language pack for Firefox' },
@@ -109,65 +109,57 @@
   async function runAnimation() {
     const inputEl = document.getElementById('typing-input');
     const listEl = document.getElementById('package-list');
-    const detailPane = document.getElementById('details-pane');
-    const selectionPane = document.getElementById('selection-pane');
-    const selectedItems = document.getElementById('selected-items');
-    const selectCount = document.getElementById('select-count');
+    const statusEl = document.getElementById('search-status');
+    const pkgCountEl = document.getElementById('pkg-count');
 
-    // Reset
-    if (!inputEl || !listEl || !detailPane || !selectionPane || !selectedItems || !selectCount) return;
+    if (!inputEl || !listEl || !statusEl || !pkgCountEl) return;
     
-    // Stage 1: Initial State (Empty)
     await wait(800);
 
-    // Stage 2: Typing "firefox"
     const query = "firefox";
     for (let i = 0; i <= query.length; i++) {
-      inputEl.textContent = query.slice(0, i);
-      updateList(query.slice(0, i));
-      await wait(100 + Math.random() * 150);
+      const currentQuery = query.slice(0, i);
+      inputEl.textContent = currentQuery;
+      const count = updateList(currentQuery);
+      pkgCountEl.textContent = count.toString();
+      if (i > 0) statusEl.classList.add('opacity-100');
+      await wait(100 + Math.random() * 100);
     }
 
-    await wait(500);
-
-    // Stage 3: Scroll & Focus
-    // We'll highlight 'firefox' (the first match in our filtered list)
-    focusPackage(0); 
-
-    await wait(800);
-
-    // Stage 4: Marking packages
-    // Mark firefox
-    markPackage(0);
-    await wait(600);
-    
-    // Move to firefoxpwa and mark it
-    focusPackage(1);
     await wait(400);
+    focusPackage(0); 
+    await wait(600);
+    markPackage(0);
+    await wait(500);
+    focusPackage(1);
+    await wait(300);
     markPackage(1);
-
-    // Final State Resting
   }
 
   function updateList(q: string) {
     const listEl = document.getElementById('package-list');
-    if (!listEl) return;
+    if (!listEl) return 0;
     
     const filtered = allPackages.filter(p => p.name.includes(q)).slice(0, 6);
     listEl.innerHTML = '';
     
     filtered.forEach((pkg, idx) => {
       const div = document.createElement('div');
-      div.className = 'pkg-item flex items-center gap-2 transition-all duration-200';
+      div.className = 'pkg-item flex items-center gap-2 px-2 py-0.5 rounded-sm transition-all duration-150';
       div.innerHTML = `
         <span class="cursor-marker opacity-0 text-highlight font-bold">&gt;</span>
-        <span class="mark-marker text-muted"> </span>
+        <span class="mark-marker text-muted w-2">*</span>
         <span class="text-${pkg.source === 'aur' ? 'pink' : 'blue'}">${pkg.source}</span><span class="text-text/40">/</span><span class="text-text font-semibold">${pkg.name}</span>
         <span class="text-muted text-xs ml-auto">${pkg.version}</span>
       `;
       div.id = `pkg-${idx}`;
+      // Initial mark state is empty
+      const mm = div.querySelector('.mark-marker');
+      if (mm) mm.textContent = ' ';
       listEl.appendChild(div);
     });
+
+    return filtered.length * 75 + Math.floor(Math.random() * 50); // Simulate large result set
   }
 
   function focusPackage(idx: number) {
@@ -175,11 +167,11 @@
     items.forEach((item, i) => {
       const marker = item.querySelector('.cursor-marker');
       if (i === idx) {
-        item.classList.add('bg-highlight/10', 'translate-x-1');
+        item.classList.add('bg-white/5');
         if (marker) marker.classList.remove('opacity-0');
         updateDetails(idx);
       } else {
-        item.classList.remove('bg-highlight/10', 'translate-x-1');
+        item.classList.remove('bg-white/5');
         if (marker) marker.classList.add('opacity-0');
       }
     });
@@ -195,7 +187,7 @@
     pane.classList.add('opacity-100');
     document.getElementById('detail-repo')!.textContent = pkg.source;
     document.getElementById('detail-name')!.textContent = pkg.name;
-    document.getElementById('detail-muted')!.textContent = pkg.version;
+    document.getElementById('detail-version')!.textContent = pkg.version;
     document.getElementById('detail-desc')!.textContent = pkg.desc;
   }
 
@@ -220,7 +212,7 @@
     const count = document.getElementById('select-count');
     if (!pane || !list || !count) return;
 
-    pane.classList.remove('translate-x-full', 'opacity-0');
+    pane.classList.remove('translate-x-4', 'opacity-0');
     count.textContent = marked.size.toString();
     list.innerHTML = Array.from(marked).map(name => `<div>${name}</div>`).join('');
   }
@@ -231,15 +223,13 @@
         const target = e.currentTarget as HTMLButtonElement;
         const cmd = target.dataset.cmd;
         
-        // UI
         document.querySelectorAll('.tab-btn').forEach(b => {
-            b.classList.remove('active', 'border-muted/30', 'border-b-background', 'text-primary');
-            b.classList.add('border-transparent');
+            b.classList.remove('active', 'text-primary');
+            b.classList.add('text-muted');
         });
-        target.classList.add('active', 'border-muted/30', 'border-b-background', 'text-primary');
-        target.classList.remove('border-transparent');
+        target.classList.add('active', 'text-primary');
+        target.classList.remove('text-muted');
 
-        // Command
         const cmdEl = document.getElementById('install-cmd');
         if (cmdEl && cmd) cmdEl.textContent = cmd;
     });
@@ -251,19 +241,19 @@
       const cmd = document.getElementById('install-cmd')?.textContent;
       if (cmd) {
           navigator.clipboard.writeText(cmd);
+          const originalText = copyBtn.textContent;
           copyBtn.textContent = '[DONE]';
-          copyBtn.classList.replace('border-primary', 'border-accent');
           copyBtn.classList.replace('text-primary', 'text-accent');
+          copyBtn.classList.replace('border-primary', 'border-accent');
           
           setTimeout(() => {
-              copyBtn.textContent = '[COPY]';
-              copyBtn.classList.replace('border-accent', 'border-primary');
+              copyBtn.textContent = originalText;
               copyBtn.classList.replace('text-accent', 'text-primary');
+              copyBtn.classList.replace('border-accent', 'border-primary');
           }, 2000);
       }
   });
 
-  // Intersection Observer to trigger animation
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
@@ -275,12 +265,4 @@
 
   const container = document.getElementById('terminal-container');
   if (container) observer.observe(container);
-
 </script>
-
-<style>
-  .tab-btn.active {
-    position: relative;
-    z-index: 10;
-  }
-</style>
