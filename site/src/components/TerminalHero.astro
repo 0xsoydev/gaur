@@ -13,8 +13,8 @@
         
         <!-- Top Section: Details Pane (ROUNDED) -->
         <div class="mx-3 mt-3 h-[42%] border border-blue/30 rounded-gaur p-4 relative bg-surface0/20">
-          <!-- Selection Pane (ABSOLUTE OVERLAY - ROUNDED) -->
-          <div id="selection-pane" class="absolute top-0 right-0 w-48 border border-pink/40 rounded-gaur p-3 bg-mantle/95 backdrop-blur-md z-20 transform translate-x-4 opacity-0 transition-all duration-500 shadow-2xl">
+          <!-- Selection Pane (ABSOLUTE OVERLAY - Lays on top of border) -->
+          <div id="selection-pane" class="absolute -top-[1px] -right-[1px] w-48 border border-pink/40 rounded-gaur p-3 bg-base z-20 opacity-0 transition-opacity duration-500">
             <div class="text-pink font-bold mb-2 uppercase tracking-wider">Selected (<span id="select-count">0</span>) [*]</div>
             <div id="selected-items" class="space-y-1 text-subtext0 leading-tight">
               <!-- Populated by JS -->
@@ -58,7 +58,7 @@
                 </div>
               </div>
               
-              <!-- Search Status (NOW BELOW THE SEARCH BOX) -->
+              <!-- Search Status -->
               <div id="search-status" class="text-[10px] text-subtext0 pb-2 pl-3 opacity-0 transition-opacity italic">
                 Found <span id="pkg-count">0</span> packages (<span id="aur-count">0</span> from AUR)
               </div>
@@ -289,7 +289,7 @@
     const count = document.getElementById('select-count');
     if (!pane || !list || !count) return;
 
-    pane.classList.remove('translate-x-4', 'opacity-0');
+    pane.classList.add('opacity-100');
     count.textContent = marked.size.toString();
     list.innerHTML = Array.from(marked).map(name => `<div>${name}</div>`).join('');
   }
