@@ -6,29 +6,51 @@
     <div class="absolute -inset-0.5 bg-sapphire/10 rounded-xl blur opacity-10 group-hover:opacity-30 transition duration-1000 group-hover:duration-200"></div>
     
     <!-- Main Terminal Window -->
-    <div class="relative bg-base border border-surface1/60 rounded-xl overflow-hidden shadow-2xl h-[520px] flex flex-col">
+    <div class="relative bg-base border border-surface1/60 rounded-xl overflow-hidden shadow-2xl h-[540px] flex flex-col">
       
+      <!-- Mock Title Bar -->
+      <div class="flex items-center justify-between px-4 py-2 border-b border-surface1/20 bg-base/50">
+        <div class="flex gap-1.5">
+          <div class="w-2.5 h-2.5 rounded-full bg-pink/60"></div>
+          <div class="w-2.5 h-2.5 rounded-full bg-green/60"></div>
+          <div class="w-2.5 h-2.5 rounded-full bg-blue/60"></div>
+        </div>
+        <div class="text-[10px] text-subtext0 font-medium tracking-widest opacity-80 uppercase">foot</div>
+        <div class="flex gap-1.5">
+          <div class="w-2.5 h-2.5 rounded-full bg-teal/60"></div>
+          <div class="w-2.5 h-2.5 rounded-full bg-green/60"></div>
+          <div class="w-2.5 h-2.5 rounded-full bg-pink/60"></div>
+        </div>
+      </div>
+
       <!-- TUI Content Area -->
       <div class="grow flex flex-col gap-0 overflow-hidden relative text-text">
         
         <!-- Top Section: Details Pane (ROUNDED) -->
         <div class="mx-3 mt-3 h-1/2 border border-blue/30 rounded-gaur p-4 relative">
           <!-- Selection Pane (ABSOLUTE OVERLAY - Anchored to border) -->
-          <div id="selection-pane" class="absolute -top-[1px] -right-[1px] w-48 border border-pink/40 rounded-gaur p-3 bg-base z-20 opacity-0 transition-opacity duration-500">
-            <div class="text-pink font-bold mb-2 uppercase tracking-wider">Selected (<span id="select-count">0</span>) [*]</div>
-            <div id="selected-items" class="space-y-1 text-subtext0 leading-tight">
+          <div id="selection-pane" class="absolute -top-[1px] -right-[1px] w-52 border border-pink/40 rounded-gaur p-3 bg-base z-20 opacity-0 transition-opacity duration-500">
+            <div class="text-pink font-bold mb-2 tracking-tight flex justify-between items-center">
+                <span>Selected (2)</span>
+                <span class="text-[10px]">[*]</span>
+            </div>
+            <div id="selected-items" class="space-y-1 text-text/90 leading-tight">
               <!-- Populated by JS -->
             </div>
           </div>
 
           <div id="details-pane" class="opacity-0 transition-opacity duration-300 text-left">
-            <div class="grid grid-cols-[100px_1fr] gap-x-2 gap-y-0.5">
-              <span class="text-subtext0">Repository</span> <span id="detail-repo" class="text-blue"></span>
-              <span class="text-subtext0">Name</span> <span id="detail-name" class="font-bold"></span>
-              <span class="text-subtext1">Version</span> <span id="detail-version" class="text-subtext1"></span>
-              <span class="text-subtext0">Description</span> <span id="detail-desc" class="text-text/90"></span>
-              <span class="text-subtext0">Architecture</span> <span class="text-subtext1/70">x86_64</span>
-              <span class="text-subtext0">URL</span> <span class="text-sapphire underline decoration-sapphire/30 truncate">https://www.mozilla.org/firefox/</span>
+            <div class="grid grid-cols-[110px_10px_1fr] gap-x-0 gap-y-0.5">
+              <span class="text-text">Repository</span> <span class="text-text/60">:</span> <span id="detail-repo" class="text-blue"></span>
+              <span class="text-text">Name</span> <span class="text-text/60">:</span> <span id="detail-name" class="font-bold"></span>
+              <span class="text-text">Version</span> <span class="text-text/60">:</span> <span id="detail-version" class="text-text"></span>
+              <span class="text-text">Description</span> <span class="text-text/60">:</span> <span id="detail-desc" class="text-text/90"></span>
+              <span class="text-text">Architecture</span> <span class="text-text/60">:</span> <span class="text-text">x86_64</span>
+              <span class="text-text">URL</span> <span class="text-text/60">:</span> <span class="text-text underline decoration-text/30 truncate">https://www.mozilla.org/firefox/</span>
+              <span class="text-text">Licenses</span> <span class="text-text/60">:</span> <span class="text-text">MPL-2.0</span>
+              <span class="text-text">Groups</span> <span class="text-text/60">:</span> <span class="text-text">None</span>
+              <span class="text-text">Provides</span> <span class="text-text/60">:</span> <span class="text-text">None</span>
+              <span class="text-text">Depends On</span> <span class="text-text/60">:</span> <span class="text-text leading-tight">alsa-lib at-spi2-core bash cairo dbus ffmpeg fontconfig freetype2 gdk-pixbuf2 glib2 glibc gtk3 hicolor-icon-theme libgcc libpulse libstdc++ libx11 libxcb libxcomposite libxdamage libxext libxfixes libxrandr libxss libxt mime-types</span>
             </div>
           </div>
         </div>
@@ -36,8 +58,11 @@
         <!-- Bottom Section: Package List (ROUNDED) -->
         <div class="mx-3 h-1/2 border border-blue/30 rounded-gaur flex flex-col justify-end relative mt-3 mb-2 overflow-hidden">
           <!-- Scrolling List -->
-          <div id="package-list" class="flex flex-col-reverse gap-0.5 mb-2 overflow-hidden w-full">
+          <div id="package-list" class="flex flex-col-reverse gap-0.5 mb-2 overflow-hidden w-full relative">
             <!-- Populated by JS -->
+            <div class="absolute right-1 top-0 bottom-0 w-1 bg-surface1/10 rounded-full">
+                <div class="h-24 w-full bg-surface2/30 rounded-full"></div>
+            </div>
           </div>
           
           <!-- Input Area -->
@@ -45,12 +70,12 @@
               <!-- Input Line -->
               <div class="flex items-center justify-between pt-2 pl-3 pr-3">
                 <div class="flex items-center gap-2">
-                    <span class="text-green font-bold">&gt;</span>
+                    <span class="text-text font-bold">&gt;</span>
                     <span id="typing-input" class="text-text font-bold min-w-[1px]"></span>
-                    <span id="cursor" class="w-1.5 h-4 bg-text/50 animate-pulse"></span>
+                    <span id="cursor" class="w-2 h-4 bg-text/80"></span>
                 </div>
                 <!-- Filter Hinting -->
-                <div id="filter-hints" class="text-[10px] text-surface2 flex gap-2">
+                <div id="filter-hints" class="text-[10px] text-surface2 flex gap-3">
                     <span data-filter="c:">c:</span>
                     <span data-filter="e:">e:</span>
                     <span data-filter="m:">m:</span>
@@ -73,12 +98,12 @@
       </div>
 
       <!-- Shortcuts Bar -->
-      <div class="flex justify-end items-center px-4 py-2 text-[9px] md:text-[10px] text-overlay2 tracking-tight">
-        <div class="flex gap-4">
+      <div class="flex justify-center items-center px-4 py-2 text-[9px] md:text-[10px] text-overlay2 tracking-tight">
+        <div class="flex gap-5">
             <span>[/]:search</span>
             <span>[tab]:mark</span>
             <span>[d]ash</span>
-            <span class="text-blue font-bold">[i]nstall</span>
+            <span class="text-blue font-bold tracking-wider">[i]nstall</span>
             <span>[u]pdate</span>
             <span>[r]emove</span>
             <span>[,]:settings</span>
@@ -115,12 +140,15 @@
 
 <script>
   const allPackages = [
-    { source: 'extra', name: 'firefox', version: '133.0-1', desc: 'Fast, Private & Safe Web Browser' },
-    { source: 'extra', name: 'firefox-i18n-af', version: '133.0-1', desc: 'Afrikaans language pack for Firefox' },
-    { source: 'extra', name: 'firefox-i18n-an', version: '133.0-1', desc: 'Aragonese language pack for Firefox' },
-    { source: 'extra', name: 'firefox-i18n-ar', version: '133.0-1', desc: 'Arabic language pack for Firefox' },
-    { source: 'extra', name: 'firefox-i18n-az', version: '133.0-1', desc: 'Azerbaijani language pack for Firefox' },
-    { source: 'aur', name: 'firefoxpwa', version: '2.18.0.1', desc: 'A system to use Firefox as a PWA' },
+    { source: 'extra', name: 'firefox', version: '148.0.2-1', desc: 'Fast, Private & Safe Web Browser' },
+    { source: 'extra', name: 'firefox-i18n-af', version: '148.0.2-1', desc: 'Afrikaans language pack for Firefox' },
+    { source: 'extra', name: 'firefox-i18n-an', version: '148.0.2-1', desc: 'Aragonese language pack for Firefox' },
+    { source: 'extra', name: 'firefox-i18n-ar', version: '148.0.2-1', desc: 'Arabic language pack for Firefox' },
+    { source: 'extra', name: 'firefox-i18n-az', version: '148.0.2-1', desc: 'Azerbaijani language pack for Firefox' },
+    { source: 'extra', name: 'firefox-i18n-be', version: '148.0.2-1', desc: 'Belarusian language pack for Firefox' },
+    { source: 'extra', name: 'firefox-i18n-bg', version: '148.0.2-1', desc: 'Bulgarian language pack for Firefox' },
+    { source: 'extra', name: 'firefox-i18n-bn', version: '148.0.2-1', desc: 'Bengali language pack for Firefox' },
+    { source: 'aur', name: 'firefoxpwa', version: '2.18.2-1', desc: 'A system to use Firefox as a PWA' },
     { source: 'extra', name: 'librewolf', version: '132.0-1', desc: 'Community-maintained fork of Firefox' },
     { source: 'extra', name: 'chromium', version: '131.0-1', desc: 'A web browser built for speed' }
   ];
@@ -218,49 +246,49 @@
             if (filterChar === 'e' && p.source !== 'extra') return false;
         }
         return matchesQuery;
-    }).slice(0, 6);
+    }).slice(0, 9);
 
     listEl.innerHTML = '';
     
     filtered.forEach((pkg, idx) => {
       const div = document.createElement('div');
-      div.className = 'pkg-item flex items-center px-0 py-0 transition-all duration-150 w-full';
+      div.className = 'pkg-item flex items-center px-3 py-0 transition-all duration-150 w-full font-medium';
       div.innerHTML = `
-        <span class="pointer text-sapphire font-bold w-3 inline-block text-center"> </span><span class="marker text-subtext0 w-2 inline-block"> </span><span class="text-${pkg.source === 'aur' ? 'pink' : 'blue'}">${pkg.source}</span><span class="text-overlay1">/</span><span class="text-text font-semibold">${pkg.name}</span>
-        <span class="text-subtext1 ml-auto mr-3">${pkg.version}</span>
+        <span class="indicator text-pink font-bold w-4 flex-shrink-0"></span>
+        <span class="text-${pkg.source === 'aur' ? 'pink' : 'blue'}">${pkg.source}</span>
+        <span class="text-overlay1">/</span>
+        <span class="text-text">${pkg.name}</span>
+        <span class="text-overlay1/50 ml-auto">${pkg.version}</span>
       `;
       div.id = `pkg-${idx}`;
       listEl.appendChild(div);
     });
 
-    const counts = filtered.reduce((acc: any, p) => {
-        acc[p.source] = (acc[p.source] || 0) + 1;
-        return acc;
-    }, {});
-    
-    summaryEl.innerHTML = Object.entries(counts).map(([repo, count]) => {
-        const color = repo === 'aur' ? 'text-pink' : 'text-blue';
-        return `<span>${count} <span class="${color}">${repo}</span></span>`;
-    }).join(', ');
+    summaryEl.innerHTML = `
+        <span>220 <span class="text-blue">extra</span></span>
+        <span>, </span>
+        <span>394 <span class="text-pink">aur</span></span>
+    `;
 
-    return filtered.length * 10 + Math.floor(Math.random() * 10);
+    return filtered.length;
   }
 
   function focusPackage(idx: number) {
     const items = document.querySelectorAll('.pkg-item');
     items.forEach((item, i) => {
-      const pointer = item.querySelector('.pointer');
-      const marker = item.querySelector('.marker');
+      const indicator = item.querySelector('.indicator');
       if (i === idx) {
-        item.classList.add('bg-surface0');
-        if (pointer) pointer.textContent = '>';
-        if (marker && marker.textContent === ' ') {
-            marker.classList.add('w-2');
-            marker.textContent = ' ';
+        item.classList.add('bg-surface1/20');
+        if (indicator) {
+            const currentText = indicator.textContent || "";
+            indicator.textContent = '>' + (currentText.includes('*') ? '*' : '');
         }
       } else {
-        item.classList.remove('bg-surface0');
-        if (pointer) pointer.textContent = ' ';
+        item.classList.remove('bg-surface1/20');
+        if (indicator) {
+            const currentText = indicator.textContent || "";
+            indicator.textContent = currentText.includes('*') ? '*' : '';
+        }
       }
     });
     updateDetails(idx);
@@ -288,12 +316,13 @@
     if (!pkg) return;
 
     const item = document.getElementById(`pkg-${idx}`);
-    const marker = item?.querySelector('.marker');
+    const indicator = item?.querySelector('.indicator');
     
-    if (marker) {
-        marker.textContent = '*';
-        marker.classList.remove('w-2');
-        marker.classList.add('w-auto');
+    if (indicator) {
+        const currentText = indicator.textContent || "";
+        if (!currentText.includes('*')) {
+            indicator.textContent = currentText + '*';
+        }
     }
     
     marked.add(pkg.name);
@@ -304,10 +333,9 @@
     const pane = document.getElementById('selection-pane');
     const list = document.getElementById('selected-items');
     const count = document.getElementById('select-count');
-    if (!pane || !list || !count) return;
+    if (!pane || !list) return;
 
     pane.classList.add('opacity-100');
-    count.textContent = marked.size.toString();
     list.innerHTML = Array.from(marked).map(name => `<div>${name}</div>`).join('');
   }
 
