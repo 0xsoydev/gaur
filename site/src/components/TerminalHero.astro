@@ -59,8 +59,9 @@
               </div>
               
               <!-- Search Status -->
-              <div id="search-status" class="text-[10px] text-subtext0 pb-2 pl-3 opacity-0 transition-opacity italic">
-                Found <span id="pkg-count">0</span> packages (<span id="aur-count">0</span> from AUR)
+              <div id="search-status" class="text-[10px] text-subtext0 pb-2 pl-3 opacity-0 transition-opacity flex items-center gap-2">
+                <span id="search-indicator" class="text-blue min-w-[1ch]"></span>
+                <span id="search-text" class="italic"></span>
               </div>
           </div>
         </div>
@@ -128,10 +129,10 @@
     const inputEl = document.getElementById('typing-input');
     const listEl = document.getElementById('package-list');
     const statusEl = document.getElementById('search-status');
-    const pkgCountEl = document.getElementById('pkg-count');
-    const aurCountEl = document.getElementById('aur-count');
+    const indicatorEl = document.getElementById('search-indicator');
+    const searchTextEl = document.getElementById('search-text');
 
-    if (!inputEl || !listEl || !statusEl || !pkgCountEl || !aurCountEl) return;
+    if (!inputEl || !listEl || !statusEl || !indicatorEl || !searchTextEl) return;
     
     await wait(800);
 
@@ -150,13 +151,27 @@
       inputEl.textContent = currentQuery;
       updateFilterHints(currentQuery);
       
-      const filteredCount = updateList(currentQuery);
-      pkgCountEl.textContent = filteredCount.toString();
-      aurCountEl.textContent = Math.floor(filteredCount * 0.8).toString();
-      
-      if (i > 0) statusEl.classList.add('opacity-100');
+      if (i > 0) {
+        statusEl.classList.add('opacity-100');
+        searchTextEl.textContent = `Searching for ${currentQuery}...`;
+      }
       await wait(100 + Math.random() * 100);
     }
+
+    // Braille Animation (1.10 seconds)
+    const brailleChars = ['⣾', '⣽', '⣻', '⢿', '⡿', '⣟', '⣯', '⣷'];
+    let startTime = Date.now();
+    let frame = 0;
+    while (Date.now() - startTime < 1100) {
+      indicatorEl.textContent = brailleChars[frame % brailleChars.length];
+      frame++;
+      await wait(80);
+    }
+
+    // Search Complete
+    indicatorEl.textContent = '';
+    searchTextEl.textContent = 'AUR search complete. Took 1.10 seconds.';
+    updateList(inputEl.textContent || "");
 
     await wait(400);
     focusPackage(0); 
