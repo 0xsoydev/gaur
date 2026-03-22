@@ -12,7 +12,7 @@
       <div class="grow flex flex-col gap-0 overflow-hidden relative text-text">
         
         <!-- Top Section: Details Pane (ROUNDED) -->
-        <div class="mx-3 mt-3 h-[42%] border border-blue/30 rounded-gaur p-4 relative">
+        <div class="mx-3 mt-3 flex-1 border border-blue/30 rounded-gaur p-4 relative">
           <!-- Selection Pane (ABSOLUTE OVERLAY - Anchored to border) -->
           <div id="selection-pane" class="absolute -top-[1px] -right-[1px] w-48 border border-pink/40 rounded-gaur p-3 bg-base z-20 opacity-0 transition-opacity duration-500">
             <div class="text-pink font-bold mb-2 uppercase tracking-wider">Selected (<span id="select-count">0</span>) [*]</div>
@@ -34,7 +34,7 @@
         </div>
 
         <!-- Bottom Section: Package List (ROUNDED) -->
-        <div class="mx-3 mb-1 flex-grow border border-blue/30 rounded-gaur flex flex-col justify-end relative mt-3 overflow-hidden">
+        <div class="mx-3 flex-1 border border-blue/30 rounded-gaur flex flex-col justify-end relative mt-3 overflow-hidden">
           <!-- Scrolling List -->
           <div id="package-list" class="flex flex-col-reverse gap-0.5 mb-2 overflow-hidden w-full">
             <!-- Populated by JS -->
@@ -67,7 +67,7 @@
       </div>
 
       <!-- Shortcuts Bar -->
-      <div class="flex justify-between items-center px-4 py-2 text-[9px] md:text-[10px] text-overlay2 tracking-tight border-t border-surface1/20">
+      <div class="flex justify-between items-center px-4 py-2 text-[9px] md:text-[10px] text-overlay2 tracking-tight">
         <div id="repo-summary" class="flex gap-2">
             <!-- Populated by JS -->
         </div>
