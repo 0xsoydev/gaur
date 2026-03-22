@@ -1,0 +1,84 @@
+---
+interface Props {
+	title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en" class="bg-background text-text font-mono selection:bg-primary/30 selection:text-primary">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="description" content="Gaur - A beautiful, interactive TUI for Arch Linux package management" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+		<meta name="generator" content={Astro.generator} />
+		<title>{title}</title>
+	</head>
+	<body class="min-h-screen flex flex-col">
+		<nav class="h-16 flex items-center justify-between px-8 border-b border-muted/20 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
+			<div class="flex items-center gap-2">
+				<span class="text-primary font-bold text-xl">[gaur]</span>
+			</div>
+			<div class="flex items-center gap-8 text-sm font-semibold tracking-tight">
+				<a href="/" class="hover:text-primary transition-colors">Home</a>
+				<a href="/showcase" class="hover:text-primary transition-colors">Showcase</a>
+				<a href="/docs" class="hover:text-primary transition-colors">Docs</a>
+				<a href="https://github.com/prbhtkumr/gaur" target="_blank" rel="noopener noreferrer" class="hover:text-primary transition-colors flex items-center gap-2">
+					GitHub
+					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-external-link"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+				</a>
+			</div>
+		</nav>
+		<main class="flex-grow">
+			<slot />
+		</main>
+		<footer class="py-12 text-center text-muted/50 text-xs border-t border-muted/10">
+			<p>© {new Date().getFullYear()} Gaur. Released under the GPLv3 License.</p>
+			<p class="mt-2">Built with Astro + Tailwind for the Arch community.</p>
+		</footer>
+	</body>
+</html>
+
+<style is:global>
+	:root {
+		--primary: #cba6f7;
+		--primary-glow: rgba(203, 166, 247, 0.4);
+	}
+	
+	/* Smooth scrolling for docs */
+	html {
+		scroll-behavior: smooth;
+	}
+
+	/* Custom Scrollbar for terminal vibe */
+	::-webkit-scrollbar {
+		width: 8px;
+		height: 8px;
+	}
+	::-webkit-scrollbar-track {
+		background: #181825;
+	}
+	::-webkit-scrollbar-thumb {
+		background: #313244;
+		border-radius: 0px;
+	}
+	::-webkit-scrollbar-thumb:hover {
+		background: #45475a;
+	}
+
+	/* ASCII-like text animations */
+	.text-glow {
+		text-shadow: 0 0 8px var(--primary);
+	}
+
+	/* Selection styling */
+	::selection {
+		background-color: rgba(203, 166, 247, 0.3);
+		color: #cba6f7;
+	}
+</style>
