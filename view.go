@@ -564,7 +564,7 @@ func (m *model) renderSelectionBox(maxWidth int) string {
 		panelStyle = panelStyle.BorderForeground(lipgloss.Color("214"))
 	}
 
-	titleText := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("205")).Render(fmt.Sprintf(" Selected (%d) ", len(pkgNames)))
+	titleText := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("205")).Render(fmt.Sprintf(" Selected (%d) [*] ", len(pkgNames)))
 
 	itemStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
 	selectedItemStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Bold(true)
