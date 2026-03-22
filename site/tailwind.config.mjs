@@ -41,8 +41,9 @@ export default {
 				highlight: '#74c7ec',
 			},
 			fontFamily: {
-				mono: ['"JetBrains Mono"', 'monospace'],
+			        mono: ['"Cascadia Cove Nerd Font"', '"Cascadia Code"', 'monospace'],
 			},
+
 			borderRadius: {
 				gaur: '8px',
 			},
