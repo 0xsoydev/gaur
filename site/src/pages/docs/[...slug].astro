@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
+import DocsSidebar from '../../components/DocsSidebar.astro';
 
 export async function getStaticPaths() {
 	const docsEntries = await getCollection('docs');
@@ -13,17 +14,62 @@ const { entry } = Astro.props;
 const { Content } = await entry.render();
 ---
 
-<Layout title={entry.data.title}>
-	<div class="docs-content">
-		<Content />
+<Layout title={`Gaur Docs - ${entry.data.title}`}>
+	<div class="flex max-w-7xl mx-auto min-h-[calc(100vh-4rem)]">
+		<!-- Sidebar -->
+		<DocsSidebar currentSlug={entry.slug} />
+
+		<!-- Main Content Section -->
+		<article class="flex-grow p-8 md:p-12 lg:p-16 overflow-hidden prose-gaur">
+			<div class="max-w-3xl mx-auto">
+				<header class="mb-12 border-b border-muted/10 pb-8">
+					<h1 class="text-4xl md:text-5xl font-extrabold text-primary mb-4 tracking-tight">{entry.data.title}</h1>
+					<p class="text-lg text-muted/80 italic">{entry.data.description}</p>
+				</header>
+				
+				<div class="content">
+					<Content />
+				</div>
+			</div>
+		</article>
 	</div>
 </Layout>
 
 <style is:global>
-	.docs-content h1 { font-size: 2.5rem; border-bottom: 2px solid #333; padding-bottom: 0.5rem; }
-	.docs-content h2 { font-size: 1.8rem; margin-top: 2rem; border-bottom: 1px solid #333; }
-	.docs-content code { background: #1b1d23; padding: 0.2rem 0.4rem; border-radius: 4px; color: #ff79c6; }
-	.docs-content pre { background: #1b1d23; padding: 1rem; border-radius: 8px; overflow-x: auto; border: 1px solid #333; }
-    .docs-content pre code { background: none; color: inherit; padding: 0; }
-    .docs-content p { line-height: 1.6; color: #ddd; }
+	/* Custom Markdown Styling within .content */
+	.content {
+		@apply text-text leading-relaxed;
+	}
+	.content h1 { @apply text-3xl font-bold text-highlight mt-12 mb-6 border-b border-muted/20 pb-2; }
+	.content h2 { @apply text-2xl font-bold text-highlight mt-10 mb-4; }
+	.content h3 { @apply text-xl font-bold text-highlight mt-8 mb-4; }
+	
+	.content p { @apply mb-6 text-base text-text/90; }
+	
+	.content ul, .content ol { @apply mb-6 ml-6 space-y-2; }
+	.content ul { @apply list-disc; }
+	.content ol { @apply list-decimal; }
+	
+	.content li { @apply text-text/90; }
+
+	.content code { 
+		@apply bg-surface0 text-pink px-1.5 py-0.5 rounded-sm font-bold text-sm;
+	}
+	
+	.content pre { 
+		@apply bg-mantle border border-muted/10 p-6 rounded-gaur mb-8 overflow-x-auto shadow-inner;
+	}
+	
+	.content pre code { 
+		@apply bg-transparent p-0 text-text/90 font-medium text-sm block;
+		background: transparent !important;
+	}
+
+	.content table { @apply w-full border-collapse mb-8 text-sm; }
+	.content th { @apply text-left border-b-2 border-muted/20 pb-3 font-bold text-highlight; }
+	.content td { @apply py-3 border-b border-muted/10 text-text/80; }
+
+	.content blockquote { @apply border-l-4 border-primary/40 pl-6 italic mb-8 py-2 bg-surface0/30 rounded-r-gaur; }
+	
+	.content a { @apply text-primary hover:underline underline-offset-4 decoration-primary/30 transition-all; }
 </style>

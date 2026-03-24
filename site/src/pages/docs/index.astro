@@ -1,51 +1,61 @@
 ---
 import { getCollection } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
+import DocsSidebar from '../../components/DocsSidebar.astro';
 
 const docsEntries = await getCollection('docs');
+
+// Sort them so Intro is first, then Installation, then Usage, etc.
+const order = ['introduction', 'installation', 'usage', 'configuration'];
+docsEntries.sort((a, b) => {
+	const aIndex = order.indexOf(a.slug);
+	const bIndex = order.indexOf(b.slug);
+	if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+	if (aIndex !== -1) return -1;
+	if (bIndex !== -1) return 1;
+	return a.data.title.localeCompare(b.data.title);
+});
 ---
 
-<Layout title="Gaur - Documentation">
-	<h1>Documentation</h1>
-	<ul class="docs-list">
-		{docsEntries.map(entry => (
-			<li>
-				<a href={`/gaur/docs/${entry.slug}`}>
-					<h2>{entry.data.title}</h2>
-					<p>{entry.data.description}</p>
-				</a>
-			</li>
-		))}
-	</ul>
-</Layout>
+<Layout title="Gaur Documentation - Overview">
+	<div class="flex max-w-7xl mx-auto min-h-[calc(100vh-4rem)]">
+		<!-- Sidebar -->
+		<DocsSidebar currentSlug="index" />
 
-<style>
-	.docs-list {
-		list-style: none;
-		padding: 0;
-	}
-	.docs-list li {
-		margin-bottom: 2rem;
-		background: #1b1d23;
-		padding: 1.5rem;
-		border-radius: 8px;
-		border: 1px solid #333;
-        transition: transform 0.2s;
-	}
-    .docs-list li:hover {
-        transform: translateX(10px);
-        border-color: rgb(var(--accent-light));
-    }
-	.docs-list a {
-		text-decoration: none;
-		color: #fff;
-	}
-	.docs-list h2 {
-		margin: 0;
-		color: rgb(var(--accent-light));
-	}
-	.docs-list p {
-		margin: 0.5rem 0 0;
-		color: #888;
-	}
-</style>
+		<!-- Main Content Section -->
+		<article class="flex-grow p-8 md:p-12 lg:p-16 overflow-hidden">
+			<div class="max-w-4xl mx-auto">
+				<header class="mb-16">
+					<h1 class="text-4xl md:text-6xl font-extrabold text-primary mb-6 tracking-tight">Documentation</h1>
+					<p class="text-xl text-muted/80 leading-relaxed max-w-2xl">
+						Welcome to the Gaur documentation. Here you'll find everything you need to know about installing, configuring, and mastering Gaur for your Arch Linux setup.
+					</p>
+				</header>
+				
+				<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+					{docsEntries.map(entry => (
+						<a 
+							href={`/gaur/docs/${entry.slug === 'index' ? '' : entry.slug}`} 
+							class="group p-8 rounded-gaur border border-muted/20 bg-surface hover:border-primary/50 hover:shadow-glow transition-all duration-300"
+						>
+							<h2 class="text-2xl font-bold text-highlight group-hover:text-primary mb-3 transition-colors tracking-tight">
+								{entry.data.title}
+							</h2>
+							<p class="text-text/70 text-base leading-relaxed">
+								{entry.data.description}
+							</p>
+						</a>
+					))}
+				</div>
+
+				<div class="mt-20 p-8 rounded-gaur border border-highlight/20 bg-highlight/5">
+					<h3 class="text-xl font-bold text-highlight mb-4">Quick Start</h3>
+					<p class="text-text/80 mb-6">Ready to jump right in? Install Gaur using your favorite AUR helper and start managing your packages beautifully.</p>
+					<code class="block bg-mantle p-4 rounded-sm border border-muted/10 text-pink font-bold">
+						paru -S gaur-bin
+					</code>
+				</div>
+			</div>
+		</article>
+	</div>
+</Layout>
