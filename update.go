@@ -700,8 +700,10 @@ func (m *model) performFiltering() tea.Cmd {
 	if m.mode == modeUpdateSelective {
 		if query == "" {
 			m.filtered = m.updatableAll
+			m.matchIndices = nil
 		} else {
 			m.filtered = fuzzyFilter(m.updatableAll, query)
+			m.matchIndices = computeAllMatchIndices(m.filtered, query)
 		}
 	}
 	if m.mode == modeCacheSelective {

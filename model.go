@@ -22,7 +22,6 @@ type model struct {
 	installed             []Package
 	filteredInstalled     []Package
 	matchIndices          map[int][]int // Maps package index to matched character indices
-	installedMatchIndices map[int][]int
 	selectedIndex         int
 	markedPackages        map[string]bool // Packages marked for batch operation
 	selectionPanelFocused bool            // Whether selection panel is focused

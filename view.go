@@ -935,14 +935,7 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 		}
 
 		// Get the appropriate match indices map
-		var matchIndicesMap map[int][]int
-		if m.mode == modeInstall {
-			matchIndicesMap = m.matchIndices
-		} else if m.mode == modeRemove {
-			matchIndicesMap = m.installedMatchIndices
-		} else if m.mode == modeUpdateSelective {
-			matchIndicesMap = m.matchIndices
-		}
+		matchIndicesMap := m.matchIndices
 
 		// Build lines in reverse order (most relevant at bottom, near input field)
 		var lines []string
