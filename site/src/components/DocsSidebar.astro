@@ -3,8 +3,8 @@ import { getCollection } from 'astro:content';
 
 const docsEntries = await getCollection('docs');
 
-// Sort them so Intro is first, then Installation, then Usage, etc.
-const order = ['introduction', 'installation', 'usage', 'configuration'];
+// Sort them so Installation is first, then Usage, etc.
+const order = ['installation', 'usage', 'configuration', 'internals'];
 docsEntries.sort((a, b) => {
 	const aIndex = order.indexOf(a.slug);
 	const bIndex = order.indexOf(b.slug);
