@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="gaur.png" alt="Gaur" width="800" />
+<img src="gaur.png" alt="gaur" width="800" />
 
-# Gaur
+# gaur
 
 **A beautiful, interactive TUI for Arch Linux package management**
 
@@ -106,7 +106,7 @@ go install github.com/prbhtkumr/gaur@latest
 
 ## ⚙️ Configuration
 
-Gaur creates a configuration file at `~/.config/gaur/config.toml` on first run. You can also configure most settings directly in the app using the **Settings Menu** (`,`).
+gaur creates a configuration file at `~/.config/gaur/config.toml` on first run. You can also configure most settings directly in the app using the **Settings Menu** (`,`).
 
 ```toml
 [commands]
@@ -228,7 +228,7 @@ Combined: `of:google` searches for orphaned AUR packages matching "google".
 
 ### Themes
 
-Gaur supports customizable color themes. Use the `--theme` flag to select a theme on startup, or press `,` to open the Settings menu and change the theme live.
+gaur supports customizable color themes. Use the `--theme` flag to select a theme on startup, or press `,` to open the Settings menu and change the theme live.
 
 ```bash
 gaur --theme catppuccin-mocha

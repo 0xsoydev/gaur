@@ -1,11 +1,11 @@
 ---
 title: "Usage"
-description: "How to use Gaur to manage packages"
+description: "How to use gaur to manage packages"
 ---
 
 # Usage
 
-Gaur is designed for speed and productivity, with a focus on keyboard-driven interactions. Master its keybindings to navigate and manage packages efficiently.
+gaur is designed for speed and productivity, with a focus on keyboard-driven interactions. Master its keybindings to navigate and manage packages efficiently.
 
 ## Global Keybindings
 
@@ -46,7 +46,7 @@ Manage your packages with these actions:
 
 ## Update Mode
 
-When viewing available updates, Gaur provides two paths:
+When viewing available updates, gaur provides two paths:
 
 | Key     | Action                                         |
 | ------- | ---------------------------------------------- |
@@ -70,7 +70,7 @@ Monitor and manage your system in **Dashboard Mode**:
 
 ## Confirmation Dialogs
 
-When Gaur prompts for confirmation, use these keys:
+When gaur prompts for confirmation, use these keys:
 
 | Key           | Action              |
 | ------------- | ------------------- |
@@ -80,7 +80,7 @@ When Gaur prompts for confirmation, use these keys:
 
 ## Search Filters
 
-Gaur supports powerful search filters to narrow down your results.
+gaur supports powerful search filters to narrow down your results.
 
 ### Install Mode
 

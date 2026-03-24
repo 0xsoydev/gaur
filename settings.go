@@ -138,7 +138,7 @@ func (m *model) renderSettings(innerWidth, innerHeight int) string {
 		Align(lipgloss.Center).
 		Width(overlayWidth - 4)
 
-	content.WriteString(titleStyle.Render("\ue690 Gaur Settings"))
+	content.WriteString(titleStyle.Render("\ue690 gaur Settings"))
 	content.WriteString("\n\n")
 
 	for i, item := range m.settingsItems {

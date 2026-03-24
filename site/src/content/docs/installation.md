@@ -1,15 +1,15 @@
 ---
 title: "Installation"
-description: "How to install Gaur on Arch Linux"
+description: "How to install gaur on Arch Linux"
 ---
 
 # Installation
 
-Gaur is designed specifically for Arch Linux and its derivatives (e.g., Manjaro, EndeavourOS). You can install it using several methods.
+gaur is designed specifically for Arch Linux and its derivatives (e.g., Manjaro, EndeavourOS). You can install it using several methods.
 
 ## Prerequisites
 
-Before installing Gaur, ensure you have the following on your system:
+Before installing gaur, ensure you have the following on your system:
 
 - **Arch Linux** (or an Arch-based distribution)
 - **AUR Helper:** [paru](https://github.com/Morganamilo/paru) or [yay](https://github.com/Jguer/yay)
@@ -20,7 +20,7 @@ Before installing Gaur, ensure you have the following on your system:
 
 ### From the AUR (Recommended)
 
-Gaur is available on the AUR. Use your favorite helper:
+gaur is available on the AUR. Use your favorite helper:
 
 ```bash
 yay -S gaur-bin
@@ -40,7 +40,7 @@ Ensure your `$GOPATH/bin` is in your `$PATH`.
 
 ### From Source
 
-To build Gaur from the latest source code:
+To build gaur from the latest source code:
 
 1. Clone the repository:
    ```bash

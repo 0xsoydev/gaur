@@ -1,15 +1,15 @@
 ---
 title: "Internals"
-description: "How Gaur works under the hood"
+description: "How gaur works under the hood"
 ---
 
 # Project Internals
 
-This section provides a technical deep dive into how Gaur operates, its architecture, and the design decisions that power its interactive experience.
+This section provides a technical deep dive into how gaur operates, its architecture, and the design decisions that power its interactive experience.
 
 ## Architecture Overview
 
-Gaur is built using a modular architecture that separates the UI logic from the system package management operations.
+gaur is built using a modular architecture that separates the UI logic from the system package management operations.
 
 ### Component Breakdown
 
@@ -20,12 +20,12 @@ Gaur is built using a modular architecture that separates the UI logic from the 
 
 ## Working with AUR Helpers
 
-Gaur doesn't reinvent package management. Instead, it acts as a high-fidelity wrapper around established tools:
+gaur doesn't reinvent package management. Instead, it acts as a high-fidelity wrapper around established tools:
 
-- **Searching**: When you type in Install mode, Gaur triggers a debounced search that queries the local `pacman` database and the AUR (via the configured helper).
+- **Searching**: When you type in Install mode, gaur triggers a debounced search that queries the local `pacman` database and the AUR (via the configured helper).
 - **Fuzzy Matching**: Results are piped through `fzf` for lightning-fast, relevance-ranked matching.
-- **Hand-off**: For operations that require user interaction (like password entry or conflict resolution), Gaur uses `tea.ExecProcess` to hand control over to the AUR helper in the terminal, ensuring full interactivity and safety.
+- **Hand-off**: For operations that require user interaction (like password entry or conflict resolution), gaur uses `tea.ExecProcess` to hand control over to the AUR helper in the terminal, ensuring full interactivity and safety.
 
 ## Real-time Refresh Logic
 
-After any operation that modifies the system state (install, remove, update), Gaur triggers a unified refresh. This re-scans the system to update dashboard stats, repo distributions, and package lists instantly, ensuring the UI always reflects the current state of your Arch Linux installation.
+After any operation that modifies the system state (install, remove, update), gaur triggers a unified refresh. This re-scans the system to update dashboard stats, repo distributions, and package lists instantly, ensuring the UI always reflects the current state of your Arch Linux installation.

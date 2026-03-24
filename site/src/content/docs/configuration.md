@@ -1,25 +1,25 @@
 ---
 title: "Configuration"
-description: "How to customize Gaur to your liking"
+description: "How to customize gaur to your liking"
 ---
 
 # Configuration
 
-Gaur is highly customizable. You can configure it either via the in-app settings menu or by editing its configuration file.
+gaur is highly customizable. You can configure it either via the in-app settings menu or by editing its configuration file.
 
 ## In-App Settings
 
-Gaur features a convenient **Settings Overlay** that you can access at any time by pressing `,`.
+gaur features a convenient **Settings Overlay** that you can access at any time by pressing `,`.
 
 From the overlay, you can instantly configure:
 - **AUR Helper:** Switch between `paru` and `yay`.
 - **Theme:** Instantly preview and apply different color themes.
-- **Default View:** Set the view Gaur opens with (`dashboard`, `install`, `update`, `remove`).
+- **Default View:** Set the view gaur opens with (`dashboard`, `install`, `update`, `remove`).
 - **Border Type:** Change the UI borders (`rounded`, `normal`, `thick`, `double`).
 
 ## Config Options
 
-On its first run, Gaur will automatically generate a default configuration file located at:
+On its first run, gaur will automatically generate a default configuration file located at:
 
 `~/.config/gaur/config.toml`
 
@@ -51,7 +51,7 @@ remove_flags = "-Rns"
 
 ### Advanced Settings
 
-Gaur also supports advanced settings like custom cache directories and debouncing limits.
+gaur also supports advanced settings like custom cache directories and debouncing limits.
 
 ```toml
 [advanced]
@@ -83,7 +83,7 @@ cancel = "esc"
 
 ## Themes
 
-Gaur supports several built-in themes to match your terminal rice. You can change them through the settings menu, config file, or command line flag.
+gaur supports several built-in themes to match your terminal rice. You can change them through the settings menu, config file, or command line flag.
 
 ### Command Line Selection
 

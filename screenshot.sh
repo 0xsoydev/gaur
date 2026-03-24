@@ -5,7 +5,7 @@ MAIN_CONFIG="$HOME/.config/foot/foot.ini"
 THEME_DIR="$HOME/.config/foot/themes"
 TEMP_CONFIG="/tmp/gaur_theme_preview.ini"
 
-# Map Gaur themes to Foot files
+# Map gaur themes to Foot files
 declare -A THEMES=(
     ["Catppuccin Frappe"]="catppuccin-frappe"
     ["Catppuccin Latte"]="catppuccin-latte"
