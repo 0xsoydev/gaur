@@ -13,8 +13,8 @@ import TerminalHero from '../components/TerminalHero.astro';
 
 	<div class="snap-container h-[calc(100vh-4rem)] overflow-y-auto snap-y snap-mandatory scroll-smooth" id="main-snap-container">
 		<!-- Hero Section -->
-		<section class="min-h-full flex flex-col pt-32 pb-12 text-center overflow-hidden snap-start relative">
-			<div class="px-4">
+		<section class="min-h-full flex flex-col pt-12 pb-8 text-center overflow-hidden snap-start relative">
+			<div class="flex-grow flex flex-col justify-center px-4">
 				<h1 class="text-5xl md:text-7xl font-bold tracking-tight mb-4 flex items-center justify-center gap-4">
 					<span class="text-green drop-shadow-[0_0_8px_rgba(166,227,161,0.5)]">></span>
 					<span class="text-primary drop-shadow-[0_0_15px_rgba(203,166,247,0.4)]">[gaur]</span>
@@ -25,45 +25,50 @@ import TerminalHero from '../components/TerminalHero.astro';
 				</p>
 			</div>
 
-			<TerminalHero />
+			<div class="flex-shrink-0">
+				<TerminalHero />
+			</div>
 
 			<!-- Threshold Indicator (Bottom Glow) -->
 			<div class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 transition-opacity duration-500 threshold-indicator"></div>
 		</section>
 
 		<!-- About / Philosophy Section -->
-		<section class="min-h-full flex flex-col pt-32 pb-12 px-4 border-t border-muted/10 snap-start relative">
-			<div class="max-w-4xl mx-auto w-full space-y-12">
-				<div>
-					<h2 class="text-3xl font-bold text-primary mb-6 tracking-tight">core philosophy</h2>
-					<p class="text-lg text-text/80 leading-relaxed">
-						gaur is designed for users who demand speed and total control without sacrificing aesthetics. it doesn't just run commands; it creates an immersive environment for managing your system's package ecosystem, providing detailed insights right from the terminal.
-					</p>
-				</div>
+		<section class="min-h-full flex flex-col px-4 border-t border-muted/10 snap-start relative">
+			<div class="max-w-4xl mx-auto w-full flex-grow flex flex-col justify-center py-8">
+				<div class="space-y-8">
+					<div>
+						<h2 class="text-3xl font-bold text-primary mb-4 tracking-tight">core philosophy</h2>
+						<p class="text-lg text-text/80 leading-relaxed">
+							gaur is designed for users who demand speed and total control without sacrificing aesthetics. it doesn't just run commands; it creates an immersive environment for managing your system's package ecosystem, providing detailed insights right from the terminal.
+						</p>
+					</div>
 
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8">
-					<div class="p-6 rounded-gaur border border-muted/20 bg-surface/50 shadow-sm hover:border-primary/30 transition-colors">
-						<h3 class="text-xl font-bold text-highlight mb-4">fuzzy search</h3>
-						<p class="text-sm text-muted leading-relaxed">powered by <code class="text-pink">fzf</code> for lightning-fast matching across official repos and the aur.</p>
-					</div>
-					<div class="p-6 rounded-gaur border border-muted/20 bg-surface/50 shadow-sm hover:border-primary/30 transition-colors">
-						<h3 class="text-xl font-bold text-highlight mb-4">system dashboard</h3>
-						<p class="text-sm text-muted leading-relaxed">real-time stats on disk usage, repository distribution, and cache management.</p>
-					</div>
-					<div class="p-6 rounded-gaur border border-muted/20 bg-surface/50 shadow-sm hover:border-primary/30 transition-colors">
-						<h3 class="text-xl font-bold text-highlight mb-4">selective updates</h3>
-						<p class="text-sm text-muted leading-relaxed">carefully manage your system by selecting specific packages to update.</p>
-					</div>
-					<div class="p-6 rounded-gaur border border-muted/20 bg-surface/50 shadow-sm hover:border-primary/30 transition-colors">
-						<h3 class="text-xl font-bold text-highlight mb-4">batch operations</h3>
-						<p class="text-sm text-muted leading-relaxed">mark multiple packages with <code class="text-pink">tab</code> and process them all at once.</p>
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+						<div class="p-5 rounded-gaur border border-muted/20 bg-surface/50 shadow-sm hover:border-primary/30 transition-colors">
+							<h3 class="text-xl font-bold text-highlight mb-3">fuzzy search</h3>
+							<p class="text-sm text-muted leading-relaxed">powered by <code class="text-pink">fzf</code> for lightning-fast matching across official repos and the aur.</p>
+						</div>
+						<div class="p-5 rounded-gaur border border-muted/20 bg-surface/50 shadow-sm hover:border-primary/30 transition-colors">
+							<h3 class="text-xl font-bold text-highlight mb-3">system dashboard</h3>
+							<p class="text-sm text-muted leading-relaxed">real-time stats on disk usage, repository distribution, and cache management.</p>
+						</div>
+						<div class="p-5 rounded-gaur border border-muted/20 bg-surface/50 shadow-sm hover:border-primary/30 transition-colors">
+							<h3 class="text-xl font-bold text-highlight mb-3">selective updates</h3>
+							<p class="text-sm text-muted leading-relaxed">carefully manage your system by selecting specific packages to update.</p>
+						</div>
+						<div class="p-5 rounded-gaur border border-muted/20 bg-surface/50 shadow-sm hover:border-primary/30 transition-colors">
+							<h3 class="text-xl font-bold text-highlight mb-3">batch operations</h3>
+							<p class="text-sm text-muted leading-relaxed">mark multiple packages with <code class="text-pink">tab</code> and process them all at once.</p>
+						</div>
 					</div>
 				</div>
+			</div>
 
-				<!-- Fixed ASCII art and actual footer info -->
-				<div class="pt-20 pb-12 text-center">
-					<div class="opacity-20 mb-12">
-						<pre class="inline-block text-[10px] md:text-xs leading-none">
+			<!-- Sticky Footer Area -->
+			<div class="w-full pb-8 text-center flex-shrink-0">
+				<div class="opacity-20 mb-6">
+					<pre class="inline-block text-[10px] md:text-xs leading-none">
    ::::::::      :::     :::    ::: :::::::::  
   :+:    :+:   :+: :+:   :+:    :+: :+:    :+: 
  +:+         +:+   +:+  +:+    +:+ +:+    +:+  
@@ -71,15 +76,15 @@ import TerminalHero from '../components/TerminalHero.astro';
  +#+   ++++ +#+     +#+ +#+    +#+ +#+    +#+    
 #+#    #+# #+#     #+# #+#    #+# #+#    #+#     
 ########  ###     ###  ########  ###    ###      
-						</pre>
-					</div>
-					
-					<div class="text-muted/40 text-xs font-mono tracking-tight">
-						<p>© {new Date().getFullYear()} gaur. released under the gplv3 license.</p>
-						<p class="mt-2">built with astro + tailwind for the arch community.</p>
-					</div>
+					</pre>
+				</div>
+				
+				<div class="text-muted/40 text-[10px] font-mono tracking-tight">
+					<p>© {new Date().getFullYear()} gaur. released under the gplv3 license.</p>
+					<p class="mt-1">built with astro + tailwind for the arch community.</p>
 				</div>
 			</div>
+			
 			<!-- Threshold Indicator -->
 			<div class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 transition-opacity duration-500 threshold-indicator"></div>
 		</section>
