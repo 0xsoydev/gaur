@@ -5,22 +5,37 @@ description: "How to customize Gaur to your liking"
 
 # Configuration
 
-Gaur is highly customizable via its configuration file. On its first run, it will automatically generate a default configuration file located at:
+Gaur is highly customizable. You can configure it either via the in-app settings menu or by editing its configuration file.
 
-`~/.config/gaur/config.toml`
+## In-App Settings
+
+Gaur features a convenient **Settings Overlay** that you can access at any time by pressing `,`.
+
+From the overlay, you can instantly configure:
+- **AUR Helper:** Switch between `paru` and `yay`.
+- **Theme:** Instantly preview and apply different color themes.
+- **Default View:** Set the view Gaur opens with (`dashboard`, `install`, `update`, `remove`).
+- **Border Type:** Change the UI borders (`rounded`, `normal`, `thick`, `double`).
 
 ## Config Options
 
+On its first run, Gaur will automatically generate a default configuration file located at:
+
+`~/.config/gaur/config.toml`
+
 The configuration file is written in TOML and uses a simple, intuitive structure.
 
-### AUR Helper
+### AUR Helper & Tools
 
-You can set your preferred AUR helper (e.g., `paru` or `yay`).
+You can set your preferred AUR helper and cache management tool.
 
 ```toml
 [commands]
-# Set your preferred AUR helper: \"paru\" (default) or \"yay\"
-aur_helper = \"paru\"
+# Set your preferred AUR helper: "paru" (default) or "yay"
+aur_helper = "paru"
+
+# The tool used for cleaning the cache (defaults to paccache)
+cache_tool = "paccache"
 ```
 
 ### Command Flags
@@ -36,19 +51,41 @@ remove_flags = "-Rns"
 
 ### Advanced Settings
 
-Gaur also supports advanced settings like custom cache directories.
+Gaur also supports advanced settings like custom cache directories and debouncing limits.
 
 ```toml
 [advanced]
+# Milliseconds to debounce package details fetching
+debounce_ms = 150
+
 # Set a custom cache directory (optional)
-cache_dir = \"\"
+cache_dir = ""
+```
+
+## Custom Keybindings
+
+You can remap keybindings to fit your workflow in the configuration file:
+
+```toml
+[keys]
+quit = ["q", "ctrl+c"]
+install_mode = ["i", "alt+2"]
+remove_mode = ["r", "alt+4"]
+update_mode = ["u", "alt+3"]
+dashboard_mode = ["d", "alt+1"]
+search = "/"
+mark = "tab"
+selective = "s"
+settings = ","
+confirm = "enter"
+cancel = "esc"
 ```
 
 ## Themes
 
-Gaur supports several built-in themes to match your terminal rice.
+Gaur supports several built-in themes to match your terminal rice. You can change them through the settings menu, config file, or command line flag.
 
-### Selecting a Theme
+### Command Line Selection
 
 Use the `--theme` flag to select a theme on startup:
 
