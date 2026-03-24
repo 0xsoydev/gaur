@@ -1,9 +1,9 @@
 ---
-title: "Usage"
+title: "usage"
 description: "How to use gaur to manage packages"
 ---
 
-# Usage
+# usage
 
 gaur is designed for speed and productivity, with a focus on keyboard-driven interactions. Master its keybindings to navigate and manage packages efficiently.
 

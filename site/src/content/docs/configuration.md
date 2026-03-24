@@ -1,9 +1,9 @@
 ---
-title: "Configuration"
+title: "configuration"
 description: "How to customize gaur to your liking"
 ---
 
-# Configuration
+# configuration
 
 gaur is highly customizable. You can configure it either via the in-app settings menu or by editing its configuration file.
 

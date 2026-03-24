@@ -1,9 +1,9 @@
 ---
-title: "Installation"
+title: "installation"
 description: "How to install gaur on Arch Linux"
 ---
 
-# Installation
+# installation
 
 gaur is designed specifically for Arch Linux and its derivatives (e.g., Manjaro, EndeavourOS). You can install it using several methods.
 

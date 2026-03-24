@@ -1,9 +1,9 @@
 ---
-title: "Internals"
+title: "internals"
 description: "How gaur works under the hood"
 ---
 
-# Project Internals
+# project internals
 
 This section provides a technical deep dive into how gaur operates, its architecture, and the design decisions that power its interactive experience.
 

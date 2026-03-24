@@ -14,7 +14,7 @@ const { entry } = Astro.props;
 const { Content } = await entry.render();
 ---
 
-<Layout title={`gaur Docs - ${entry.data.title}`}>
+<Layout title={`gaur docs - ${entry.data.title}`}>
 	<div class="flex max-w-7xl mx-auto min-h-[calc(100vh-4rem)]">
 		<!-- Sidebar -->
 		<DocsSidebar currentSlug={entry.slug} />
