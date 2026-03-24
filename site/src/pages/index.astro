@@ -11,7 +11,7 @@ import TerminalHero from '../components/TerminalHero.astro';
 				<span class="text-primary">Gaur</span>
 			</h1>
 			<p class="text-lg md:text-xl text-muted max-w-2xl mx-auto mb-10 leading-relaxed">
-				A beautiful, interactive TUI for Arch Linux package management. Built for speed, precision, and aesthetics.
+				A beautiful, interactive terminal user interface (TUI) designed to make Arch Linux package management both powerful and visually striking.
 			</p>
 			
 			<div class="flex items-center justify-center gap-4 mb-16">
@@ -27,31 +27,33 @@ import TerminalHero from '../components/TerminalHero.astro';
 		<TerminalHero />
 	</section>
 
-	<!-- Features Grid -->
-	<section class="max-w-6xl mx-auto px-4 py-20 border-t border-muted/10">
-		<div class="grid grid-cols-1 md:grid-cols-3 gap-12">
-			<div class="space-y-4">
-				<div class="text-blue text-2xl font-bold">01.</div>
-				<h3 class="text-xl font-bold text-highlight tracking-tight">&gt; search/fuzzy</h3>
-				<p class="text-muted text-sm leading-relaxed">
-					Lightning-fast fuzzy matching powered by <code class="text-pink">fzf</code>. Instantly find any package across official repos and the AUR.
-				</p>
-			</div>
-			
-			<div class="space-y-4">
-				<div class="text-blue text-2xl font-bold">02.</div>
-				<h3 class="text-xl font-bold text-primary tracking-tight">&gt; system/dashboard</h3>
-				<p class="text-muted text-sm leading-relaxed">
-					Comprehensive system overview. Track disk usage, identify large packages, and manage your pacman cache in one view.
+	<!-- About / Philosophy Section (from Introduction) -->
+	<section class="max-w-4xl mx-auto px-4 py-20 border-t border-muted/10">
+		<div class="space-y-12">
+			<div>
+				<h2 class="text-3xl font-bold text-primary mb-6 tracking-tight">Core Philosophy</h2>
+				<p class="text-lg text-text/80 leading-relaxed">
+					Gaur is designed for users who demand speed and total control without sacrificing aesthetics. It doesn't just run commands; it creates an immersive environment for managing your system's package ecosystem, providing detailed insights right from the terminal.
 				</p>
 			</div>
 
-			<div class="space-y-4">
-				<div class="text-blue text-2xl font-bold">03.</div>
-				<h3 class="text-xl font-bold text-accent tracking-tight">&gt; theme/custom</h3>
-				<p class="text-muted text-sm leading-relaxed">
-					Deep customization support. Built-in themes for Catppuccin, Gruvbox, Tokyo Night, and more. Make it yours.
-				</p>
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8">
+				<div class="p-6 rounded-gaur border border-muted/20 bg-surface/50 shadow-sm">
+					<h3 class="text-xl font-bold text-highlight mb-4">Fuzzy Search</h3>
+					<p class="text-sm text-muted leading-relaxed">Powered by <code class="text-pink">fzf</code> for lightning-fast matching across official repos and the AUR.</p>
+				</div>
+				<div class="p-6 rounded-gaur border border-muted/20 bg-surface/50 shadow-sm">
+					<h3 class="text-xl font-bold text-highlight mb-4">System Dashboard</h3>
+					<p class="text-sm text-muted leading-relaxed">Real-time stats on disk usage, repository distribution, and cache management.</p>
+				</div>
+				<div class="p-6 rounded-gaur border border-muted/20 bg-surface/50 shadow-sm">
+					<h3 class="text-xl font-bold text-highlight mb-4">Selective Updates</h3>
+					<p class="text-sm text-muted leading-relaxed">Carefully manage your system by selecting specific packages to update.</p>
+				</div>
+				<div class="p-6 rounded-gaur border border-muted/20 bg-surface/50 shadow-sm">
+					<h3 class="text-xl font-bold text-highlight mb-4">Batch Operations</h3>
+					<p class="text-sm text-muted leading-relaxed">Mark multiple packages with <code class="text-pink">Tab</code> and process them all at once.</p>
+				</div>
 			</div>
 		</div>
 	</section>
