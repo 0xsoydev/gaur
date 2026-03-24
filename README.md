@@ -9,7 +9,7 @@
 Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea) • Powered by [paru](https://github.com/Morganamilo/paru) or [yay](https://github.com/Jguer/yay)
 
 > ⚠️ **Disclaimer:** This project is mostly vibecoded and continues to be developed through vibecoding.  
-> Do report rough edges, and expect an occasional \"it works on my machine\" moment (trying my best to eliminate those).
+> Do report rough edges, and expect an occasional "it works on my machine" moment (trying my best to eliminate those).
 
 </div>
 
@@ -34,6 +34,7 @@ Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea) • Powered 
 - **Dynamic Helper Support** — Seamlessly switch between `paru` and `yay` via configuration
 - **Repository Filtering** — Filter by source with prefixes: `c:` (core), `e:` (extra), `m:` (multilib), `a:` (aur)
 - **Batch Operations** — Mark multiple packages with `Tab` and install/remove them all at once
+- **Selective Updates** — Carefully manage your system by selecting specific packages to update rather than full updates
 - **Interactive Hand-off** — Correctly handles terminal prompts for password entry and conflict resolution
 - **Real-time Package Details** — View detailed package information with debounced loading
 
@@ -41,15 +42,17 @@ Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea) • Powered 
 
 - **Package Statistics** — Total, explicit, foreign (AUR), and orphan package counts
 - **Disk Space Analysis** — Capacity, usage breakdown (packages, cache, other, free) with visual proportional bars
+- **Repository Distribution** — Breakdown of packages by repository (core, extra, multilib, AUR)
 - **XDG Compliance** — Automatically respects `$XDG_CACHE_HOME` for all cache operations
-- **Top 10 Packages** — See your largest installed packages at a glance
-- **Top Cache Hogs** — Identifies the top largest packages taking up space across both pacman and helper caches
-- **Cache Management** — Clean package caches directly from the dashboard with `sudo` privilege escalation
+- **Top Packages** — See your largest installed packages at a glance
+- **Top Cache Hogs** — Identifies the largest packages taking up space across both pacman and helper caches
+- **Cache Management** — Clean package caches via an interactive menu, choose keep policies, or selectively delete packages from cache
 - **Orphan Removal** — Identify and remove orphaned packages
 
 ### 🎨 Interface
 
 - **Mode-specific Theming** — Each mode (Install, Dash, Remove, Update) has its own color scheme
+- **In-App Settings Menu** — Press `,` to instantly change themes, borders, and helpers without restarting
 - **Selection Panel** — Dedicated panel for managing marked packages
 - **Centered Dialogs** — All confirmation and error boxes are perfectly centered line-by-line
 - **Automatic Refresh** — The entire UI refreshes automatically after any system change to ensure data integrity
@@ -81,7 +84,7 @@ Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea) • Powered 
 │Found 610 packages (492 from AUR)                                           │
 │> firefox                                                                   │
 ╰────────────────────────────────────────────────────────────────────────────╯
-       [/] search  [tab] mark  [i]nstall  [d]ash  [r]emove  [u]pdate  [q]uit
+       [/] search  [tab] mark  [i]nstall  [d]ash  [r]emove  [u]pdate  [,] settings  [q]uit
 ```
 
 ## 🚀 Installation
@@ -103,19 +106,21 @@ go install github.com/prbhtkumr/gaur@latest
 
 ## ⚙️ Configuration
 
-Gaur creates a configuration file at `~/.config/gaur/config.toml` on first run.
+Gaur creates a configuration file at `~/.config/gaur/config.toml` on first run. You can also configure most settings directly in the app using the **Settings Menu** (`,`).
 
 ```toml
 [commands]
-# Set your preferred AUR helper: \"paru\" (default) or \"yay\"
-aur_helper = \"paru\"
+# Set your preferred AUR helper: "paru" (default) or "yay"
+aur_helper = "paru"
+# The tool used for cleaning the cache (defaults to paccache)
+cache_tool = "paccache"
 # Custom flags for install/remove
 install_flags = ""
 remove_flags = "-Rns"
 
 [advanced]
 # Set a custom cache directory (optional)
-cache_dir = \"\"
+cache_dir = ""
 ```
 
 ## 📖 Usage
@@ -134,6 +139,7 @@ gaur
 | `d`      | Switch to **Dash** (dashboard) mode            |
 | `r`      | Switch to **Remove** mode                     |
 | `u`      | Switch to **Update** mode / Check for updates |
+| `,`      | Open **Settings** menu                        |
 | `q`      | Quit                                          |
 | `Ctrl+C` | Force quit                                    |
 
@@ -156,6 +162,13 @@ gaur
 | `Enter`   | Install/remove selected or marked packages |
 | `*`       | Toggle selection panel focus               |
 
+#### Update Mode
+
+| Key     | Action                                         |
+| ------- | ---------------------------------------------- |
+| `Enter` | Proceed with a full system update              |
+| `s`     | Switch to **Selective Update** mode            |
+
 #### Dashboard (Dash Mode)
 
 | Key | Action                                       |
@@ -164,7 +177,7 @@ gaur
 | `e` | Jump to Remove mode → Explicit packages      |
 | `f` | Jump to Remove mode → Foreign (AUR) packages |
 | `o` | Jump to Remove mode → Orphan packages        |
-| `c` | Clean package cache                          |
+| `c` | Open Cache Cleaning menu                     |
 | `R` | Remove all orphan packages                   |
 
 #### Confirmation Dialogs
@@ -201,7 +214,7 @@ Filter installed packages by type:
 | `f:` / `a:`   | Foreign (AUR) packages |
 | `o:`   | Orphan packages        |
 
-Combined: `of:google` searches for orphaned AUR packages matching \"google\".
+Combined: `of:google` searches for orphaned AUR packages matching "google".
 
 ### Color Legend
 
@@ -215,33 +228,17 @@ Combined: `of:google` searches for orphaned AUR packages matching \"google\".
 
 ### Themes
 
-Gaur supports customizable color themes. Use the `--theme` flag to select a theme:
+Gaur supports customizable color themes. Use the `--theme` flag to select a theme on startup, or press `,` to open the Settings menu and change the theme live.
 
 ```bash
 gaur --theme catppuccin-mocha
 ```
 
-To list available themes:
+To list available themes from the command line:
 
 ```bash
 gaur --list-themes
 ```
-
-#### Supported Themes
-
-| Theme                  | Screenshot                                                     |
-| ---------------------- | -------------------------------------------------------------- |
-| `catppuccin-frappe`    | <img src="screenshots/catppuccin-frappe.png" width="320" />    |
-| `catppuccin-macchiato` | <img src="screenshots/catppuccin-macchiato.png" width="320" /> |
-| `catppuccin-mocha`     | <img src="screenshots/catppuccin-mocha.png" width="320" />     |
-| `dracula`              | <img src="screenshots/dracula.png" width="320" />              |
-| `gruvbox-dark`         | <img src="screenshots/gruvbox-dark.png" width="320" />         |
-| `monokai-pro`          | <img src="screenshots/monokai-pro.png" width="320" />          |
-| `onedark`              | <img src="screenshots/one-dark.png" width="320" />             |
-| `rose-pine`            | <img src="screenshots/rose-pine.png" width="320" />            |
-| `solarized-dark`       | <img src="screenshots/solarized-dark.png" width="320" />       |
-| `tokyonight-night`     | <img src="screenshots/tokyonight-night.png" width="320" />     |
-| `tokyonight-storm`     | <img src="screenshots/tokyonight-storm.png" width="320" />     |
 
 ## 🔧 How It Works
 
