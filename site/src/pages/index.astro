@@ -3,7 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import TerminalHero from '../components/TerminalHero.astro';
 ---
 
-<Layout title="gaur - arch linux package manager tui">
+<Layout title="gaur - arch linux package manager tui" hideFooter={true}>
 	<!-- Scroll Indicator (Vertical Bar) -->
 	<div class="fixed right-6 top-1/2 -translate-y-1/2 z-50 hidden lg:flex">
 		<div class="w-1 h-48 bg-surface1/30 rounded-full relative overflow-hidden">
@@ -60,9 +60,10 @@ import TerminalHero from '../components/TerminalHero.astro';
 					</div>
 				</div>
 
-				<!-- Fixed ASCII art and footer info merged into section -->
-				<div class="pt-20 pb-12 text-center opacity-20">
-					<pre class="inline-block text-[10px] md:text-xs leading-none">
+				<!-- Fixed ASCII art and actual footer info -->
+				<div class="pt-20 pb-12 text-center">
+					<div class="opacity-20 mb-12">
+						<pre class="inline-block text-[10px] md:text-xs leading-none">
    ::::::::      :::     :::    ::: :::::::::  
   :+:    :+:   :+: :+:   :+:    :+: :+:    :+: 
  +:+         +:+   +:+  +:+    +:+ +:+    +:+  
@@ -70,8 +71,13 @@ import TerminalHero from '../components/TerminalHero.astro';
  +#+   ++++ +#+     +#+ +#+    +#+ +#+    +#+    
 #+#    #+# #+#     #+# #+#    #+# #+#    #+#     
 ########  ###     ###  ########  ###    ###      
-					</pre>
-					<p class="mt-8 text-[10px] font-mono tracking-[0.2em] uppercase opacity-50">end of system report</p>
+						</pre>
+					</div>
+					
+					<div class="text-muted/40 text-xs font-mono tracking-tight">
+						<p>© {new Date().getFullYear()} gaur. released under the gplv3 license.</p>
+						<p class="mt-2">built with astro + tailwind for the arch community.</p>
+					</div>
 				</div>
 			</div>
 			<!-- Threshold Indicator -->

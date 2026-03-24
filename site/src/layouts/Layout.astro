@@ -1,9 +1,10 @@
 ---
 interface Props {
 	title: string;
+	hideFooter?: boolean;
 }
 
-const { title } = Astro.props;
+const { title, hideFooter = false } = Astro.props;
 ---
 
 <!doctype html>
@@ -33,10 +34,12 @@ const { title } = Astro.props;
 		<main class="flex-grow">
 			<slot />
 		</main>
-		<footer class="py-12 text-center text-muted/50 text-xs border-t border-muted/10">
-			<p>© {new Date().getFullYear()} gaur. released under the gplv3 license.</p>
-			<p class="mt-2">built with astro + tailwind for the arch community.</p>
-		</footer>
+		{!hideFooter && (
+			<footer class="py-12 text-center text-muted/50 text-xs border-t border-muted/10">
+				<p>© {new Date().getFullYear()} gaur. released under the gplv3 license.</p>
+				<p class="mt-2">built with astro + tailwind for the arch community.</p>
+			</footer>
+		)}
 	</body>
 </html>
 
