@@ -101,4 +101,4 @@ To see all available themes:
 gaur --list-themes
 ```
 
-Check out our [Showcase](/showcase) to see what each theme looks like in action.
+Check out our [Theme Gallery](/gaur/themes) to see what each theme looks like in action.
