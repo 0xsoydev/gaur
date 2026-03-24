@@ -59,23 +59,23 @@ import TerminalHero from '../components/TerminalHero.astro';
 						<p class="text-sm text-muted leading-relaxed">mark multiple packages with <code class="text-pink">tab</code> and process them all at once.</p>
 					</div>
 				</div>
+
+				<!-- Fixed ASCII art and footer info merged into section -->
+				<div class="pt-20 pb-12 text-center opacity-20">
+					<pre class="inline-block text-[10px] md:text-xs leading-none">
+   ::::::::      :::     :::    ::: :::::::::  
+  :+:    :+:   :+: :+:   :+:    :+: :+:    :+: 
+ +:+         +:+   +:+  +:+    +:+ +:+    +:+  
+ :#:        +#++:++#++: +#+    +:+ +#++:++#:    
+ +#+   ++++ +#+     +#+ +#+    +#+ +#+    +#+    
+#+#    #+# #+#     #+# #+#    #+# #+#    #+#     
+########  ###     ###  ########  ###    ###      
+					</pre>
+					<p class="mt-8 text-[10px] font-mono tracking-[0.2em] uppercase opacity-50">end of system report</p>
+				</div>
 			</div>
 			<!-- Threshold Indicator -->
 			<div class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 transition-opacity duration-500 threshold-indicator"></div>
-		</section>
-
-		<!-- Minimal ASCII decoration / Footer section -->
-		<section class="min-h-full flex flex-col pt-32 pb-12 text-center opacity-30 snap-start border-t border-muted/10">
-			<pre class="inline-block text-[10px] md:text-xs">
-      :::::::::::      :::     :::    ::: :::::::::  
-     :+:      :+:    :+: :+:   :+:    :+: :+:    :+: 
-    +:+     +:+    +:+   +:+  +:+    +:+ +:+    +:+  
-   +#+    +#+    +#++:++#++: +#+    +:+ +#++:++#:    
-  +#+   +#+     +#+     +#+ +#+    +#+ +#+    +#+    
- #+#  #+#      #+#     #+# #+#    #+# #+#    #+#     
-#########     ###     ###  ########  ###    ###      
-			</pre>
-			<p class="mt-12 text-xs font-mono tracking-widest uppercase opacity-40">end of system report</p>
 		</section>
 	</div>
 </Layout>
