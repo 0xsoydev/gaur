@@ -1102,48 +1102,55 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 	switch m.confirmType {
 	case confirmInstall:
 		title = "📦 Confirm Installation"
-		actionDesc = "install"
-		for name := range m.markedPackages {
+		actionDesc = "installed"
+		for _, name := range m.confirmPackages {
 			pkg := m.getPackageByName(name)
 			if pkg != nil {
 				packages = append(packages, *pkg)
+			} else {
+				// Fallback if full package info is missing
+				packages = append(packages, Package{Name: name})
 			}
 		}
 	case confirmRemove:
 		title = "🗑 Confirm Removal"
-		actionDesc = "remove"
-		for name := range m.markedPackages {
+		actionDesc = "removed"
+		for _, name := range m.confirmPackages {
 			pkg := m.getPackageByName(name)
 			if pkg != nil {
 				packages = append(packages, *pkg)
+			} else {
+				packages = append(packages, Package{Name: name})
 			}
 		}
 	case confirmUpdate:
 		title = "🔄 Confirm System Update"
-		actionDesc = "update"
+		actionDesc = "updated"
 		packages = m.pendingUpdates
 	case confirmSelectiveUpdate:
 		title = "🔄 Confirm Selective Update"
-		actionDesc = "update"
-		for name := range m.markedPackages {
+		actionDesc = "updated"
+		for _, name := range m.confirmPackages {
 			pkg := m.getPackageByName(name)
 			if pkg != nil {
 				packages = append(packages, *pkg)
+			} else {
+				packages = append(packages, Package{Name: name})
 			}
 		}
 	case confirmRemoveOrphans:
 		title = "🧹 Confirm Orphan Removal"
-		actionDesc = "remove orphans"
+		actionDesc = "removed"
 		for _, name := range m.confirmPackages {
 			packages = append(packages, Package{Name: name})
 		}
 	case confirmCleanKeep3, confirmCleanKeep1, confirmCleanNuke:
 		title = "🧹 Confirm Cache Cleaning"
-		actionDesc = "clean"
+		actionDesc = "cleaned"
 		simpleConfirm = true
 	case confirmCleanRemoved:
 		title = "🧹 Confirm Orphaned Cache Clean"
-		actionDesc = "clean orphaned packages from cache"
+		actionDesc = "cleaned"
 		if len(m.dashboard.RemovedPacmanCache) > 0 {
 			for _, p := range m.dashboard.RemovedPacmanCache {
 				packages = append(packages, Package{Name: p.Name, Size: p.Size})
@@ -1156,8 +1163,8 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 		}
 	case confirmCleanSelective:
 		title = "🧹 Confirm Selective Clean"
-		actionDesc = "clean selected packages from cache"
-		for name := range m.markedPackages {
+		actionDesc = "removed from cache"
+		for _, name := range m.confirmPackages {
 			packages = append(packages, Package{Name: name, Size: ""}) // Size filled later if available
 		}
 	}
@@ -1271,7 +1278,7 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 		} else if m.confirmType == confirmCleanRemoved {
 			dialogContent = append(dialogContent, listTitleStyle.Render("This will remove cached packages that are no longer installed."))
 		} else {
-			dialogContent = append(dialogContent, listTitleStyle.Render(fmt.Sprintf("The following %s packages will be %sd:", countStyle.Render(fmt.Sprintf("%d", len(packages))), actionDesc)))
+			dialogContent = append(dialogContent, listTitleStyle.Render(fmt.Sprintf("The following %s packages will be %s:", countStyle.Render(fmt.Sprintf("%d", len(packages))), actionDesc)))
 		}
 		dialogContent = append(dialogContent, "")
 

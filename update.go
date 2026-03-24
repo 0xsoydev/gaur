@@ -747,6 +747,7 @@ func (m *model) getSelectedPkg() *Package {
 }
 
 func (m *model) getPackageByName(name string) *Package {
+	// 1. Check currently filtered list (fastest)
 	list := m.filtered
 	if m.mode == modeRemove {
 		list = m.filteredInstalled
@@ -756,6 +757,36 @@ func (m *model) getPackageByName(name string) *Package {
 			return &list[i]
 		}
 	}
+
+	// 2. Check full source lists if not found in filtered
+	// Check installed packages (for removal/updates)
+	for i := range m.installed {
+		if m.installed[i].Name == name {
+			return &m.installed[i]
+		}
+	}
+
+	// Check repo packages (for installation)
+	for i := range m.repoPackages {
+		if m.repoPackages[i].Name == name {
+			return &m.repoPackages[i]
+		}
+	}
+
+	// Check AUR packages (for installation)
+	for i := range m.aurPackages {
+		if m.aurPackages[i].Name == name {
+			return &m.aurPackages[i]
+		}
+	}
+
+	// Check pending updates
+	for i := range m.pendingUpdates {
+		if m.pendingUpdates[i].Name == name {
+			return &m.pendingUpdates[i]
+		}
+	}
+
 	return nil
 }
 

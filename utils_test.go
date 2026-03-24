@@ -209,3 +209,23 @@ func TestSimplifyErrorMessage(t *testing.T) {
 		})
 	}
 }
+
+// stripAnsi removes ANSI escape codes from a string for easier testing.
+func stripAnsi(s string) string {
+	var b strings.Builder
+	inEsc := false
+	for _, r := range s {
+		if r == '\x1b' {
+			inEsc = true
+			continue
+		}
+		if inEsc {
+			if (r >= 'A' && r <= 'Z') || (r >= 'a' && r <= 'z') {
+				inEsc = false
+			}
+			continue
+		}
+		b.WriteRune(r)
+	}
+	return b.String()
+}

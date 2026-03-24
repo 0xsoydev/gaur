@@ -155,23 +155,3 @@ func TestConfigKeyReflectionInSettings(t *testing.T) {
 		t.Errorf("Expected [q]uit in settings view, got %q", view)
 	}
 }
-
-// Helper to strip ANSI escape codes for easier comparison
-func stripAnsi(s string) string {
-	var b strings.Builder
-	inEsc := false
-	for _, r := range s {
-		if r == '\x1b' {
-			inEsc = true
-			continue
-		}
-		if inEsc {
-			if (r >= 'A' && r <= 'Z') || (r >= 'a' && r <= 'z') {
-				inEsc = false
-			}
-			continue
-		}
-		b.WriteRune(r)
-	}
-	return b.String()
-}
