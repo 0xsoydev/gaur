@@ -18,8 +18,10 @@ const { title } = Astro.props;
 	</head>
 	<body class="min-h-screen flex flex-col">
 		<nav class="h-16 flex items-center justify-between px-8 border-b border-muted/20 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
-			<a href="/gaur/" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
-				<span class="text-primary font-bold text-xl">[gaur]</span>
+			<a href="/gaur/" class="flex items-center gap-2 hover:opacity-90 transition-opacity group">
+				<span class="text-green font-bold text-xl drop-shadow-[0_0_5px_rgba(166,227,161,0.5)]">></span>
+				<span class="text-primary font-bold text-xl tracking-tight drop-shadow-[0_0_8px_rgba(203,166,247,0.4)] group-hover:drop-shadow-[0_0_12px_rgba(203,166,247,0.6)] transition-all">[gaur]</span>
+				<span class="w-2.5 h-5 bg-primary/80 animate-pulse ml-1"></span>
 			</a>
 			<div class="flex items-center gap-8 text-sm font-semibold tracking-tight">
 				<a href="/gaur/themes" class="hover:text-primary transition-colors">Themes</a>
