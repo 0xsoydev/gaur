@@ -112,7 +112,7 @@ func (m *model) View() string {
 	} else {
 		// Handle modeInstall and modeRemove
 		helpWidth := lipgloss.Width(helpText)
-		padding := innerWidth - helpWidth
+		padding := (innerWidth - helpWidth) / 2
 		if padding < 0 {
 			padding = 0
 		}
@@ -1425,7 +1425,7 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 	borderStyle := baseBorderStyle.BorderForeground(activeColor)
 
 	helpWidth := lipgloss.Width(helpText)
-	padding := innerWidth - helpWidth
+	padding := (innerWidth - helpWidth) / 2
 	if padding < 0 {
 		padding = 0
 	}

@@ -142,3 +142,57 @@ func TestSearchStatusAlignment(t *testing.T) {
 		t.Errorf("Plain status line: %q", plainStatus)
 	}
 }
+
+func TestFooterCentering(t *testing.T) {
+	lipgloss.SetColorProfile(termenv.TrueColor)
+	
+	m := initialModel(modeInstall, DefaultConfig())
+	m.width = 100
+	m.height = 40
+	m.loading = false
+	
+	modes := []viewMode{modeInstall, modeDashboard, modeUpdate, modeRemove, modeCacheMenu, modeCacheSelective, modeUpdateSelective}
+	
+	for _, mode := range modes {
+		t.Run("mode "+string(rune(mode)), func(t *testing.T) {
+			m.mode = mode
+			m.previousMode = modeInstall // for settings overlay check
+			output := m.View()
+			lines := strings.Split(output, "\n")
+			
+			// The footer is the very last line
+			footerLine := lines[len(lines)-1]
+			
+			// Help text contains "search" and "quit" normally
+			if !strings.Contains(footerLine, "search") && !strings.Contains(footerLine, "quit") && !strings.Contains(footerLine, "dash") {
+				t.Fatalf("Footer line not found or doesn't contain expected help text. Mode: %v, Line: %q", mode, footerLine)
+			}
+			
+			trimmed := strings.TrimSpace(footerLine)
+			contentWidth := lipgloss.Width(trimmed)
+			
+			// Find actual left padding
+			// We need to handle ANSI codes
+			ansi := regexp.MustCompile("\x1b\\[[0-9;]*[a-zA-Z]")
+			plainLine := ansi.ReplaceAllString(footerLine, "")
+			
+			leftPadding := 0
+			for _, r := range plainLine {
+				if r == ' ' {
+					leftPadding++
+				} else {
+					break
+				}
+			}
+			
+			rightPadding := m.width - leftPadding - contentWidth
+			
+			// For centering, left and right padding should be roughly equal
+			diff := leftPadding - rightPadding
+			if diff > 2 || diff < -2 {
+				t.Errorf("Footer not centered in mode %v: left padding %d, right padding %d, diff %d. Line length: %d, content width: %d", 
+					mode, leftPadding, rightPadding, diff, len(plainLine), contentWidth)
+			}
+		})
+	}
+}

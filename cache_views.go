@@ -97,7 +97,7 @@ func (m *model) renderCacheMenu(helpText string, innerWidth, innerHeight int) st
 	if helpText != "" {
 		footerHeight = 1
 		helpWidth := lipgloss.Width(helpText)
-		padding := innerWidth - helpWidth
+		padding := (innerWidth - helpWidth) / 2
 		if padding < 0 {
 			padding = 0
 		}
@@ -284,7 +284,7 @@ func (m *model) renderSelectiveCacheView(helpText string, innerWidth, innerHeigh
 	header := lipgloss.NewStyle().Bold(true).Foreground(activeColor).Render(" \uf0c7 Selective Cache Clean")
 
 	helpWidth := lipgloss.Width(helpText)
-	padding := innerWidth - helpWidth
+	padding := (innerWidth - helpWidth) / 2
 	if padding < 0 {
 		padding = 0
 	}

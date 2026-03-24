@@ -580,7 +580,7 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 	borderStyle := baseBorderStyle.BorderForeground(activeColor)
 
 	helpWidth := lipgloss.Width(helpText)
-	padding := innerWidth - helpWidth
+	padding := (innerWidth - helpWidth) / 2
 	if padding < 0 {
 		padding = 0
 	}
