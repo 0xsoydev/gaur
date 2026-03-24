@@ -67,23 +67,23 @@ Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea) • Powered 
 ## 🖼️ Interface
 
 ```
-╭─────────────────────────────────────────────────────────╭──────────────────╮
-│ Repository   : extra                                    | Selected (2) [*] │
-│ Name         : firefox                                  |  firefox         │
-│ Version      : 133.0-1                                  |  firefoxpwa      |
-│ Description  : Fast, Private & Safe Web Browser         ╰──────────────────│
-│ Architecture : x86_64                                                      │
-│ URL          : https://www.mozilla.org/firefox                             │
-│                                                                            │
-├────────────────────────────────────────────────────────────────────────────┤
-│  extra/firefox-i18n-an 147.0.2-1                                           │
-│  extra/firefox-i18n-af 147.0.2-1                                           │
-│ *extra/firefoxpwa 2.18.0.1                                                 │
-│>*extra/firefox 147.0.2-1 [installed]                                       │
-│                                                                            │
-│Found 610 packages (492 from AUR)                                           │
-│> firefox                                                                   │
-╰────────────────────────────────────────────────────────────────────────────╯
+╭────────────────────────────────────────────────────────────────────────────╭──────────────────╮
+│ Repository   : extra                                                       | Selected (2) [*] │
+│ Name         : firefox                                                     |  firefox         │
+│ Version      : 133.0-1                                                     |  firefoxpwa      |
+│ Description  : Fast, Private & Safe Web Browser                            ╰──────────────────│
+│ Architecture : x86_64                                                                         │
+│ URL          : https://www.mozilla.org/firefox                                                │
+│                                                                                               │
+├───────────────────────────────────────────────────────────────────────────────────────────────┤
+│  extra/firefox-i18n-an 147.0.2-1                                                              │
+│  extra/firefox-i18n-af 147.0.2-1                                                              │
+│ *extra/firefoxpwa 2.18.0.1                                                                    │
+│>*extra/firefox 147.0.2-1 [installed]                                                          │
+│                                                                                               │
+│Found 610 packages (492 from AUR)                                                              │
+│> firefox                                                                                      │
+╰───────────────────────────────────────────────────────────────────────────────────────────────╯
        [/] search  [tab] mark  [i]nstall  [d]ash  [r]emove  [u]pdate  [,] settings  [q]uit
 ```
 
