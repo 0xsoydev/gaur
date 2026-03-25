@@ -359,31 +359,14 @@
       }
   });
 
-  let scrollCount = 0;
-  let hasStarted = false;
-
-  function handleScrollTrigger() {
-    if (hasStarted) return;
-    scrollCount++;
-    if (scrollCount >= 3) {
-      hasStarted = true;
-      runAnimation();
-      window.removeEventListener('wheel', handleScrollTrigger);
-      window.removeEventListener('touchmove', handleScrollTrigger);
-    }
-  }
-
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
-        window.addEventListener('wheel', handleScrollTrigger, { passive: true });
-        window.addEventListener('touchmove', handleScrollTrigger, { passive: true });
-      } else {
-        window.removeEventListener('wheel', handleScrollTrigger);
-        window.removeEventListener('touchmove', handleScrollTrigger);
+        runAnimation();
+        observer.unobserve(entry.target);
       }
     });
-  }, { threshold: 0.2 });
+  }, { threshold: 0.5 });
 
   const container = document.getElementById('terminal-container');
   if (container) observer.observe(container);
