@@ -14,12 +14,12 @@
         <!-- Top Section: Details Pane (ROUNDED) -->
         <div class="mx-3 mt-3 h-1/2 border border-blue/30 rounded-gaur p-4 relative">
           <!-- Selection Pane (ABSOLUTE OVERLAY - Anchored to border) -->
-          <div id="selection-pane" class="absolute -top-[1px] -right-[1px] w-52 border border-pink/40 rounded-gaur p-3 bg-base z-20 opacity-0 transition-opacity duration-500">
-            <div class="text-pink font-bold mb-2 tracking-tight flex justify-between items-center">
+          <div id="selection-pane" class="absolute -top-[1px] -right-[1px] min-w-[15ch] max-w-[25ch] w-fit border border-pink/40 rounded-gaur p-3 bg-base z-20 opacity-0 transition-opacity duration-500 text-left">
+            <div class="text-pink font-bold mb-2 tracking-tight flex justify-between items-center gap-4">
                 <span>Selected (2)</span>
                 <span class="text-[10px]">[*]</span>
             </div>
-            <div id="selected-items" class="space-y-1 text-text/90 leading-tight">
+            <div id="selected-items" class="space-y-1 text-text/90 leading-tight break-all">
               <!-- Populated by JS -->
             </div>
           </div>
