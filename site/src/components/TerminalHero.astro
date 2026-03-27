@@ -151,6 +151,11 @@
 
     if (!inputEl || !listEl || !statusEl || !indicatorEl || !searchTextEl) return;
     
+    // Initial state
+    updateList("");
+    statusEl.classList.add('opacity-100');
+    searchTextEl.textContent = "Welcome to gaur. Type / to search.";
+    
     await wait(1000);
 
     // Initial search: firefox
@@ -159,6 +164,7 @@
       const currentQuery = query1.slice(0, i);
       inputEl.textContent = currentQuery;
       updateFilterHints(currentQuery);
+      updateList(currentQuery);
       
       if (i > 0) {
         statusEl.classList.add('opacity-100');
@@ -180,6 +186,7 @@
     // Search Complete
     indicatorEl.textContent = '';
     searchTextEl.textContent = 'Found 9 matches in official repos.';
+    // updateList is already called during typing, but ensure it's correct at end
     updateList(query1);
 
     await wait(400);
@@ -197,6 +204,7 @@
       const currentQuery = query1.slice(0, i);
       inputEl.textContent = currentQuery;
       updateFilterHints(currentQuery);
+      updateList(currentQuery);
       await wait(50);
     }
     await wait(300);
@@ -207,6 +215,7 @@
       const q = filter.slice(0, i);
       inputEl.textContent = q;
       updateFilterHints(q);
+      updateList(q);
       await wait(100);
     }
     
@@ -215,6 +224,7 @@
       const currentQuery = filter + query2.slice(0, i);
       inputEl.textContent = currentQuery;
       updateFilterHints(currentQuery);
+      // For AUR search, we usually wait for the result, but let's update list mockingly
       
       statusEl.classList.add('opacity-100');
       searchTextEl.textContent = `Searching for ${currentQuery}...`;
@@ -276,11 +286,38 @@
             if (filterChar === 'e' && p.source !== 'extra') return false;
         }
         return matchesQuery;
-    }).slice(0, 9);
+    });
+
+    const displayList = filtered.slice(0, 9);
+    
+    // Count sources from the ALL filtered results
+    const counts: Record<string, number> = {};
+    filtered.forEach(p => {
+        counts[p.source] = (counts[p.source] || 0) + 1;
+    });
+
+    // Update summary
+    let summaryHTML = '';
+    const sortedSources = Object.keys(counts).sort();
+    
+    if (sortedSources.length > 0) {
+        sortedSources.forEach((source, idx) => {
+            let colorClass = 'text-blue'; // default
+            if (source === 'aur') colorClass = 'text-pink';
+            if (source === 'core') colorClass = 'text-green';
+            if (source === 'multilib') colorClass = 'text-orange';
+            
+            summaryHTML += `<span>${counts[source]} <span class="${colorClass}">${source}</span></span>`;
+            if (idx < sortedSources.length - 1) {
+                summaryHTML += '<span>, </span>';
+            }
+        });
+    }
+    summaryEl.innerHTML = summaryHTML;
 
     listEl.innerHTML = '';
     
-    filtered.forEach((pkg, idx) => {
+    displayList.forEach((pkg, idx) => {
       const div = document.createElement('div');
       div.className = 'pkg-item flex items-center px-3 py-0 transition-all duration-150 w-full font-medium';
       div.innerHTML = `
@@ -293,12 +330,6 @@
       div.id = `pkg-${idx}`;
       listEl.appendChild(div);
     });
-
-    summaryEl.innerHTML = `
-        <span>220 <span class="text-blue">extra</span></span>
-        <span>, </span>
-        <span>394 <span class="text-pink">aur</span></span>
-    `;
 
     return filtered.length;
   }
