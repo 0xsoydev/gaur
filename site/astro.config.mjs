@@ -4,7 +4,8 @@ import tailwind from '@astrojs/tailwind';
 
 // https://astro.build/config
 export default defineConfig({
-  base: '/gaur', 
+  site: 'https://gaur.prbhtkumr.xyz',
+  base: '/', 
   output: 'static',
 
   integrations: [tailwind()],
