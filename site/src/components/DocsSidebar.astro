@@ -25,7 +25,7 @@ const { currentSlug } = Astro.props;
 				{docsEntries.map(entry => (
 					<li>
 						<a 
-							href={`/gaur/docs/${entry.slug === 'index' ? '' : entry.slug}`} 
+							href={`/docs/${entry.slug === 'index' ? '' : entry.slug}`} 
 							class:list={[
 								"text-sm font-medium transition-colors hover:text-primary",
 								(currentSlug === entry.slug || (currentSlug === undefined && entry.slug === 'index')) ? "text-primary" : "text-text/70"

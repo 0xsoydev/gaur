@@ -21,7 +21,7 @@ From the overlay, you can instantly configure:
 
 On its first run, gaur will automatically generate a default configuration file located at:
 
-`~/.config/gaur/config.toml`
+`~/.config/config.toml`
 
 The configuration file is written in TOML and uses a simple, intuitive structure.
 
@@ -101,4 +101,4 @@ To see all available themes:
 gaur --list-themes
 ```
 
-Check out our [Theme Gallery](/gaur/themes) to see what each theme looks like in action.
+Check out our [Theme Gallery](/themes) to see what each theme looks like in action.
