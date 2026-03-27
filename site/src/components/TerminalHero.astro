@@ -262,11 +262,14 @@
     const summaryEl = document.getElementById('repo-summary');
     if (!listEl || !summaryEl) return 0;
     
-    const actualQuery = q.includes(':') ? q.split(':')[1] : q;
-    const activeFilters = q.includes(':') ? [q.split(':')[0]] : [];
+    let actualQuery = q.includes(':') ? q.split(':')[1] : q;
+    actualQuery = actualQuery.trim().toLowerCase().replace(/\s+/g, '-');
+    const activeFilters = q.includes(':') ? [q.split(':')[0].trim()] : [];
 
     const filtered = allPackages.filter(p => {
-        const matchesQuery = p.name.includes(actualQuery);
+        const name = p.name.toLowerCase();
+        const matchesQuery = name.includes(actualQuery) || actualQuery === "";
+        
         if (activeFilters.length > 0) {
             const filterChar = activeFilters[0];
             if (filterChar === 'a' && p.source !== 'aur') return false;
@@ -321,9 +324,27 @@
     updateDetails(idx);
   }
 
-  function updateDetails(idx: number) {
+  function getFilteredPackages() {
     const q = document.getElementById('typing-input')?.textContent || "";
-    const filtered = allPackages.filter(p => p.name.includes(q.includes(':') ? q.split(':')[1] : q));
+    let actualQuery = q.includes(':') ? q.split(':')[1] : q;
+    actualQuery = actualQuery.trim().toLowerCase().replace(/\s+/g, '-');
+    const activeFilters = q.includes(':') ? [q.split(':')[0].trim()] : [];
+
+    return allPackages.filter(p => {
+        const name = p.name.toLowerCase();
+        const matchesQuery = name.includes(actualQuery) || actualQuery === "";
+        
+        if (activeFilters.length > 0) {
+            const filterChar = activeFilters[0];
+            if (filterChar === 'a' && p.source !== 'aur') return false;
+            if (filterChar === 'e' && p.source !== 'extra') return false;
+        }
+        return matchesQuery;
+    });
+  }
+
+  function updateDetails(idx: number) {
+    const filtered = getFilteredPackages();
     const pkg = filtered[idx];
     const pane = document.getElementById('details-pane');
     if (!pkg || !pane) return;
@@ -337,8 +358,7 @@
 
   const marked = new Set();
   function markPackage(idx: number) {
-    const q = document.getElementById('typing-input')?.textContent || "";
-    const filtered = allPackages.filter(p => p.name.includes(q.includes(':') ? q.split(':')[1] : q));
+    const filtered = getFilteredPackages();
     const pkg = filtered[idx];
     if (!pkg) return;
 
