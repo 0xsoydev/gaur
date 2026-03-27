@@ -6,26 +6,26 @@
     <div class="absolute -inset-0.5 bg-sapphire/10 rounded-xl blur opacity-10 group-hover:opacity-30 transition duration-1000 group-hover:duration-200"></div>
     
     <!-- Main Terminal Window -->
-    <div class="relative bg-base border border-surface1/60 rounded-xl overflow-hidden shadow-2xl h-[540px] flex flex-col">
+    <div class="relative bg-base border border-surface1/60 rounded-xl overflow-hidden shadow-2xl min-h-[540px] md:h-[540px] flex flex-col">
       
       <!-- TUI Content Area -->
       <div class="grow flex flex-col gap-0 overflow-hidden relative text-text">
         
         <!-- Top Section: Details Pane (ROUNDED) -->
-        <div class="mx-3 mt-3 h-1/2 border border-blue/30 rounded-gaur p-4 relative">
+        <div class="mx-3 mt-3 h-1/2 border border-blue/30 rounded-gaur p-4 relative overflow-y-auto overflow-x-hidden">
           <!-- Selection Pane (ABSOLUTE OVERLAY - Anchored to border) -->
-          <div id="selection-pane" class="absolute -top-[1px] -right-[1px] min-w-[15ch] max-w-[25ch] w-fit border border-pink/40 rounded-gaur p-3 bg-base z-20 opacity-0 transition-opacity duration-500 text-left">
-            <div class="text-pink font-bold mb-2 tracking-tight flex justify-between items-center gap-4">
-                <span>Selected (2)</span>
+          <div id="selection-pane" class="absolute top-0 right-0 min-w-[15ch] max-w-[20ch] md:max-w-[25ch] w-fit border-l border-b border-pink/40 rounded-bl-gaur p-2 md:p-3 bg-base z-20 opacity-0 transition-opacity duration-500 text-left">
+            <div class="text-pink font-bold mb-1 md:mb-2 tracking-tight flex justify-between items-center gap-2 md:gap-4 text-[10px] md:text-xs">
+                <span>Selected</span>
                 <span class="text-[10px]">[*]</span>
             </div>
-            <div id="selected-items" class="space-y-1 text-text/90 leading-tight break-all">
+            <div id="selected-items" class="space-y-1 text-text/90 leading-tight break-all text-[9px] md:text-[10px]">
               <!-- Populated by JS -->
             </div>
           </div>
 
           <div id="details-pane" class="opacity-0 transition-opacity duration-300 text-left">
-            <div class="grid grid-cols-[110px_10px_1fr] gap-x-0 gap-y-0.5">
+            <div class="grid grid-cols-[80px_10px_1fr] md:grid-cols-[110px_10px_1fr] gap-x-0 gap-y-0.5">
               <span class="text-text">Repository</span> <span class="text-text/60">:</span> <span id="detail-repo" class="text-blue"></span>
               <span class="text-text">Name</span> <span class="text-text/60">:</span> <span id="detail-name" class="font-bold"></span>
               <span class="text-text">Version</span> <span class="text-text/60">:</span> <span id="detail-version" class="text-text"></span>
@@ -35,7 +35,7 @@
               <span class="text-text">Licenses</span> <span class="text-text/60">:</span> <span class="text-text">MPL-2.0</span>
               <span class="text-text">Groups</span> <span class="text-text/60">:</span> <span class="text-text">None</span>
               <span class="text-text">Provides</span> <span class="text-text/60">:</span> <span class="text-text">None</span>
-              <span class="text-text">Depends On</span> <span class="text-text/60">:</span> <span class="text-text leading-tight">alsa-lib at-spi2-core bash cairo dbus ffmpeg fontconfig freetype2 gdk-pixbuf2 glib2 glibc gtk3 hicolor-icon-theme libgcc libpulse libstdc++ libx11 libxcb libxcomposite libxdamage libxext libxfixes libxrandr libxss libxt mime-types</span>
+              <span class="text-text truncate">Depends On</span> <span class="text-text/60">:</span> <span class="text-text leading-tight">alsa-lib at-spi2-core bash cairo dbus ffmpeg fontconfig freetype2 gdk-pixbuf2 glib2 glibc gtk3 hicolor-icon-theme libgcc libpulse libstdc++ libx11 libxcb libxcomposite libxdamage libxext libxfixes libxrandr libxss libxt mime-types</span>
             </div>
           </div>
         </div>
@@ -43,15 +43,15 @@
         <!-- Bottom Section: Package List (ROUNDED) -->
         <div class="mx-3 h-1/2 border border-blue/30 rounded-gaur flex flex-col justify-end relative mt-3 mb-2 overflow-hidden">
           <!-- Scrolling List -->
-          <div id="package-list" class="flex flex-col-reverse gap-0.5 mb-2 overflow-hidden w-full relative">
+          <div id="package-list" class="flex flex-col-reverse gap-0.5 mb-2 overflow-y-auto overflow-x-hidden w-full relative">
             <!-- Populated by JS -->
-            <div class="absolute right-1 top-0 bottom-0 w-1 bg-surface1/10 rounded-full">
+            <div class="absolute right-1 top-0 bottom-0 w-1 bg-surface1/10 rounded-full hidden md:block">
                 <div class="h-24 w-full bg-surface2/30 rounded-full"></div>
             </div>
           </div>
           
           <!-- Input Area -->
-          <div class="border-t border-surface1/40">
+          <div class="border-t border-surface1/40 shrink-0">
               <!-- Input Line -->
               <div class="flex items-center justify-between pt-2 pl-3 pr-3">
                 <div class="flex items-center gap-2">
@@ -60,7 +60,7 @@
                     <span id="cursor" class="w-2 h-4 bg-text/80"></span>
                 </div>
                 <!-- Filter Hinting -->
-                <div id="filter-hints" class="text-[10px] text-surface2 flex gap-3">
+                <div id="filter-hints" class="text-[10px] text-surface2 flex gap-2 md:gap-3">
                     <span data-filter="c:">c:</span>
                     <span data-filter="e:">e:</span>
                     <span data-filter="m:">m:</span>
@@ -69,12 +69,12 @@
               </div>
               
               <!-- Search Status -->
-              <div id="search-status" class="text-[10px] text-subtext0 pb-2 pl-3 pr-3 opacity-0 transition-opacity flex items-center justify-between">
+              <div id="search-status" class="text-[10px] text-subtext0 pb-2 pl-3 pr-3 opacity-0 transition-opacity flex flex-wrap items-center justify-between gap-x-4">
                 <div class="flex items-center gap-2">
                   <span id="search-indicator" class="text-blue min-w-[1ch]"></span>
                   <span id="search-text" class="italic"></span>
                 </div>
-                <div id="repo-summary" class="flex gap-2">
+                <div id="repo-summary" class="flex gap-2 text-[9px] md:text-[10px]">
                     <!-- Populated by JS -->
                 </div>
               </div>
@@ -84,7 +84,7 @@
 
       <!-- Shortcuts Bar -->
       <div class="flex justify-center items-center px-4 py-2 text-[9px] md:text-[10px] text-overlay2 tracking-tight">
-        <div class="flex gap-5">
+        <div class="flex flex-wrap justify-center gap-x-4 gap-y-1">
             <span>[/]:search</span>
             <span>[tab]:mark</span>
             <span>[d]ash</span>
@@ -100,7 +100,7 @@
 
   <!-- Install Command Bar (ROUNDED) -->
   <div class="mt-4 max-w-2xl mx-auto">
-    <div class="flex gap-4 px-4 mb-2">
+    <div class="flex flex-wrap gap-4 px-4 mb-2 justify-center md:justify-start">
         <button class="tab-btn active text-[10px] font-bold text-mauve tracking-widest uppercase transition-all hover:text-mauve" data-cmd="paru -S gaur-bin">
             [ paru ]
         </button>
@@ -111,12 +111,12 @@
             [ go ]
         </button>
     </div>
-    <div class="bg-crust border border-surface0 rounded-gaur p-4 flex items-center justify-between group shadow-xl">
-        <div class="flex items-center gap-3">
+    <div class="bg-crust border border-surface0 rounded-gaur p-3 md:p-4 flex flex-col md:flex-row items-center justify-between group shadow-xl gap-4">
+        <div class="flex items-center gap-3 w-full md:w-auto">
             <span class="text-green font-bold">$</span>
-            <code id="install-cmd" class="text-green/90 text-[11px]">paru -S gaur-bin</code>
+            <code id="install-cmd" class="text-green/90 text-[11px] break-all">paru -S gaur-bin</code>
         </div>
-        <button id="copy-btn" class="px-4 py-1 text-[10px] font-bold border border-mauve text-mauve hover:bg-mauve/10 transition-all rounded-sm uppercase tracking-widest">
+        <button id="copy-btn" class="w-full md:w-auto px-6 py-2 md:py-1 text-[10px] font-bold border border-mauve text-mauve hover:bg-mauve/10 transition-all rounded-sm uppercase tracking-widest">
             COPY
         </button>
     </div>
