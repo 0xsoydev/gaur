@@ -151,20 +151,12 @@
 
     if (!inputEl || !listEl || !statusEl || !indicatorEl || !searchTextEl) return;
     
-    await wait(800);
+    await wait(1000);
 
-    const filter = "a:";
-    for (let i = 0; i <= filter.length; i++) {
-      const q = filter.slice(0, i);
-      inputEl.textContent = q;
-      updateFilterHints(q);
-      await wait(150);
-    }
-    await wait(300);
-
-    const query = "firefox";
-    for (let i = 0; i <= query.length; i++) {
-      const currentQuery = filter + query.slice(0, i);
+    // Initial search: firefox
+    const query1 = "firefox";
+    for (let i = 0; i <= query1.length; i++) {
+      const currentQuery = query1.slice(0, i);
       inputEl.textContent = currentQuery;
       updateFilterHints(currentQuery);
       
@@ -172,14 +164,14 @@
         statusEl.classList.add('opacity-100');
         searchTextEl.textContent = `Searching for ${currentQuery}...`;
       }
-      await wait(100 + Math.random() * 100);
+      await wait(80 + Math.random() * 100);
     }
 
-    // Braille Animation (1.10 seconds)
+    // Braille Animation (0.8 seconds)
     const brailleChars = ['⣾', '⣽', '⣻', '⢿', '⡿', '⣟', '⣯', '⣷'];
     let startTime = Date.now();
     let frame = 0;
-    while (Date.now() - startTime < 1100) {
+    while (Date.now() - startTime < 800) {
       indicatorEl.textContent = brailleChars[frame % brailleChars.length];
       frame++;
       await wait(80);
@@ -187,17 +179,65 @@
 
     // Search Complete
     indicatorEl.textContent = '';
-    searchTextEl.textContent = 'AUR search complete. Took 1.10 seconds.';
-    updateList(inputEl.textContent || "");
+    searchTextEl.textContent = 'Found 9 matches in official repos.';
+    updateList(query1);
 
     await wait(400);
     focusPackage(0); 
+    await wait(300);
+    markPackage(0);
+    await wait(400);
+    focusPackage(1);
+    await wait(250);
+    markPackage(1);
+    await wait(400);
+
+    // Backspace query
+    for (let i = query1.length; i >= 0; i--) {
+      const currentQuery = query1.slice(0, i);
+      inputEl.textContent = currentQuery;
+      updateFilterHints(currentQuery);
+      await wait(50);
+    }
+    await wait(300);
+
+    // New search: a: zen browser
+    const filter = "a: ";
+    for (let i = 0; i <= filter.length; i++) {
+      const q = filter.slice(0, i);
+      inputEl.textContent = q;
+      updateFilterHints(q);
+      await wait(100);
+    }
+    
+    const query2 = "zen browser";
+    for (let i = 0; i <= query2.length; i++) {
+      const currentQuery = filter + query2.slice(0, i);
+      inputEl.textContent = currentQuery;
+      updateFilterHints(currentQuery);
+      
+      statusEl.classList.add('opacity-100');
+      searchTextEl.textContent = `Searching for ${currentQuery}...`;
+      await wait(80 + Math.random() * 80);
+    }
+
+    // Braille Animation (1.2 seconds)
+    startTime = Date.now();
+    frame = 0;
+    while (Date.now() - startTime < 1200) {
+      indicatorEl.textContent = brailleChars[frame % brailleChars.length];
+      frame++;
+      await wait(80);
+    }
+
+    indicatorEl.textContent = '';
+    searchTextEl.textContent = 'AUR search complete. Took 1.20 seconds.';
+    updateList(filter + query2);
+
+    await wait(500);
+    focusPackage(0);
     await wait(600);
     markPackage(0);
-    await wait(500);
-    focusPackage(1);
-    await wait(300);
-    markPackage(1);
   }
 
   function updateFilterHints(q: string) {
