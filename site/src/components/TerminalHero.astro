@@ -127,15 +127,25 @@
   const allPackages = [
     { source: 'extra', name: 'firefox', version: '133.0.3-1', desc: 'Fast, Private & Safe Web Browser' },
     { source: 'extra', name: 'firefox-i18n-af', version: '133.0.3-1', desc: 'Afrikaans language pack for Firefox' },
-    { source: 'extra', name: 'firefox-i18n-an', version: '133.0.3-1', desc: 'Aragonese language pack for Firefox' },
     { source: 'extra', name: 'firefox-i18n-ar', version: '133.0.3-1', desc: 'Arabic language pack for Firefox' },
-    { source: 'extra', name: 'firefox-i18n-az', version: '133.0.3-1', desc: 'Azerbaijani language pack for Firefox' },
     { source: 'extra', name: 'firefox-i18n-be', version: '133.0.3-1', desc: 'Belarusian language pack for Firefox' },
-    { source: 'extra', name: 'firefox-i18n-bg', version: '133.0.3-1', desc: 'Bulgarian language pack for Firefox' },
-    { source: 'extra', name: 'firefox-i18n-bn', version: '133.0.3-1', desc: 'Bengali language pack for Firefox' },
+    { source: 'extra', name: 'firefox-developer-edition', version: '134.0b1-1', desc: 'Developer Edition of Firefox' },
+    { source: 'extra', name: 'firefox-nightly-bin', version: '135.0a1-1', desc: 'Nightly build of Firefox' },
+    { source: 'extra', name: 'firefox-focus', version: '133.0-1', desc: 'Privacy browser' },
+    { source: 'extra', name: 'firefox-adblock', version: '1.0-1', desc: 'Adblock for firefox' },
+    { source: 'extra', name: 'firefox-extension-privacy-badger', version: '2024.7.17-1', desc: 'Privacy Badger' },
+    { source: 'core', name: 'filesystem', version: '2024.11.22-1', desc: 'Base Arch Linux files' },
+    { source: 'core', name: 'findutils', version: '4.10.0-1', desc: 'GNU find, xargs, and locate' },
+    { source: 'core', name: 'flex', version: '2.6.4-5', desc: 'Fast lexical analyzer generator' },
+    { source: 'core', name: 'fzip', version: '1.0-1', desc: 'Fast zip' },
+    { source: 'multilib', name: 'fbg-lib32', version: '1.2-1', desc: '32-bit library' },
+    { source: 'multilib', name: 'flash-lib32', version: '32.0-1', desc: 'Flash library' },
     { source: 'aur', name: 'firefoxpwa', version: '2.18.2-1', desc: 'A system to use Firefox as a PWA' },
     { source: 'aur', name: 'zen-browser-bin', version: '1.0.0-a.42-1', desc: 'Experience tranquility while browsing the web without losing speed. Firefox based browser with vertical tabs.' },
     { source: 'aur', name: 'zen-browser-avx2-bin', version: '1.0.0-a.42-1', desc: 'Zen Browser (AVX2 optimized) - precompiled binaries' },
+    { source: 'aur', name: 'zen-browser-patched-bin', version: '1.0.0-1', desc: 'Patched version of zen browser' },
+    { source: 'aur', name: 'zenity-git', version: '3.99-1', desc: 'Display GTK+ dialogs' },
+    { source: 'aur', name: 'zengarden', version: '0.1-1', desc: 'Zen garden theme' },
     { source: 'extra', name: 'librewolf', version: '133.0-1', desc: 'Community-maintained fork of Firefox' },
     { source: 'extra', name: 'chromium', version: '131.0.6778.85-1', desc: 'A web browser built for speed' }
   ];
@@ -185,8 +195,7 @@
 
     // Search Complete
     indicatorEl.textContent = '';
-    searchTextEl.textContent = 'Found 9 matches in official repos.';
-    // updateList is already called during typing, but ensure it's correct at end
+    searchTextEl.textContent = 'Found matching packages in official repos.';
     updateList(query1);
 
     await wait(400);
@@ -224,7 +233,7 @@
       const currentQuery = filter + query2.slice(0, i);
       inputEl.textContent = currentQuery;
       updateFilterHints(currentQuery);
-      // For AUR search, we usually wait for the result, but let's update list mockingly
+      updateList(currentQuery);
       
       statusEl.classList.add('opacity-100');
       searchTextEl.textContent = `Searching for ${currentQuery}...`;
