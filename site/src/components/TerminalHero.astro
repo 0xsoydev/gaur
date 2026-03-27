@@ -309,21 +309,27 @@
 
     const filtered = allPackages.filter(p => {
         const name = p.name.toLowerCase();
-        const matchesQuery = name.includes(actualQuery) || actualQuery === "";
+        // Only return matches if there is an actual query, or if a specific repo filter is active
+        const matchesQuery = (actualQuery !== "" && name.includes(actualQuery));
         
         if (activeFilters.length > 0) {
             const filterChar = activeFilters[0];
             if (filterChar === 'a' && p.source !== 'aur') return false;
             if (filterChar === 'e' && p.source !== 'extra') return false;
+            // If we have a filter but no query, we might still show packages in that repo
+            // but for gaur, it usually waits for some input or shows nothing if search is blank
+            return actualQuery === "" || matchesQuery;
         }
         return matchesQuery;
     });
 
-    const displayList = filtered.slice(0, 9);
+    // If query and filters are empty, show nothing in the list (gaur behavior)
+    const displayList = (actualQuery === "" && activeFilters.length === 0) ? [] : filtered.slice(0, 9);
     
-    // Count sources from the ALL filtered results
+    // Count sources from the ALL filtered results (if no query, show total counts)
     const counts: Record<string, number> = {};
-    filtered.forEach(p => {
+    const countSource = (actualQuery === "" && activeFilters.length === 0) ? allPackages : filtered;
+    countSource.forEach(p => {
         counts[p.source] = (counts[p.source] || 0) + 1;
     });
 
