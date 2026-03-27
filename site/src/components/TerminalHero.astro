@@ -357,11 +357,15 @@
     displayList.forEach((pkg, idx) => {
       const div = document.createElement('div');
       div.className = 'pkg-item flex items-center px-3 py-0 transition-all duration-150 w-full font-medium';
+      
+      const sourceColorClass = pkg.source === 'aur' ? 'text-pink' : 'text-blue';
+      const highlightedName = getHighlightedName(pkg.name, actualQuery);
+      
       div.innerHTML = `
         <span class="indicator text-pink font-bold w-4 flex-shrink-0"></span>
-        <span class="text-${pkg.source === 'aur' ? 'pink' : 'blue'}">${pkg.source}</span>
+        <span class="${sourceColorClass}">${pkg.source}</span>
         <span class="text-overlay1">/</span>
-        <span class="text-text">${pkg.name}</span>
+        <span class="text-text">${highlightedName}</span>
         <span class="text-overlay1/50 ml-auto">${pkg.version}</span>
       `;
       div.id = `pkg-${idx}`;
@@ -369,6 +373,26 @@
     });
 
     return filtered.length;
+  }
+
+  function getHighlightedName(name: string, query: string) {
+    if (!query) return name;
+    
+    const normalizedQuery = query.toLowerCase().replace(/\s+/g, '');
+    const result: string[] = [];
+    let queryIdx = 0;
+    
+    // Simple fuzzy highlight: highlight characters in the order they appear in the query
+    for (let i = 0; i < name.length; i++) {
+        const char = name[i];
+        if (queryIdx < normalizedQuery.length && char.toLowerCase() === normalizedQuery[queryIdx]) {
+            result.push(`<span class="text-yellow font-bold">${char}</span>`);
+            queryIdx++;
+        } else {
+            result.push(char);
+        }
+    }
+    return result.join('');
   }
 
   function focusPackage(idx: number) {
