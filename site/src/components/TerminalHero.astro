@@ -161,12 +161,12 @@
 
     if (!inputEl || !listEl || !statusEl || !indicatorEl || !searchTextEl) return;
     
-    // Initial state
+    // Initial state: Loaded packages
     updateList("");
     statusEl.classList.add('opacity-100');
-    searchTextEl.textContent = "Welcome to gaur. Type / to search.";
+    searchTextEl.textContent = "Loaded 14285 packages";
     
-    await wait(1000);
+    await wait(1500);
 
     // Initial search: firefox
     const query1 = "firefox";
@@ -176,18 +176,25 @@
       updateFilterHints(currentQuery);
       updateList(currentQuery);
       
-      if (i > 0) {
-        statusEl.classList.add('opacity-100');
-        searchTextEl.textContent = `Searching for ${currentQuery}...`;
+      if (currentQuery.length >= 3) {
+        searchTextEl.textContent = `Searching AUR for "${currentQuery}"...`;
+        // Show spinner
+        indicatorEl.textContent = '⣾';
+      } else if (currentQuery.length > 0) {
+        searchTextEl.textContent = "";
+        indicatorEl.textContent = "";
+      } else {
+        searchTextEl.textContent = "Loaded 14285 packages";
+        indicatorEl.textContent = "";
       }
       await wait(80 + Math.random() * 100);
     }
 
-    // Braille Animation (0.8 seconds)
+    // Braille Animation (0.6 seconds)
     const brailleChars = ['⣾', '⣽', '⣻', '⢿', '⡿', '⣟', '⣯', '⣷'];
     let startTime = Date.now();
     let frame = 0;
-    while (Date.now() - startTime < 800) {
+    while (Date.now() - startTime < 600) {
       indicatorEl.textContent = brailleChars[frame % brailleChars.length];
       frame++;
       await wait(80);
@@ -195,7 +202,7 @@
 
     // Search Complete
     indicatorEl.textContent = '';
-    searchTextEl.textContent = 'Found matching packages in official repos.';
+    searchTextEl.textContent = 'AUR search complete. Took 0.62 seconds.';
     updateList(query1);
 
     await wait(400);
@@ -214,9 +221,17 @@
       inputEl.textContent = currentQuery;
       updateFilterHints(currentQuery);
       updateList(currentQuery);
+      
+      if (currentQuery.length >= 3) {
+        searchTextEl.textContent = `Searching AUR for "${currentQuery}"...`;
+      } else if (currentQuery.length > 0) {
+        searchTextEl.textContent = "";
+      } else {
+        searchTextEl.textContent = "Loaded 14285 packages";
+      }
       await wait(50);
     }
-    await wait(300);
+    await wait(500);
 
     // New search: a: zen browser
     const filter = "a: ";
@@ -225,32 +240,39 @@
       inputEl.textContent = q;
       updateFilterHints(q);
       updateList(q);
+      searchTextEl.textContent = "";
       await wait(100);
     }
     
     const query2 = "zen browser";
     for (let i = 0; i <= query2.length; i++) {
       const currentQuery = filter + query2.slice(0, i);
+      const searchQuery = query2.slice(0, i).trim();
       inputEl.textContent = currentQuery;
       updateFilterHints(currentQuery);
       updateList(currentQuery);
       
-      statusEl.classList.add('opacity-100');
-      searchTextEl.textContent = `Searching for ${currentQuery}...`;
+      if (searchQuery.length >= 3) {
+        searchTextEl.textContent = `Searching AUR for "${searchQuery}"...`;
+        indicatorEl.textContent = '⣾';
+      } else {
+        searchTextEl.textContent = "";
+        indicatorEl.textContent = "";
+      }
       await wait(80 + Math.random() * 80);
     }
 
-    // Braille Animation (1.2 seconds)
+    // Braille Animation (1.1 seconds)
     startTime = Date.now();
     frame = 0;
-    while (Date.now() - startTime < 1200) {
+    while (Date.now() - startTime < 1100) {
       indicatorEl.textContent = brailleChars[frame % brailleChars.length];
       frame++;
       await wait(80);
     }
 
     indicatorEl.textContent = '';
-    searchTextEl.textContent = 'AUR search complete. Took 1.20 seconds.';
+    searchTextEl.textContent = 'AUR search complete. Took 1.12 seconds.';
     updateList(filter + query2);
 
     await wait(500);
