@@ -18,16 +18,16 @@ const { title, hideFooter = false } = Astro.props;
 		<title>{title}</title>
 	</head>
 	<body class="min-h-screen flex flex-col">
-		<nav class="h-16 flex items-center justify-between px-8 border-b border-muted/20 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
+		<nav class="h-16 flex items-center justify-between px-4 md:px-8 border-b border-muted/20 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
 			<a href="/" class="flex items-center gap-2 hover:opacity-90 transition-opacity group">
 				<span class="text-primary font-bold text-xl tracking-tight drop-shadow-[0_0_8px_rgba(203,166,247,0.4)] transition-all">[gaur]</span>
 			</a>
-			<div class="flex items-center gap-8 text-sm font-semibold tracking-tight">
+			<div class="flex items-center gap-4 md:gap-8 text-[11px] md:text-sm font-semibold tracking-tight uppercase md:normal-case">
 				<a href="/themes" class="hover:text-primary transition-colors">themes</a>
 				<a href="/docs" class="hover:text-primary transition-colors">docs</a>
-				<a href="https://github.com/prbhtkumr/gaur" target="_blank" rel="noopener noreferrer" class="hover:text-primary transition-colors flex items-center gap-2">
+				<a href="https://github.com/prbhtkumr/gaur" target="_blank" rel="noopener noreferrer" class="hover:text-primary transition-colors flex items-center gap-1 md:gap-2">
 					github
-					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-external-link"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-external-link md:w-4 md:h-4"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
 				</a>
 			</div>
 		</nav>
