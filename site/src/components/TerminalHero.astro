@@ -14,12 +14,12 @@
         <!-- Top Section: Details Pane (ROUNDED) -->
         <div class="mx-3 mt-3 h-1/2 border border-blue/30 rounded-gaur relative">
           <!-- Selection Pane (ABSOLUTE OVERLAY - Anchored to border) -->
-          <div id="selection-pane" class="absolute -top-[1px] -right-[1px] min-w-[15ch] max-w-[20ch] md:max-w-[25ch] w-fit border border-pink/40 rounded-gaur p-2 md:p-3 bg-base z-20 opacity-0 transition-opacity duration-500 text-left">
+          <div id="selection-pane" class="absolute -top-[1px] -right-[1px] min-w-[15ch] max-w-[20ch] md:max-w-[25ch] w-fit border border-pink/40 rounded-gaur p-2 md:p-3 bg-base z-20 opacity-0 transition-all duration-500 text-left">
             <div class="text-pink font-bold mb-1 md:mb-2 tracking-tight flex justify-between items-center gap-2 md:gap-4 text-[10px] md:text-xs">
-                <span>Selected</span>
+                <span>Selected (<span id="select-count">0</span>)</span>
                 <span class="text-[10px]">[*]</span>
             </div>
-            <div id="selected-items" class="space-y-1 text-text/90 leading-tight break-all text-[9px] md:text-[10px]">
+            <div id="selected-items" class="space-y-0 text-text/90 leading-tight break-all text-[9px] md:text-[10px]">
               <!-- Populated by JS -->
             </div>
           </div>
@@ -133,26 +133,28 @@
     { source: 'extra', name: 'firefox-i18n-be', version: '133.0.3-1', desc: 'Belarusian language pack for Firefox' },
     { source: 'extra', name: 'firefox-developer-edition', version: '134.0b1-1', desc: 'Developer Edition of Firefox' },
     { source: 'extra', name: 'firefox-nightly-bin', version: '135.0a1-1', desc: 'Nightly build of Firefox' },
-    { source: 'extra', name: 'firefox-focus', version: '133.0-1', desc: 'Privacy browser' },
-    { source: 'extra', name: 'firefox-adblock', version: '1.0-1', desc: 'Adblock for firefox' },
-    { source: 'extra', name: 'firefox-extension-privacy-badger', version: '2024.7.17-1', desc: 'Privacy Badger' },
-    { source: 'core', name: 'filesystem', version: '2024.11.22-1', desc: 'Base Arch Linux files' },
-    { source: 'core', name: 'findutils', version: '4.10.0-1', desc: 'GNU find, xargs, and locate' },
-    { source: 'core', name: 'flex', version: '2.6.4-5', desc: 'Fast lexical analyzer generator' },
-    { source: 'core', name: 'fzip', version: '1.0-1', desc: 'Fast zip' },
-    { source: 'multilib', name: 'fbg-lib32', version: '1.2-1', desc: '32-bit library' },
-    { source: 'multilib', name: 'flash-lib32', version: '32.0-1', desc: 'Flash library' },
     { source: 'aur', name: 'firefoxpwa', version: '2.18.2-1', desc: 'A system to use Firefox as a PWA' },
     { source: 'aur', name: 'zen-browser-bin', version: '1.0.0-a.42-1', desc: 'Experience tranquility while browsing the web without losing speed. Firefox based browser with vertical tabs.' },
     { source: 'aur', name: 'zen-browser-avx2-bin', version: '1.0.0-a.42-1', desc: 'Zen Browser (AVX2 optimized) - precompiled binaries' },
     { source: 'aur', name: 'zen-browser-patched-bin', version: '1.0.0-1', desc: 'Patched version of zen browser' },
     { source: 'aur', name: 'zenity-git', version: '3.99-1', desc: 'Display GTK+ dialogs' },
     { source: 'aur', name: 'zengarden', version: '0.1-1', desc: 'Zen garden theme' },
-    { source: 'extra', name: 'librewolf', version: '133.0-1', desc: 'Community-maintained fork of Firefox' },
-    { source: 'extra', name: 'chromium', version: '131.0.6778.85-1', desc: 'A web browser built for speed' }
+    { source: 'core', name: 'linux', version: '6.12.1.arch1-1', desc: 'The Linux kernel and modules' },
+    { source: 'core', name: 'linux-headers', version: '6.12.1.arch1-1', desc: 'Headers and scripts for building modules for the Mainline kernel' },
+    { source: 'core', name: 'linux-lts', version: '6.6.63-1', desc: 'The Linux-LTS kernel and modules' },
+    { source: 'extra', name: 'linux-firmware', version: '20241118.9d3568b-1', desc: 'Firmware files for Linux' },
+    { source: 'aur', name: 'linux-zen', version: '6.12.1.zen1-1', desc: 'The Linux-ZEN kernel and modules' },
+    { source: 'aur', name: 'linux-mainline', version: '6.13rc1-1', desc: 'The Mainline Linux kernel and modules' },
+    { source: 'multilib', name: 'flash-lib32', version: '32.0-1', desc: 'Flash library' },
+    { source: 'core', name: 'filesystem', version: '2024.11.22-1', desc: 'Base Arch Linux files' }
   ];
 
   const wait = (ms: number) => new Promise(res => setTimeout(res, ms));
+
+  let currentFocusIdx = -1;
+  let selectionFocusedIdx = -1;
+  const marked = new Set();
+  let isSelectionMode = false;
 
   async function runAnimation() {
     const inputEl = document.getElementById('typing-input');
@@ -163,124 +165,148 @@
 
     if (!inputEl || !listEl || !statusEl || !indicatorEl || !searchTextEl) return;
     
-    // Initial state: Loaded packages
+    // Reset state
+    marked.clear();
+    updateSelectionPane();
+    currentFocusIdx = -1;
+    selectionFocusedIdx = -1;
+    isSelectionMode = false;
+    updateDetails(-1);
+
+    // Initial state
     updateList("");
     statusEl.classList.add('opacity-100');
     searchTextEl.textContent = "Loaded 14285 packages";
-    
-    await wait(1500);
+    await wait(1000);
 
-    // Initial search: firefox
+    // Type "/"
+    await wait(500);
+
+    // Search: firefox
     const query1 = "firefox";
     for (let i = 0; i <= query1.length; i++) {
-      const currentQuery = query1.slice(0, i);
-      inputEl.textContent = currentQuery;
-      updateFilterHints(currentQuery);
-      updateList(currentQuery);
-      
-      if (currentQuery.length >= 3) {
-        searchTextEl.textContent = `Searching AUR for "${currentQuery}"...`;
-        // Show spinner
-        indicatorEl.textContent = '⣾';
-      } else if (currentQuery.length > 0) {
-        searchTextEl.textContent = "";
-        indicatorEl.textContent = "";
-      } else {
-        searchTextEl.textContent = "Loaded 14285 packages";
-        indicatorEl.textContent = "";
-      }
-      await wait(80 + Math.random() * 100);
+      const q = query1.slice(0, i);
+      inputEl.textContent = q;
+      updateFilterHints(q);
+      const count = updateList(q);
+      updateSearchStatus(q, count);
+      await wait(400);
     }
+    await wait(800);
 
-    // Braille Animation (0.6 seconds)
-    const brailleChars = ['⣾', '⣽', '⣻', '⢿', '⡿', '⣟', '⣯', '⣷'];
-    let startTime = Date.now();
-    let frame = 0;
-    while (Date.now() - startTime < 600) {
-      indicatorEl.textContent = brailleChars[frame % brailleChars.length];
-      frame++;
-      await wait(80);
-    }
-
-    // Search Complete
-    indicatorEl.textContent = '';
-    searchTextEl.textContent = 'AUR search complete. Took 0.62 seconds.';
-    updateList(query1);
-
-    await wait(400);
-    focusPackage(0); 
-    await wait(300);
-    markPackage(0);
-    await wait(400);
-    focusPackage(1);
-    await wait(250);
-    markPackage(1);
-    await wait(400);
+    // Tab, Up, Tab...
+    await focusPackage(0); await wait(400);
+    markPackage(0); await wait(500);
+    await focusPackage(1); await wait(500);
+    markPackage(1); await wait(500);
+    await focusPackage(2); await wait(500);
+    markPackage(2); await wait(500);
+    await focusPackage(1); await wait(500);
+    markPackage(1); // Toggle off
+    await wait(500);
 
     // Backspace query
     for (let i = query1.length; i >= 0; i--) {
-      const currentQuery = query1.slice(0, i);
-      inputEl.textContent = currentQuery;
-      updateFilterHints(currentQuery);
-      updateList(currentQuery);
-      
-      if (currentQuery.length >= 3) {
-        searchTextEl.textContent = `Searching AUR for "${currentQuery}"...`;
-      } else if (currentQuery.length > 0) {
-        searchTextEl.textContent = "";
-      } else {
-        searchTextEl.textContent = "Loaded 14285 packages";
-      }
-      await wait(50);
-    }
-    await wait(500);
-
-    // New search: a: zen browser
-    const filter = "a: ";
-    for (let i = 0; i <= filter.length; i++) {
-      const q = filter.slice(0, i);
+      const q = query1.slice(0, i);
       inputEl.textContent = q;
       updateFilterHints(q);
-      updateList(q);
-      searchTextEl.textContent = "";
+      const count = updateList(q);
+      updateSearchStatus(q, count);
       await wait(100);
     }
-    
+    await wait(500);
+
+    // Type "zen browser"
     const query2 = "zen browser";
     for (let i = 0; i <= query2.length; i++) {
-      const currentQuery = filter + query2.slice(0, i);
-      const searchQuery = query2.slice(0, i).trim();
-      inputEl.textContent = currentQuery;
-      updateFilterHints(currentQuery);
-      updateList(currentQuery);
-      
-      if (searchQuery.length >= 3) {
-        searchTextEl.textContent = `Searching AUR for "${searchQuery}"...`;
-        indicatorEl.textContent = '⣾';
-      } else {
-        searchTextEl.textContent = "";
-        indicatorEl.textContent = "";
-      }
-      await wait(80 + Math.random() * 80);
+      const q = query2.slice(0, i);
+      inputEl.textContent = q;
+      updateFilterHints(q);
+      const count = updateList(q);
+      updateSearchStatus(q, count);
+      await wait(400);
     }
+    await wait(800);
 
-    // Braille Animation (1.1 seconds)
-    startTime = Date.now();
-    frame = 0;
-    while (Date.now() - startTime < 1100) {
-      indicatorEl.textContent = brailleChars[frame % brailleChars.length];
-      frame++;
-      await wait(80);
-    }
+    // Tab (Select zen-browser-bin), Escape (Clear details)
+    await focusPackage(0); await wait(500);
+    markPackage(0); await wait(500);
+    await focusPackage(-1); await wait(500);
 
-    indicatorEl.textContent = '';
-    searchTextEl.textContent = 'AUR search complete. Took 1.12 seconds.';
-    updateList(filter + query2);
-
+    // Type "*" (Focus Selection Pane)
+    inputEl.textContent = "*";
+    isSelectionMode = true;
+    updateSelectionPane();
     await wait(500);
-    focusPackage(0);
-    await wait(600);
-    markPackage(0);
+    
+    // Down (Navigate selection pane to firefox-i18n-ar)
+    await focusSelectionItem(0); await wait(500);
+    await focusSelectionItem(1); await wait(500);
+    
+    // Tab (Unselect focused item: firefox-i18n-ar)
+    markPackage(-1); 
+    await wait(500);
+    
+    // Escape (Exit selection mode)
+    isSelectionMode = false;
+    selectionFocusedIdx = -1;
+    updateSelectionPane();
+    await focusPackage(-1);
+    await wait(500);
+
+    // Type "/" then Backspace 11
+    inputEl.textContent = "/"; await wait(200);
+    inputEl.textContent = ""; await wait(500);
+
+    // Type "linux"
+    const query3 = "linux";
+    for (let i = 0; i <= query3.length; i++) {
+      const q = query3.slice(0, i);
+      inputEl.textContent = q;
+      updateFilterHints(q);
+      const count = updateList(q);
+      updateSearchStatus(q, count);
+      await wait(400);
+    }
+    await wait(500);
+
+    // Ctrl+a + m: 
+    inputEl.textContent = "m: linux";
+    updateFilterHints("m: linux");
+    updateList("m: linux");
+    await wait(500);
+
+    // e: 
+    inputEl.textContent = "e: linux";
+    updateFilterHints("e: linux");
+    updateList("e: linux");
+    await wait(500);
+
+    // Up 25, Tab
+    await focusPackage(0); await wait(500);
+    markPackage(0); await wait(500);
+
+    // a: 
+    inputEl.textContent = "a: linux";
+    updateFilterHints("a: linux");
+    updateList("a: linux");
+    await wait(2000);
+
+    // Up 25, Tab
+    await focusPackage(0); await wait(500);
+    markPackage(0); await wait(2000);
+  }
+
+  function updateSearchStatus(q: string, count: number) {
+    const searchTextEl = document.getElementById('search-text');
+    if (!searchTextEl) return;
+    if (q === "") {
+        searchTextEl.textContent = "Loaded 14285 packages";
+    } else if (q.length >= 2 || isSelectionMode) {
+        searchTextEl.textContent = `AUR search complete. Found ${count} matches.`;
+    } else {
+        searchTextEl.textContent = "";
+    }
   }
 
   function updateFilterHints(q: string) {
@@ -311,111 +337,107 @@
 
     const filtered = allPackages.filter(p => {
         const name = p.name.toLowerCase();
-        // Only return matches if there is an actual query, or if a specific repo filter is active
         const matchesQuery = (actualQuery !== "" && name.includes(actualQuery));
-        
         if (activeFilters.length > 0) {
-            const filterChar = activeFilters[0];
-            if (filterChar === 'a' && p.source !== 'aur') return false;
-            if (filterChar === 'e' && p.source !== 'extra') return false;
-            // If we have a filter but no query, we might still show packages in that repo
-            // but for gaur, it usually waits for some input or shows nothing if search is blank
+            const f = activeFilters[0];
+            if (f === 'a' && p.source !== 'aur') return false;
+            if (f === 'e' && p.source !== 'extra') return false;
+            if (f === 'm' && p.source !== 'multilib') return false;
+            if (f === 'c' && p.source !== 'core') return false;
             return actualQuery === "" || matchesQuery;
         }
-        return matchesQuery;
+        return actualQuery === "" ? false : matchesQuery;
     });
 
-    // If query and filters are empty, show nothing in the list (gaur behavior)
-    const displayList = (actualQuery === "" && activeFilters.length === 0) ? [] : filtered.slice(0, 9);
-    
-    // Count sources from the ALL filtered results (if no query, show total counts)
+    const displayList = (actualQuery === "" && activeFilters.length === 0) ? [] : filtered.slice(0, 12);
     const counts: Record<string, number> = {};
     const countSource = (actualQuery === "" && activeFilters.length === 0) ? allPackages : filtered;
-    countSource.forEach(p => {
-        counts[p.source] = (counts[p.source] || 0) + 1;
-    });
+    countSource.forEach(p => { counts[p.source] = (counts[p.source] || 0) + 1; });
 
-    // Update summary
     let summaryHTML = '';
-    const sortedSources = Object.keys(counts).sort();
-    
-    if (sortedSources.length > 0) {
-        sortedSources.forEach((source, idx) => {
-            let colorClass = 'text-blue'; // default
-            if (source === 'aur') colorClass = 'text-pink';
-            if (source === 'core') colorClass = 'text-green';
-            if (source === 'multilib') colorClass = 'text-orange';
-            
-            summaryHTML += `<span>${counts[source]} <span class="${colorClass}">${source}</span></span>`;
-            if (idx < sortedSources.length - 1) {
-                summaryHTML += '<span>, </span>';
-            }
-        });
-    }
+    const sortedSources = ['core', 'extra', 'multilib', 'aur'].filter(s => counts[s]);
+    sortedSources.forEach((source, idx) => {
+        let colorClass = 'text-blue';
+        if (source === 'aur') colorClass = 'text-pink';
+        if (source === 'core') colorClass = 'text-green';
+        if (source === 'multilib') colorClass = 'text-yellow';
+        summaryHTML += `<span>${counts[source]} <span class="${colorClass}">${source}</span></span>`;
+        if (idx < sortedSources.length - 1) summaryHTML += '<span>, </span>';
+    });
     summaryEl.innerHTML = summaryHTML;
 
     listEl.innerHTML = '';
-    
     displayList.forEach((pkg, idx) => {
       const div = document.createElement('div');
       div.className = 'pkg-item flex items-center px-3 py-0 transition-all duration-150 w-full font-medium';
-      
       const sourceColorClass = pkg.source === 'aur' ? 'text-pink' : 'text-blue';
-      const highlightedName = getHighlightedName(pkg.name, actualQuery);
-      
+      const isMarked = marked.has(pkg.name);
       div.innerHTML = `
-        <span class="indicator text-pink font-bold w-4 flex-shrink-0"></span>
+        <span class="indicator text-pink font-bold w-4 flex-shrink-0">${isMarked ? '*' : ''}</span>
         <span class="${sourceColorClass}">${pkg.source}</span>
         <span class="text-overlay1">/</span>
-        <span class="text-text">${highlightedName}</span>
+        <span class="text-text">${getHighlightedName(pkg.name, actualQuery)}</span>
         <span class="text-overlay1/50 ml-auto">${pkg.version}</span>
       `;
       div.id = `pkg-${idx}`;
       listEl.appendChild(div);
     });
-
     return filtered.length;
   }
 
   function getHighlightedName(name: string, query: string) {
     if (!query) return name;
-    
-    const normalizedQuery = query.toLowerCase().replace(/\s+/g, '');
-    const result: string[] = [];
-    let queryIdx = 0;
-    
-    // Simple fuzzy highlight: highlight characters in the order they appear in the query
+    const nq = query.toLowerCase().replace(/\s+/g, '');
+    const res = [];
+    let qi = 0;
     for (let i = 0; i < name.length; i++) {
-        const char = name[i];
-        if (queryIdx < normalizedQuery.length && char.toLowerCase() === normalizedQuery[queryIdx]) {
-            result.push(`<span class="text-yellow font-bold">${char}</span>`);
-            queryIdx++;
-        } else {
-            result.push(char);
-        }
+        if (qi < nq.length && name[i].toLowerCase() === nq[qi]) {
+            res.push(`<span class="text-yellow font-bold">${name[i]}</span>`);
+            qi++;
+        } else { res.push(name[i]); }
     }
-    return result.join('');
+    return res.join('');
   }
 
-  function focusPackage(idx: number) {
+  async function focusPackage(idx: number) {
+    if (isSelectionMode) return;
+    currentFocusIdx = idx;
     const items = document.querySelectorAll('.pkg-item');
     items.forEach((item, i) => {
       const indicator = item.querySelector('.indicator');
+      const isMarked = indicator?.textContent?.includes('*');
       if (i === idx) {
         item.classList.add('bg-surface1/20');
-        if (indicator) {
-            const currentText = indicator.textContent || "";
-            indicator.textContent = '>' + (currentText.includes('*') ? '*' : '');
-        }
+        if (indicator) indicator.textContent = '>' + (isMarked ? '*' : '');
       } else {
         item.classList.remove('bg-surface1/20');
-        if (indicator) {
-            const currentText = indicator.textContent || "";
-            indicator.textContent = currentText.includes('*') ? '*' : '';
-        }
+        if (indicator) indicator.textContent = isMarked ? '*' : '';
       }
     });
     updateDetails(idx);
+  }
+
+  async function focusSelectionItem(idx: number) {
+      selectionFocusedIdx = idx;
+      updateSelectionPane();
+
+      const markedList = Array.from(marked);
+      const pkgName = markedList[idx];
+      const paneDetails = document.getElementById('details-pane');
+      if (!paneDetails) return;
+
+      if (!pkgName || idx === -1) {
+          paneDetails.classList.replace('opacity-100', 'opacity-0');
+      } else {
+          const pkg = allPackages.find(p => p.name === pkgName);
+          if (pkg) {
+              paneDetails.classList.replace('opacity-0', 'opacity-100');
+              document.getElementById('detail-repo')!.textContent = pkg.source;
+              document.getElementById('detail-name')!.textContent = pkg.name;
+              document.getElementById('detail-version')!.textContent = pkg.version;
+              document.getElementById('detail-desc')!.textContent = pkg.desc;
+          }
+      }
   }
 
   function getFilteredPackages() {
@@ -423,77 +445,97 @@
     let actualQuery = q.includes(':') ? q.split(':')[1] : q;
     actualQuery = actualQuery.trim().toLowerCase().replace(/\s+/g, '-');
     const activeFilters = q.includes(':') ? [q.split(':')[0].trim()] : [];
-
     return allPackages.filter(p => {
         const name = p.name.toLowerCase();
         const matchesQuery = name.includes(actualQuery) || actualQuery === "";
-        
         if (activeFilters.length > 0) {
-            const filterChar = activeFilters[0];
-            if (filterChar === 'a' && p.source !== 'aur') return false;
-            if (filterChar === 'e' && p.source !== 'extra') return false;
+            const f = activeFilters[0];
+            if (f === 'a' && p.source !== 'aur') return false;
+            if (f === 'e' && p.source !== 'extra') return false;
+            if (f === 'm' && p.source !== 'multilib') return false;
+            if (f === 'c' && p.source !== 'core') return false;
         }
         return matchesQuery;
     });
   }
 
   function updateDetails(idx: number) {
+    if (isSelectionMode) return;
     const filtered = getFilteredPackages();
     const pkg = filtered[idx];
     const pane = document.getElementById('details-pane');
-    if (!pkg || !pane) return;
-
-    pane.classList.add('opacity-100');
-    document.getElementById('detail-repo')!.textContent = pkg.source;
-    document.getElementById('detail-name')!.textContent = pkg.name;
-    document.getElementById('detail-version')!.textContent = pkg.version;
-    document.getElementById('detail-desc')!.textContent = pkg.desc;
+    if (!pane) return;
+    if (!pkg || idx === -1) {
+        pane.classList.replace('opacity-100', 'opacity-0');
+    } else {
+        pane.classList.replace('opacity-0', 'opacity-100');
+        document.getElementById('detail-repo')!.textContent = pkg.source;
+        document.getElementById('detail-name')!.textContent = pkg.name;
+        document.getElementById('detail-version')!.textContent = pkg.version;
+        document.getElementById('detail-desc')!.textContent = pkg.desc;
+    }
   }
 
-  const marked = new Set();
   function markPackage(idx: number) {
-    const filtered = getFilteredPackages();
-    const pkg = filtered[idx];
-    if (!pkg) return;
-
-    const item = document.getElementById(`pkg-${idx}`);
-    const indicator = item?.querySelector('.indicator');
-    
-    if (indicator) {
-        const currentText = indicator.textContent || "";
-        if (!currentText.includes('*')) {
-            indicator.textContent = currentText + '*';
-        }
+    if (isSelectionMode) {
+        const markedList = Array.from(marked);
+        const nameToRemove = markedList[selectionFocusedIdx];
+        if (nameToRemove) marked.delete(nameToRemove);
+    } else {
+        const filtered = getFilteredPackages();
+        const pkg = filtered[idx];
+        if (!pkg) return;
+        if (marked.has(pkg.name)) { marked.delete(pkg.name); } else { marked.add(pkg.name); }
     }
     
-    marked.add(pkg.name);
     updateSelectionPane();
+    if (isSelectionMode) {
+        if (marked.size === 0) {
+            isSelectionMode = false;
+            selectionFocusedIdx = -1;
+            updateDetails(-1);
+        } else {
+            // Adjust index if we removed the last item
+            if (selectionFocusedIdx >= marked.size) selectionFocusedIdx = marked.size - 1;
+            focusSelectionItem(selectionFocusedIdx);
+        }
+    }
+    const q = document.getElementById('typing-input')?.textContent || "";
+    updateList(q);
+    if (!isSelectionMode && currentFocusIdx !== -1) focusPackage(currentFocusIdx);
   }
 
   function updateSelectionPane() {
     const pane = document.getElementById('selection-pane');
     const list = document.getElementById('selected-items');
-    const count = document.getElementById('select-count');
-    if (!pane || !list) return;
+    const countEl = document.getElementById('select-count');
+    if (!pane || !list || !countEl) return;
 
-    pane.classList.add('opacity-100');
-    list.innerHTML = Array.from(marked).map(name => `<div>${name}</div>`).join('');
+    countEl.textContent = marked.size.toString();
+
+    if (marked.size > 0 || isSelectionMode) {
+        pane.classList.add('opacity-100');
+        list.innerHTML = Array.from(marked).map((name, i) => {
+            const isFocused = isSelectionMode && i === selectionFocusedIdx;
+            const prefix = isFocused ? "> " : "  ";
+            return `<div class="${isFocused ? 'text-peach' : ''} whitespace-pre">${prefix}${name}</div>`;
+        }).join('');
+    } else {
+        pane.classList.remove('opacity-100');
+    }
   }
 
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
-        const target = e.currentTarget as HTMLButtonElement;
-        const cmd = target.dataset.cmd;
-        
+        const t = e.currentTarget as HTMLButtonElement;
         document.querySelectorAll('.tab-btn').forEach(b => {
             b.classList.remove('active', 'text-mauve');
             b.classList.add('text-subtext0');
         });
-        target.classList.add('active', 'text-mauve');
-        target.classList.remove('text-subtext0');
-
+        t.classList.add('active', 'text-mauve');
+        t.classList.remove('text-subtext0');
         const cmdEl = document.getElementById('install-cmd');
-        if (cmdEl && cmd) cmdEl.textContent = cmd;
+        if (cmdEl && t.dataset.cmd) cmdEl.textContent = t.dataset.cmd;
     });
   });
 
@@ -502,13 +544,12 @@
       const cmd = document.getElementById('install-cmd')?.textContent;
       if (cmd) {
           navigator.clipboard.writeText(cmd);
-          const originalText = copyBtn.textContent;
+          const ot = copyBtn.textContent;
           copyBtn.textContent = 'DONE';
           copyBtn.classList.replace('text-mauve', 'text-green');
           copyBtn.classList.replace('border-mauve', 'border-green');
-          
           setTimeout(() => {
-              copyBtn.textContent = originalText;
+              copyBtn.textContent = ot;
               copyBtn.classList.replace('text-green', 'text-mauve');
               copyBtn.classList.replace('border-green', 'border-mauve');
           }, 2000);
@@ -517,10 +558,7 @@
 
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        runAnimation();
-        observer.unobserve(entry.target);
-      }
+      if (entry.isIntersecting) { runAnimation(); observer.unobserve(entry.target); }
     });
   }, { threshold: 0.5 });
 
