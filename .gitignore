@@ -1,4 +1,21 @@
+# Binaries
 gaur
+*.test
+*.out
+bin/
+
+# Temporary files
 .tmp/
 testing-report.md
+
+# Node / Astro
 node_modules/
+.astro/
+dist/
+.env
+.env.*
+!.env.example
+
+# OS files
+.DS_Store
+Thumbs.db
