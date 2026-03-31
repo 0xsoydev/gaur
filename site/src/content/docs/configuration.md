@@ -16,15 +16,40 @@ Press `,` anywhere in gaur to open the settings overlay. From there you can adju
 - **Default View:** Choose what gaur opens to (`dashboard`, `install`, `update`, `remove`)
 - **Border Style:** Pick your aesthetic (`rounded`, `normal`, `thick`, `double`)
 
-Changes apply immediately. No restart needed.
+Changes apply immediately and are saved automatically. No restart needed.
 
 ## config file
 
 On first run, gaur creates a config at:
 
-`~/.config/config.toml`
+```
+~/.config/gaur/config.toml
+```
 
-The format is TOML. Simple and readable.
+The format is TOML. Here's a complete reference:
+
+### startup options
+
+Control what gaur shows when it launches:
+
+```toml
+[startup]
+# Which mode to open: "dashboard", "dash", "install", "remove", "update"
+default_mode = "install"
+```
+
+### ui customization
+
+Visual appearance settings:
+
+```toml
+[ui]
+# Color theme (see --list-themes for options)
+theme = "catppuccin-mocha"
+
+# Border style: "rounded", "normal", "thick", "double"
+border_type = "rounded"
+```
 
 ### aur helper & tools
 
@@ -37,15 +62,11 @@ aur_helper = "paru"
 
 # cache cleaning tool (paccache by default)
 cache_tool = "paccache"
-```
 
-### package manager flags
-
-Pass custom flags to install and remove operations:
-
-```toml
-[commands]
+# custom flags for install operations
 install_flags = ""
+
+# custom flags for remove operations (default: remove with deps and configs)
 remove_flags = "-Rns"
 ```
 
@@ -55,10 +76,10 @@ Fine-tune performance and paths:
 
 ```toml
 [advanced]
-# debounce delay for package lookups (ms)
+# debounce delay for package details fetch (ms)
 debounce_ms = 150
 
-# custom cache directory (leave empty for default)
+# custom cache directory (must be absolute path, leave empty for default)
 cache_dir = ""
 ```
 
@@ -83,14 +104,27 @@ cancel = "esc"
 
 ## themes
 
-gaur bundles several popular themes. Switch via settings, config file, or command line.
+gaur bundles 11 popular themes. Switch via settings, config file, or command line.
+
+**Available themes:**
+- Catppuccin Frappe
+- Catppuccin Macchiato
+- Catppuccin Mocha (default)
+- Dracula
+- Gruvbox Dark
+- Monokai Pro
+- One Dark
+- Rose Pine
+- Solarized Dark
+- Tokyonight Night
+- Tokyonight Storm
 
 ### command line
 
 Launch with a specific theme:
 
 ```bash
-gaur --theme catppuccin-mocha
+gaur --theme dracula
 ```
 
 ### list all themes
@@ -102,3 +136,15 @@ gaur --list-themes
 ```
 
 Browse the [Theme Gallery](/themes) to preview each one.
+
+## file locations
+
+gaur follows XDG conventions:
+
+| Path | Purpose |
+|------|---------|
+| `~/.config/gaur/config.toml` | Configuration file |
+| `~/.config/gaur/gaur.log` | Error log |
+| `/var/cache/pacman/pkg` | Pacman cache (system) |
+| `~/.cache/paru/clone` | Paru build cache |
+| `~/.cache/yay` | Yay build cache |

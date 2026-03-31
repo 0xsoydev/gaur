@@ -53,6 +53,8 @@ Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea) • Powered 
 
 ### 🎨 Interface
 
+- **11 Built-in Themes** — Catppuccin, Dracula, Gruvbox, One Dark, Monokai Pro, Rose Pine, Solarized, Tokyonight, and more
+- **Mouse Support** — Full mouse wheel scrolling throughout the interface
 - **Mode-specific Theming** — Each mode (Install, Dash, Remove, Update) has its own color scheme
 - **In-App Settings Menu** — Press `,` to instantly change themes, borders, and helpers without restarting
 - **Selection Panel** — Dedicated panel for managing marked packages
@@ -64,6 +66,7 @@ Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea) • Powered 
 - Arch Linux (or Arch-based distribution)
 - [paru](https://github.com/Morganamilo/paru) or [yay](https://github.com/Jguer/yay) — AUR helper
 - [fzf](https://github.com/junegunn/fzf) — Fuzzy finder (for search)
+- [paccache](https://man.archlinux.org/man/paccache.8) — Cache management (from `pacman-contrib`)
 - Go 1.21+ (for building from source)
 
 ## 🖼️ Interface
@@ -91,6 +94,14 @@ Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea) • Powered 
 
 ## 🚀 Installation
 
+### From AUR (Recommended)
+
+```bash
+paru -S gaur-bin
+# or
+yay -S gaur-bin
+```
+
 ### From Source
 
 ```bash
@@ -111,84 +122,107 @@ go install github.com/prbhtkumr/gaur@latest
 gaur creates a configuration file at `~/.config/gaur/config.toml` on first run. You can also configure most settings directly in the app using the **Settings Menu** (`,`).
 
 ```toml
+[startup]
+# Start in: "dashboard", "dash", "install", "remove", "update"
+default_mode = "install"
+
+[ui]
+# Color theme (use --list-themes to see options)
+theme = "catppuccin-mocha"
+# Border style: "rounded", "normal", "thick", "double"
+border_type = "rounded"
+
 [commands]
-# Set your preferred AUR helper: "paru" (default) or "yay"
+# AUR helper: "paru" (default) or "yay"
 aur_helper = "paru"
-# The tool used for cleaning the cache (defaults to paccache)
+# Cache management tool
 cache_tool = "paccache"
 # Custom flags for install/remove
 install_flags = ""
 remove_flags = "-Rns"
 
 [advanced]
-# Set a custom cache directory (optional)
+# Debounce delay for package details (ms)
+debounce_ms = 150
+# Custom cache directory (optional, must be absolute path)
 cache_dir = ""
 ```
 
 ## 📖 Usage
 
 ```bash
-gaur
+gaur              # Start with default mode
+gaur -i           # Start in install mode
+gaur -d           # Start in dashboard mode
+gaur --theme dracula  # Use Dracula theme
 ```
 
 ### Keybindings
 
 #### Global
 
-| Key      | Action                                        |
-| -------- | --------------------------------------------- |
-| `i`      | Switch to **Install** mode                    |
-| `d`      | Switch to **Dash** (dashboard) mode            |
-| `r`      | Switch to **Remove** mode                     |
-| `u`      | Switch to **Update** mode / Check for updates |
-| `,`      | Open **Settings** menu                        |
-| `q`      | Quit                                          |
-| `Ctrl+C` | Force quit                                    |
+| Key | Alt Key | Action |
+|-----|---------|--------|
+| `i` | `Alt+2` | Switch to **Install** mode |
+| `d` | `Alt+1` | Switch to **Dashboard** mode |
+| `r` | `Alt+4` | Switch to **Remove** mode |
+| `u` | `Alt+3` | Switch to **Update** mode |
+| `,` | | Open **Settings** menu |
+| `q` | | Quit |
+| `Ctrl+C` | | Force quit |
 
 #### Navigation
 
-| Key       | Action                           |
-| --------- | -------------------------------- |
-| `/`       | Focus search input               |
-| `↑` / `k` | Move selection up                |
-| `↓` / `j` | Move selection down              |
-| `PgUp`    | Jump 10 items up                 |
-| `PgDown`  | Jump 10 items down               |
-| `Esc`     | Defocus input / Clear selections |
+| Key | Action |
+|-----|--------|
+| `/` | Focus search input |
+| `↑` / `k` | Move selection up |
+| `↓` / `j` | Move selection down |
+| `PgUp` | Jump 10 items up |
+| `PgDown` | Jump 10 items down |
+| `Esc` | Defocus input / Clear selections |
 
 #### Package Operations
 
-| Key       | Action                                     |
-| --------- | ------------------------------------------ |
-| `Tab`/`m` | Mark/unmark package for batch operation    |
-| `Enter`   | Install/remove selected or marked packages |
-| `*`       | Toggle selection panel focus               |
+| Key | Action |
+|-----|--------|
+| `Tab` | Mark/unmark package for batch operation |
+| `Enter` | Install/remove selected or marked packages |
+| `*` | Toggle selection panel focus |
 
 #### Update Mode
 
-| Key     | Action                                         |
-| ------- | ---------------------------------------------- |
-| `Enter` | Proceed with a full system update              |
-| `s`     | Switch to **Selective Update** mode            |
+| Key | Action |
+|-----|--------|
+| `Enter` / `y` / `a` | Proceed with a full system update |
+| `s` | Switch to **Selective Update** mode |
 
-#### Dashboard (Dash Mode)
+#### Dashboard
 
-| Key | Action                                       |
-| --- | -------------------------------------------- |
-| `t` | Jump to Remove mode → All packages           |
-| `e` | Jump to Remove mode → Explicit packages      |
+| Key | Action |
+|-----|--------|
+| `t` | Jump to Remove mode → All packages |
+| `e` | Jump to Remove mode → Explicit packages |
 | `f` | Jump to Remove mode → Foreign (AUR) packages |
-| `o` | Jump to Remove mode → Orphan packages        |
-| `c` | Open Cache Cleaning menu                     |
-| `R` | Remove all orphan packages                   |
+| `o` | Jump to Remove mode → Orphan packages |
+| `c` | Open Cache Cleaning menu |
+| `R` | Remove all orphan packages |
+| `Ctrl+R` | Refresh dashboard data |
 
 #### Confirmation Dialogs
 
-| Key           | Action              |
-| ------------- | ------------------- |
-| `y` / `Enter` | Confirm operation   |
-| `n` / `Esc`   | Cancel operation    |
-| `↑` / `↓`     | Scroll package list |
+| Key | Action |
+|-----|--------|
+| `y` / `Enter` | Confirm operation |
+| `n` / `Esc` | Cancel operation |
+| `↑` / `↓` | Scroll package list |
+
+### Mouse Support
+
+gaur has full mouse wheel support:
+- Scroll to navigate package lists
+- In split views, scroll left side for list, right side for details
+- Works in confirmation dialogs too
 
 ### Search Filters
 
@@ -197,11 +231,11 @@ gaur
 Prefix your search with repository filters:
 
 | Prefix | Repository |
-| ------ | ---------- |
-| `c:`   | Core       |
-| `e:`   | Extra      |
-| `m:`   | Multilib   |
-| `a:`   | AUR        |
+|--------|------------|
+| `c:` | Core |
+| `e:` | Extra |
+| `m:` | Multilib |
+| `a:` | AUR |
 
 Combine filters: `ae:firefox` searches AUR and Extra for "firefox"
 
@@ -209,37 +243,22 @@ Combine filters: `ae:firefox` searches AUR and Extra for "firefox"
 
 Filter installed packages by type:
 
-| Prefix | Filter                 |
-| ------ | ---------------------- |
-| `t:`   | Total (all packages)   |
-| `e:` / `l:`   | Explicitly installed (local) |
-| `f:` / `a:`   | Foreign (AUR) packages |
-| `o:`   | Orphan packages        |
+| Prefix | Filter |
+|--------|--------|
+| `t:` | Total (all packages) |
+| `e:` / `l:` | Explicitly installed |
+| `f:` / `a:` | Foreign (AUR) packages |
+| `o:` | Orphan packages |
 
 Combined: `of:google` searches for orphaned AUR packages matching "google".
 
-### Color Legend
-
-| Color      | Source   |
-| ---------- | -------- |
-| 🟢 Green   | core     |
-| 🔵 Blue    | extra    |
-| 🟠 Orange  | multilib |
-| 🟣 Magenta | AUR      |
-| ⚪ Grey    | Other    |
-
 ### Themes
 
-gaur supports customizable color themes. Use the `--theme` flag to select a theme on startup, or press `,` to open the Settings menu and change the theme live.
+gaur ships with 11 color themes. Use the `--theme` flag or press `,` for in-app settings:
 
 ```bash
-gaur --theme catppuccin-mocha
-```
-
-To list available themes from the command line:
-
-```bash
-gaur --list-themes
+gaur --theme dracula
+gaur --list-themes    # See all options
 ```
 
 ## 🔧 How It Works
