@@ -3,7 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import TerminalHero from '../components/TerminalHero.astro';
 ---
 
-<Layout title="gaur - arch linux package manager tui" hideFooter={true}>
+<Layout title="gaur - terminal-native arch linux package manager" hideFooter={true}>
 	<!-- Scroll Indicator (Vertical Bar) -->
 	<div class="fixed right-6 top-1/2 -translate-y-1/2 z-50 hidden lg:flex">
 		<div class="w-1 h-48 bg-surface1/30 rounded-full relative overflow-hidden">
@@ -20,9 +20,9 @@ import TerminalHero from '../components/TerminalHero.astro';
 					<span class="text-primary drop-shadow-[0_0_15px_rgba(203,166,247,0.4)]">[gaur]</span>
 					<span class="w-4 h-12 md:w-6 md:h-20 bg-primary/80 animate-pulse"></span>
 				</h1>
-				<p class="text-lg md:text-xl text-muted max-w-2xl mx-auto mb-4 leading-relaxed">
-					a beautiful, interactive terminal user interface (tui) designed to make arch linux package management both powerful and visually striking.
-				</p>
+			<p class="text-lg md:text-xl text-muted max-w-2xl mx-auto mb-4 leading-relaxed">
+				your arch packages deserve better than raw pacman output. search, install, update, and clean up, all from one keyboard-driven interface.
+			</p>
 			</div>
 
 			<div class="flex-shrink-0">
@@ -37,30 +37,30 @@ import TerminalHero from '../components/TerminalHero.astro';
 		<section class="min-h-full flex flex-col px-4 border-t border-muted/10 snap-start relative">
 			<div class="max-w-4xl mx-auto w-full flex-grow flex flex-col justify-center py-8">
 				<div class="space-y-8">
-					<div>
-						<h2 class="text-3xl font-bold text-primary mb-4 tracking-tight">core philosophy</h2>
-						<p class="text-lg text-text/80 leading-relaxed">
-							gaur is designed for users who demand speed and total control without sacrificing aesthetics. it doesn't just run commands; it creates an immersive environment for managing your system's package ecosystem, providing detailed insights right from the terminal.
-						</p>
-					</div>
+				<div>
+					<h2 class="text-3xl font-bold text-primary mb-4 tracking-tight">why gaur?</h2>
+					<p class="text-lg text-text/80 leading-relaxed">
+						managing packages on arch shouldn't feel like archaeology. gaur brings clarity to your system with real-time stats, fuzzy search, and batch operations. power users stay in flow; newcomers stop guessing.
+					</p>
+				</div>
 
 					<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-						<div class="p-5 rounded-gaur border border-muted/20 bg-surface/50 shadow-sm hover:border-primary/30 transition-colors">
-							<h3 class="text-xl font-bold text-highlight mb-3">fuzzy search</h3>
-							<p class="text-sm text-muted leading-relaxed">powered by <code class="text-pink">fzf</code> for lightning-fast matching across official repos and the aur.</p>
-						</div>
-						<div class="p-5 rounded-gaur border border-muted/20 bg-surface/50 shadow-sm hover:border-primary/30 transition-colors">
-							<h3 class="text-xl font-bold text-highlight mb-3">system dashboard</h3>
-							<p class="text-sm text-muted leading-relaxed">real-time stats on disk usage, repository distribution, and cache management.</p>
-						</div>
-						<div class="p-5 rounded-gaur border border-muted/20 bg-surface/50 shadow-sm hover:border-primary/30 transition-colors">
-							<h3 class="text-xl font-bold text-highlight mb-3">selective updates</h3>
-							<p class="text-sm text-muted leading-relaxed">carefully manage your system by selecting specific packages to update.</p>
-						</div>
-						<div class="p-5 rounded-gaur border border-muted/20 bg-surface/50 shadow-sm hover:border-primary/30 transition-colors">
-							<h3 class="text-xl font-bold text-highlight mb-3">batch operations</h3>
-							<p class="text-sm text-muted leading-relaxed">mark multiple packages with <code class="text-pink">tab</code> and process them all at once.</p>
-						</div>
+					<div class="p-5 rounded-gaur border border-muted/20 bg-surface/50 shadow-sm hover:border-primary/30 transition-colors">
+						<h3 class="text-xl font-bold text-highlight mb-3">instant search</h3>
+						<p class="text-sm text-muted leading-relaxed"><code class="text-pink">fzf</code>-powered fuzzy matching across repos and the aur. find any package in milliseconds.</p>
+					</div>
+					<div class="p-5 rounded-gaur border border-muted/20 bg-surface/50 shadow-sm hover:border-primary/30 transition-colors">
+						<h3 class="text-xl font-bold text-highlight mb-3">live dashboard</h3>
+						<p class="text-sm text-muted leading-relaxed">see disk usage, orphans, cache bloat, and repo breakdowns at a glance. no more guesswork.</p>
+					</div>
+					<div class="p-5 rounded-gaur border border-muted/20 bg-surface/50 shadow-sm hover:border-primary/30 transition-colors">
+						<h3 class="text-xl font-bold text-highlight mb-3">granular updates</h3>
+						<p class="text-sm text-muted leading-relaxed">full system upgrade or cherry-pick specific packages. you decide what gets updated.</p>
+					</div>
+					<div class="p-5 rounded-gaur border border-muted/20 bg-surface/50 shadow-sm hover:border-primary/30 transition-colors">
+						<h3 class="text-xl font-bold text-highlight mb-3">batch actions</h3>
+						<p class="text-sm text-muted leading-relaxed">mark multiple packages with <code class="text-pink">tab</code>, then install or remove them in one shot.</p>
+					</div>
 					</div>
 				</div>
 			</div>
@@ -80,8 +80,8 @@ import TerminalHero from '../components/TerminalHero.astro';
 				</div>
 				
 				<div class="text-muted/40 text-[10px] font-mono tracking-tight">
-					<p>© {new Date().getFullYear()} gaur. released under the gplv3 license.</p>
-					<p class="mt-1">built with astro + tailwind for the arch community.</p>
+					<p>© {new Date().getFullYear()} gaur. open source under gplv3.</p>
+					<p class="mt-1">crafted with astro + tailwind. made for arch users, by arch users.</p>
 				</div>
 			</div>
 			
