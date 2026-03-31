@@ -1,70 +1,70 @@
 ---
 title: "configuration"
-description: "How to customize gaur to your liking"
+description: "Customize gaur to fit your workflow"
 ---
 
 # configuration
 
-gaur is highly customizable. You can configure it either via the in-app settings menu or by editing its configuration file.
+gaur works great out of the box, but you can tweak everything. Change settings on the fly or edit the config file directly.
 
-## In-App Settings
+## in-app settings
 
-gaur features a convenient **Settings Overlay** that you can access at any time by pressing `,`.
+Press `,` anywhere in gaur to open the settings overlay. From there you can adjust:
 
-From the overlay, you can instantly configure:
-- **AUR Helper:** Switch between `paru` and `yay`.
-- **Theme:** Instantly preview and apply different color themes.
-- **Default View:** Set the view gaur opens with (`dashboard`, `install`, `update`, `remove`).
-- **Border Type:** Change the UI borders (`rounded`, `normal`, `thick`, `double`).
+- **AUR Helper:** Toggle between `paru` and `yay`
+- **Theme:** Preview and apply color schemes instantly
+- **Default View:** Choose what gaur opens to (`dashboard`, `install`, `update`, `remove`)
+- **Border Style:** Pick your aesthetic (`rounded`, `normal`, `thick`, `double`)
 
-## Config Options
+Changes apply immediately. No restart needed.
 
-On its first run, gaur will automatically generate a default configuration file located at:
+## config file
+
+On first run, gaur creates a config at:
 
 `~/.config/config.toml`
 
-The configuration file is written in TOML and uses a simple, intuitive structure.
+The format is TOML. Simple and readable.
 
-### AUR Helper & Tools
+### aur helper & tools
 
-You can set your preferred AUR helper and cache management tool.
+Set your preferred AUR helper and cache cleaner:
 
 ```toml
 [commands]
-# Set your preferred AUR helper: "paru" (default) or "yay"
+# "paru" (default) or "yay"
 aur_helper = "paru"
 
-# The tool used for cleaning the cache (defaults to paccache)
+# cache cleaning tool (paccache by default)
 cache_tool = "paccache"
 ```
 
-### Command Flags
+### package manager flags
 
-Customize the flags passed to your package manager for installation and removal.
+Pass custom flags to install and remove operations:
 
 ```toml
 [commands]
-# Custom flags for install/remove
 install_flags = ""
 remove_flags = "-Rns"
 ```
 
-### Advanced Settings
+### advanced options
 
-gaur also supports advanced settings like custom cache directories and debouncing limits.
+Fine-tune performance and paths:
 
 ```toml
 [advanced]
-# Milliseconds to debounce package details fetching
+# debounce delay for package lookups (ms)
 debounce_ms = 150
 
-# Set a custom cache directory (optional)
+# custom cache directory (leave empty for default)
 cache_dir = ""
 ```
 
-## Custom Keybindings
+## custom keybindings
 
-You can remap keybindings to fit your workflow in the configuration file:
+Remap any key to fit your muscle memory:
 
 ```toml
 [keys]
@@ -81,24 +81,24 @@ confirm = "enter"
 cancel = "esc"
 ```
 
-## Themes
+## themes
 
-gaur supports several built-in themes to match your terminal rice. You can change them through the settings menu, config file, or command line flag.
+gaur bundles several popular themes. Switch via settings, config file, or command line.
 
-### Command Line Selection
+### command line
 
-Use the `--theme` flag to select a theme on startup:
+Launch with a specific theme:
 
 ```bash
 gaur --theme catppuccin-mocha
 ```
 
-### Listing Themes
+### list all themes
 
-To see all available themes:
+See what's available:
 
 ```bash
 gaur --list-themes
 ```
 
-Check out our [Theme Gallery](/themes) to see what each theme looks like in action.
+Browse the [Theme Gallery](/themes) to preview each one.
