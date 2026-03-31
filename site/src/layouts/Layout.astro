@@ -11,7 +11,7 @@ const { title, hideFooter = false } = Astro.props;
 <html lang="en" class="bg-background text-text font-mono selection:bg-primary/30 selection:text-primary">
 	<head>
 		<meta charset="UTF-8" />
-		<meta name="description" content="gaur - A beautiful, interactive TUI for Arch Linux package management" />
+		<meta name="description" content="gaur - The terminal-native package manager for Arch Linux. Fast, visual, and keyboard-driven." />
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
@@ -35,10 +35,10 @@ const { title, hideFooter = false } = Astro.props;
 			<slot />
 		</main>
 		{!hideFooter && (
-			<footer class="py-12 text-center text-muted/50 text-xs border-t border-muted/10">
-				<p>© {new Date().getFullYear()} gaur. released under the gplv3 license.</p>
-				<p class="mt-2">built with astro + tailwind for the arch community.</p>
-			</footer>
+		<footer class="py-12 text-center text-muted/50 text-xs border-t border-muted/10">
+			<p>© {new Date().getFullYear()} gaur. open source under gplv3.</p>
+			<p class="mt-2">crafted with astro + tailwind. made for arch users, by arch users.</p>
+		</footer>
 		)}
 	</body>
 </html>
