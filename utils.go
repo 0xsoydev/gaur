@@ -592,6 +592,62 @@ func renderCenteredFooter(content string, width int) string {
 	return footer
 }
 
+// overlayOnBase renders an overlay centered on top of a base string.
+// Both base and overlay should be rectangular strings (same width per line).
+// Returns the composited result maintaining the base's dimensions.
+func overlayOnBase(base, overlay string, baseWidth, baseHeight int) string {
+	baseLines := strings.Split(base, "\n")
+	overlayLines := strings.Split(overlay, "\n")
+
+	overlayHeight := len(overlayLines)
+	if overlayHeight == 0 {
+		return base
+	}
+
+	overlayWidth := lipgloss.Width(overlayLines[0])
+
+	// Ensure base has enough lines
+	for len(baseLines) < baseHeight {
+		baseLines = append(baseLines, strings.Repeat(" ", baseWidth))
+	}
+
+	startY := (baseHeight - overlayHeight) / 2
+	startCol := (baseWidth - overlayWidth) / 2
+	if startCol < 0 {
+		startCol = 0
+	}
+
+	result := make([]string, len(baseLines))
+	copy(result, baseLines)
+
+	for y := 0; y < overlayHeight; y++ {
+		targetY := startY + y
+		if targetY >= 0 && targetY < len(result) {
+			bgLine := result[targetY]
+
+			// Ensure bgLine is at least baseWidth chars wide
+			bgWidth := lipgloss.Width(bgLine)
+			if bgWidth < baseWidth {
+				bgLine += strings.Repeat(" ", baseWidth-bgWidth)
+			}
+
+			// Reconstruct the line using precise slicing
+			left := truncateWithAnsi(bgLine, startCol)
+			leftWidth := lipgloss.Width(left)
+			if leftWidth < startCol {
+				left += strings.Repeat(" ", startCol-leftWidth)
+			}
+
+			right := substringAnsi(bgLine, startCol+overlayWidth)
+			right = truncateWithAnsi(right, baseWidth-(startCol+overlayWidth))
+
+			result[targetY] = left + overlayLines[y] + right
+		}
+	}
+
+	return strings.Join(result, "\n")
+}
+
 // GetAURCacheDir resolves the AUR build/clone directory based on the helper or override.
 func GetAURCacheDir(c *Config) (string, error) {
 	if c.Advanced.CacheDir != "" {
