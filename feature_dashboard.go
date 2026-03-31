@@ -195,7 +195,7 @@ func getDashboardData(c *Config) tea.Cmd {
 				addErr("AUR cache path", err)
 				return
 			}
-			// Base is parent of clone for paru, or the dir itself for yay? 
+			// Base is parent of clone for paru, or the dir itself for yay?
 			// User logic: paru -> ~/.cache/paru/clone, yay -> ~/.cache/yay
 			aurBase := aurClonePath
 			if c.Commands.AurHelper == "paru" {
@@ -205,7 +205,7 @@ func getDashboardData(c *Config) tea.Cmd {
 			// Fetch installed list locally for this goroutine to avoid complex sync
 			installed := make(map[string]bool)
 			args := BuildAURCommand(c, "query-all", "-Qq")
-			if out, err := runner.Run(args[0], args[1:]...) ; err == nil {
+			if out, err := runner.Run(args[0], args[1:]...); err == nil {
 				for _, name := range strings.Split(string(out), "\n") {
 					if n := strings.TrimSpace(name); n != "" {
 						installed[n] = true
@@ -214,18 +214,22 @@ func getDashboardData(c *Config) tea.Cmd {
 			}
 
 			type aurCacheFile struct {
-				path      string
-				size      int64
-				modTime   time.Time
+				path    string
+				size    int64
+				modTime time.Time
 			}
 			aurFiles := make(map[string][]aurCacheFile)
 
 			pacmanHogs := make(map[string]int64)
 			if entries, err := os.ReadDir(pacmanCachePath); err == nil {
 				for _, entry := range entries {
-					if entry.IsDir() { continue }
+					if entry.IsDir() {
+						continue
+					}
 					name := entry.Name()
-					if !strings.HasSuffix(name, ".pkg.tar.zst") && !strings.HasSuffix(name, ".pkg.tar.xz") { continue }
+					if !strings.HasSuffix(name, ".pkg.tar.zst") && !strings.HasSuffix(name, ".pkg.tar.xz") {
+						continue
+					}
 					parts := strings.Split(name, "-")
 					if len(parts) > 3 {
 						baseName := strings.Join(parts[:len(parts)-3], "-")
@@ -237,9 +241,13 @@ func getDashboardData(c *Config) tea.Cmd {
 			}
 
 			filepath.WalkDir(aurClonePath, func(path string, d os.DirEntry, err error) error {
-				if err != nil || d.IsDir() { return nil }
+				if err != nil || d.IsDir() {
+					return nil
+				}
 				name := d.Name()
-				if !strings.HasSuffix(name, ".pkg.tar.zst") && !strings.HasSuffix(name, ".pkg.tar.xz") { return nil }
+				if !strings.HasSuffix(name, ".pkg.tar.zst") && !strings.HasSuffix(name, ".pkg.tar.xz") {
+					return nil
+				}
 				parts := strings.Split(name, "-")
 				if len(parts) > 3 {
 					baseName := strings.Join(parts[:len(parts)-3], "-")
@@ -262,7 +270,7 @@ func getDashboardData(c *Config) tea.Cmd {
 			for name, files := range aurFiles {
 				// Sum for total hogs
 				var totalSize int64
-				for _, f := range files { 
+				for _, f := range files {
 					totalSize += f.size
 					aurPackagesSize += f.size
 				}
@@ -281,14 +289,14 @@ func getDashboardData(c *Config) tea.Cmd {
 
 				// Keep N logic
 				if len(files) > 1 {
-					for i := 1; i < len(files); i++ { 
-						aurKeep1Saved += files[i].size 
+					for i := 1; i < len(files); i++ {
+						aurKeep1Saved += files[i].size
 						aurKeep1Count++
 					}
 				}
 				if len(files) > 3 {
-					for i := 3; i < len(files); i++ { 
-						aurKeep3Saved += files[i].size 
+					for i := 3; i < len(files); i++ {
+						aurKeep3Saved += files[i].size
 						aurKeep3Count++
 					}
 				}
@@ -296,8 +304,12 @@ func getDashboardData(c *Config) tea.Cmd {
 
 			// Combine for AllCacheHogs
 			combinedHogs := make(map[string]int64)
-			for k, v := range pacmanHogs { combinedHogs[k] += v }
-			for k, v := range aurHogs { combinedHogs[k] += v }
+			for k, v := range pacmanHogs {
+				combinedHogs[k] += v
+			}
+			for k, v := range aurHogs {
+				combinedHogs[k] += v
+			}
 
 			type cacheEntry struct {
 				name string
@@ -327,15 +339,19 @@ func getDashboardData(c *Config) tea.Cmd {
 			}
 
 			allSorted := sortEntries(combinedHogs)
-			
+
 			// Filter removed packages from cache
 			removedPacman := make(map[string]int64)
 			for k, v := range pacmanHogs {
-				if !installed[k] { removedPacman[k] = v }
+				if !installed[k] {
+					removedPacman[k] = v
+				}
 			}
 			removedAur := make(map[string]int64)
 			for k, v := range aurHogs {
-				if !installed[k] { removedAur[k] = v }
+				if !installed[k] {
+					removedAur[k] = v
+				}
 			}
 
 			var topHogs []PackageSize
@@ -359,7 +375,7 @@ func getDashboardData(c *Config) tea.Cmd {
 				out, _ := runner.Run("paccache", append([]string{"-d", "-c", pacmanCachePath}, args...)...)
 				pacmanCount, pacmanSavedStr := parsePaccacheDryRunDetailed(string(out))
 				pacmanSavedBytes := parseSizeToBytes(pacmanSavedStr)
-				
+
 				if pacmanCount > 0 {
 					estimatesPacman[ct] = fmt.Sprintf("%d pkgs (%s)", pacmanCount, pacmanSavedStr)
 				} else {
@@ -383,7 +399,7 @@ func getDashboardData(c *Config) tea.Cmd {
 			fetchDetailedEstimate(confirmCleanKeep3, aurKeep3Count, aurKeep3Saved, "-k3")
 			fetchDetailedEstimate(confirmCleanKeep1, aurKeep1Count, aurKeep1Saved, "-k1")
 			fetchDetailedEstimate(confirmCleanRemoved, aurOrphanCount, aurOrphanSaved, "-uk0")
-			
+
 			estimatesPacman[confirmCleanNuke] = formatBytes(pacmanSize)
 			estimatesAur[confirmCleanNuke] = formatBytes(aurBaseSize)
 			estimatesTotal[confirmCleanNuke] = formatBytes(pacmanSize + aurBaseSize)
@@ -579,15 +595,7 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 	}
 	borderStyle := baseBorderStyle.BorderForeground(activeColor)
 
-	helpWidth := lipgloss.Width(helpText)
-	padding := (innerWidth - helpWidth) / 2
-	if padding < 0 {
-		padding = 0
-	}
-	footerLine := strings.Repeat(" ", padding) + helpText
-	if lipgloss.Width(footerLine) > innerWidth {
-		footerLine = truncateWithAnsi(footerLine, innerWidth)
-	}
+	footerLine := renderCenteredFooter(helpText, innerWidth)
 
 	if m.loading {
 		// Total height is innerHeight. Footer is 1 line.
@@ -628,12 +636,13 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 
 	var dashboard strings.Builder
 
-	greenColor := lipgloss.Color("42")
-	redColor := lipgloss.Color("196")
-	yellowColor := lipgloss.Color("214")
-	orangeColor := lipgloss.Color("208")
-	cyanColor := lipgloss.Color("51")
-	dimColor := lipgloss.Color("240")
+	// Use centralized color constants
+	greenColor := colorGreen
+	redColor := colorRed
+	yellowColor := colorYellow
+	orangeColor := colorOrange
+	cyanColor := colorCyan
+	dimColor := colorLightGray
 
 	boxTitleStyle := lipgloss.NewStyle().
 		Bold(true).
@@ -1043,7 +1052,7 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 	panelInnerHeight := panelTotalHeight - 2
 
 	dashboardContent := lipgloss.NewStyle().
-		Width(innerWidth - 4). // account for Padding(0, 1)
+		Width(innerWidth-4). // account for Padding(0, 1)
 		Padding(0, 1).
 		Render(truncateHeight(dashboard.String(), panelInnerHeight))
 
