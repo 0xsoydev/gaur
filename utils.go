@@ -332,107 +332,91 @@ func formatRemoveFilters(filters map[string]bool) string {
 	return strings.Join(names, "+")
 }
 
-// parseAUROutput parses paru -Ss output for AUR packages
-func parseAUROutput(output string) []Package {
+// parsePackageOutput parses package search output from pacman/paru/yay.
+// It handles both AUR helper output (paru -Ss, yay -Ss) and pacman -Ss output.
+// The format is: repo/name version [installed] followed by description on next line.
+func parsePackageOutput(output string) []Package {
 	var packages []Package
 	lines := strings.Split(output, "\n")
 
 	for i := 0; i < len(lines); i++ {
 		line := lines[i]
 
+		// Skip empty lines and description lines (indented)
 		if line == "" || strings.HasPrefix(line, " ") || strings.HasPrefix(line, "\t") {
 			continue
 		}
 
-		parts := strings.Fields(line)
-		if len(parts) < 2 {
+		// Handle numbered output (some helpers prefix with numbers)
+		trimmedLine := strings.TrimSpace(line)
+		fields := strings.Fields(trimmedLine)
+		if len(fields) == 0 {
 			continue
 		}
 
-		repoPkg := strings.SplitN(parts[0], "/", 2)
-		if len(repoPkg) != 2 {
+		// Find the repo/name field (contains "/")
+		pkgField := ""
+		pkgFieldIdx := 0
+		for idx, f := range fields {
+			if strings.Contains(f, "/") {
+				pkgField = f
+				pkgFieldIdx = idx
+				break
+			}
+		}
+
+		if pkgField == "" {
 			continue
 		}
 
-		pkg := Package{
-			Source:    repoPkg[0],
-			Name:      repoPkg[1],
-			Version:   parts[1],
-			Installed: strings.Contains(line, "[Installed"),
+		parts := strings.SplitN(pkgField, "/", 2)
+		if len(parts) != 2 {
+			continue
 		}
 
-		if i+1 < len(lines) && (strings.HasPrefix(lines[i+1], " ") || strings.HasPrefix(lines[i+1], "\t")) {
-			pkg.Description = strings.TrimSpace(lines[i+1])
+		source := parts[0]
+		name := parts[1]
+
+		// Get version (next field after repo/name)
+		version := ""
+		if pkgFieldIdx+1 < len(fields) {
+			version = fields[pkgFieldIdx+1]
 		}
 
-		packages = append(packages, pkg)
+		// Check for installed status
+		installed := strings.Contains(line, "[Installed")
+
+		// Get description from next line if it's indented
+		description := ""
+		if i+1 < len(lines) {
+			nextLine := lines[i+1]
+			if strings.HasPrefix(nextLine, " ") || strings.HasPrefix(nextLine, "\t") {
+				description = strings.TrimSpace(nextLine)
+			}
+		}
+
+		packages = append(packages, Package{
+			Source:      source,
+			Name:        name,
+			Version:     version,
+			Description: description,
+			Installed:   installed,
+		})
 	}
 
 	return packages
 }
 
+// parseAUROutput parses paru/yay -Ss output for AUR packages.
+// Deprecated: Use parsePackageOutput instead.
+func parseAUROutput(output string) []Package {
+	return parsePackageOutput(output)
+}
+
+// parseSearchOutput parses pacman -Ss output.
+// Deprecated: Use parsePackageOutput instead.
 func parseSearchOutput(output string) []Package {
-	var packages []Package
-	lines := strings.Split(output, "\n")
-
-	for i := 0; i < len(lines); i++ {
-		line := strings.TrimSpace(lines[i])
-		if line == "" {
-			continue
-		}
-
-		if strings.Contains(line, "/") && !strings.HasPrefix(line, " ") || (len(line) > 0 && line[0] >= '0' && line[0] <= '9') {
-
-			fields := strings.Fields(line)
-			if len(fields) == 0 {
-				continue
-			}
-
-			pkgField := ""
-			pkgFieldIdx := 0
-			for idx, f := range fields {
-				if strings.Contains(f, "/") {
-					pkgField = f
-					pkgFieldIdx = idx
-					break
-				}
-			}
-			if pkgField == "" {
-				continue
-			}
-
-			parts := strings.SplitN(pkgField, "/", 2)
-			if len(parts) < 2 {
-				continue
-			}
-
-			source := parts[0]
-			name := parts[1]
-
-			version := ""
-			if pkgFieldIdx+1 < len(fields) {
-				version = fields[pkgFieldIdx+1]
-			}
-
-			installed := strings.Contains(line, "[Installed")
-
-			description := ""
-			if i+1 < len(lines) {
-				description = strings.TrimSpace(lines[i+1])
-				i++
-			}
-
-			packages = append(packages, Package{
-				Source:      source,
-				Name:        name,
-				Version:     version,
-				Description: description,
-				Installed:   installed,
-			})
-		}
-	}
-
-	return packages
+	return parsePackageOutput(output)
 }
 
 func countLines(output string) int {
