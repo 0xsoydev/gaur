@@ -895,3 +895,37 @@ func simplifyErrorMessage(msg string) string {
 
 	return strings.Join(uniqueParts, ": ")
 }
+
+// PackageFilterFunc is a function type for filtering packages.
+type PackageFilterFunc func(pkg Package) bool
+
+// filterPackagesWithFunc applies a filter function and fuzzy search to a package list.
+// If filterFn is nil, all packages pass the filter phase.
+// Returns the filtered/searched packages and computed match indices.
+func filterPackagesWithFunc(packages []Package, query string, filterFn PackageFilterFunc) ([]Package, map[int][]int) {
+	if len(packages) == 0 {
+		return []Package{}, nil
+	}
+
+	// Apply filter function first
+	candidates := packages
+	if filterFn != nil {
+		var filtered []Package
+		for _, pkg := range packages {
+			if filterFn(pkg) {
+				filtered = append(filtered, pkg)
+			}
+		}
+		candidates = filtered
+	}
+
+	if query == "" {
+		return candidates, nil
+	}
+
+	// Apply fuzzy filter
+	result := fuzzyFilter(candidates, query)
+	matchIndices := computeAllMatchIndices(result, query)
+
+	return result, matchIndices
+}
