@@ -1,26 +1,27 @@
 ---
 title: "installation"
-description: "How to install gaur on Arch Linux"
+description: "Get gaur running on your Arch system"
 ---
 
 # installation
 
-gaur is designed specifically for Arch Linux and its derivatives (e.g., Manjaro, EndeavourOS). You can install it using several methods.
+gaur runs on Arch Linux and its derivatives: Manjaro, EndeavourOS, CachyOS, you name it.  
+Here's how to get it.
 
-## Prerequisites
+## what you'll need
 
-Before installing gaur, ensure you have the following on your system:
+Make sure these are on your system before installing:
 
-- **Arch Linux** (or an Arch-based distribution)
-- **AUR Helper:** [paru](https://github.com/Morganamilo/paru) or [yay](https://github.com/Jguer/yay)
-- **Fuzzy Finder:** [fzf](https://github.com/junegunn/fzf) (required for searching)
-- **Go 1.21+** (only if building from source)
+- **Arch Linux** (or any Arch-based distro)
+- **An AUR helper:** [paru](https://github.com/Morganamilo/paru) or [yay](https://github.com/Jguer/yay)
+- **fzf:** [fzf](https://github.com/junegunn/fzf) powers the fuzzy search
+- **Go 1.21+** (only needed if you're building from source)
 
-## Methods
+## install methods
 
-### From the AUR (Recommended)
+### AUR (recommended)
 
-gaur is available on the AUR. Use your favorite helper:
+The fastest route. Pick your helper:
 
 ```bash
 yay -S gaur-bin
@@ -28,43 +29,43 @@ yay -S gaur-bin
 paru -S gaur-bin
 ```
 
-### Using go install
+### go install
 
-If you have Go installed, you can install the latest release directly:
+Already have Go set up? Grab the latest release directly:
 
 ```bash
 go install github.com/prbhtkumr/gaur@latest
 ```
 
-Ensure your `$GOPATH/bin` is in your `$PATH`.
+Make sure `$GOPATH/bin` is in your `$PATH`.
 
-### From Source
+### from source
 
-To build gaur from the latest source code:
+Want to run the bleeding edge?
 
-1. Clone the repository:
+1. Clone the repo:
    ```bash
    git clone https://github.com/prbhtkumr/gaur.git
    ```
-2. Navigate to the project directory:
+2. Enter the directory:
    ```bash
    cd gaur
    ```
-3. Build the binary:
+3. Build it:
    ```bash
    go build -o gaur .
    ```
-4. Move the binary to your local path:
+4. Move the binary somewhere in your path:
    ```bash
    sudo mv gaur /usr/local/bin/
    ```
 
-## Verification
+## verify
 
-After installation, verify it's working by running:
+Check that everything's working:
 
 ```bash
 gaur --version
 ```
 
-If everything is correct, you are ready to [configure](/docs/configuration) your setup.
+If you see a version number, you're all set. Head over to [configuration](/docs/configuration) to customize your setup.
