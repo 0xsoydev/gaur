@@ -821,19 +821,16 @@ func TestSecurityEdgeCases(t *testing.T) {
 		}
 
 		// Sanitization should handle it
-		names := []string{longName}
-		valid, _ := sanitizePackageNames(names)
-		if len(valid) > 0 && len(valid[0]) > 10000 {
-			t.Log("Note: consider adding length limits to package names")
+		names, _ := sanitizePackageNames([]string{longName})
+		if len(names) > 0 && len(names[0]) > 100000 {
+			t.Error("Sanitization should handle very long input")
 		}
-	})
 
-	t.Run("NullBytes_InStrings", func(t *testing.T) {
-		// Null bytes could truncate strings in C-based systems
+		// Test null bytes in package names
 		nullByteInputs := []string{
-			"pkg\x00malicious",
-			"\x00leadingnull",
-			"trailing\x00",
+			"pkg\x00name",
+			"\x00package",
+			"package\x00",
 		}
 
 		for _, input := range nullByteInputs {

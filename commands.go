@@ -135,15 +135,6 @@ func executeInstallInTerminal(m *model, packages []string) tea.Cmd {
 	}, args[0], args[1:]...)
 }
 
-func contains(slice []string, val string) bool {
-	for _, item := range slice {
-		if item == val {
-			return true
-		}
-	}
-	return false
-}
-
 // executeRemoveInTerminal runs the AUR helper interactively using tea.ExecProcess
 func executeRemoveInTerminal(m *model, packages []string) tea.Cmd {
 

@@ -8,27 +8,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-func updateSystem(c *Config) tea.Cmd {
-	return func() tea.Msg {
-		args := BuildAURCommand(c, "update", "--noconfirm")
-		out, err := runner.Run(args[0], args[1:]...)
-		output := string(out)
-
-		if err != nil {
-			return updateOutputMsg{
-				output: output,
-				done:   true,
-				err:    err,
-			}
-		}
-
-		return updateOutputMsg{
-			output: output,
-			done:   true,
-		}
-	}
-}
-
 // checkUpdates fetches available updates using the AUR helper
 func checkUpdates(c *Config) tea.Cmd {
 	return func() tea.Msg {

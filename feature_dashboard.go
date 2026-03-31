@@ -557,36 +557,6 @@ func parsePaccacheDryRun(output string) string {
 	return "0 B"
 }
 
-// renderCenteredLabels returns a string with labels centered under segments of given widths
-func renderCenteredLabels(widths []int, labels []string, colors []lipgloss.Color) string {
-	var result strings.Builder
-	for i, w := range widths {
-		if i >= len(labels) {
-			break
-		}
-		label := labels[i]
-		if w <= 0 {
-			continue
-		}
-
-		style := lipgloss.NewStyle()
-		if i < len(colors) {
-			style = style.Foreground(colors[i])
-		}
-
-		if len(label) > w {
-			label = label[:w]
-		}
-
-		padding := (w - len(label)) / 2
-		extra := (w - len(label)) % 2
-		result.WriteString(strings.Repeat(" ", padding))
-		result.WriteString(style.Render(label))
-		result.WriteString(strings.Repeat(" ", padding+extra))
-	}
-	return result.String()
-}
-
 func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) string {
 
 	activeColor := modeColors[m.mode]

@@ -341,7 +341,7 @@ func TestConfirmationFlow(t *testing.T) {
 
 	// 'y' to confirm
 	newModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("y")})
-	m = newModel.(*model)
+	_ = newModel // Model state not needed after this point
 	if cmd == nil {
 		t.Errorf("expected command after confirming with 'y'")
 	}

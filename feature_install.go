@@ -136,75 +136,19 @@ func searchAUR(c *Config, query string) tea.Cmd {
 			if errMsg == "" {
 				errMsg = err.Error()
 			}
-			
+
 			// Clean up redundant prefixes often found in AUR helper output
 			errMsg = strings.TrimPrefix(errMsg, "error: ")
 			errMsg = strings.TrimPrefix(errMsg, "aur search failed: ")
 			errMsg = strings.TrimSpace(errMsg)
 
 			return aurSearchMsg{packages: nil, query: query, timeTaken: duration, err: fmt.Errorf("%s", simplifyErrorMessage(errMsg))}
-			}
+		}
 		if len(stdout) == 0 {
 			return aurSearchMsg{packages: []Package{}, query: query, timeTaken: duration}
 		}
 
 		packages := parseAUROutput(string(stdout))
 		return aurSearchMsg{packages: packages, query: query, timeTaken: duration}
-	}
-}
-
-func installPackage(c *Config, pkg Package) tea.Cmd {
-	return func() tea.Msg {
-		if !isValidPackageName(pkg.Name) {
-			return actionCompleteMsg{
-				message: fmt.Sprintf("Invalid package name: %s", pkg.Name),
-				err:     fmt.Errorf("invalid package name"),
-			}
-		}
-
-		args := BuildAURCommand(c, "install", pkg.Name)
-		out, err := runner.Run(args[0], args[1:]...)
-		if err != nil {
-			return actionCompleteMsg{
-				message: fmt.Sprintf("Failed to install %s: %s", pkg.Name, string(out)),
-				err:     err,
-			}
-		}
-
-		return actionCompleteMsg{
-			message: fmt.Sprintf("Successfully installed %s", pkg.Name),
-		}
-	}
-}
-
-func installMultiplePackages(c *Config, pkgNames []string) tea.Cmd {
-	return func() tea.Msg {
-
-		validNames, allValid := sanitizePackageNames(pkgNames)
-		if !allValid {
-			return actionCompleteMsg{
-				message: "Some package names contain invalid characters and were skipped",
-				err:     fmt.Errorf("invalid package names detected"),
-			}
-		}
-		if len(validNames) == 0 {
-			return actionCompleteMsg{
-				message: "No valid package names to install",
-				err:     fmt.Errorf("no valid packages"),
-			}
-		}
-
-		args := BuildAURCommand(c, "install", validNames...)
-		out, err := runner.Run(args[0], args[1:]...)
-		if err != nil {
-			return actionCompleteMsg{
-				message: fmt.Sprintf("Failed to install packages: %s", string(out)),
-				err:     err,
-			}
-		}
-
-		return actionCompleteMsg{
-			message: fmt.Sprintf("Successfully installed %d packages", len(validNames)),
-		}
 	}
 }

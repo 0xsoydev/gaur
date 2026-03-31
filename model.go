@@ -39,14 +39,12 @@ type model struct {
 	height                int
 	loading               bool
 	statusMessage         string
-	updateOutput          string
 	lastQuery             string
 	lastAURQuery          string // Last query sent to AUR search
 	searchingAUR          bool   // Whether AUR search is in progress
 	searchTerm            string // Current search term for status line
 	searchStatus          string // "Searching..." or "Search complete..."
 	searchError           bool   // Whether the last search failed
-	searchStartTime       time.Time
 	lastSearchDuration    time.Duration
 	spinner               spinner.Model
 	dashboard             DashboardData
