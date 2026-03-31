@@ -10,17 +10,15 @@ import (
 
 func sourceStyle(source string) lipgloss.Style {
 	if color, ok := sourceColors[source]; ok {
-		return lipgloss.NewStyle().Foreground(color)
+		return styleWithForeground(color)
 	}
-	return lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
+	return styleWithForeground(colorWhite)
 }
 
 // renderHelpText creates the help menu with the active mode highlighted
 func (m *model) renderHelpText(activeColor lipgloss.Color) string {
 	dimStyle := helpStyle
-	activeStyle := lipgloss.NewStyle().
-		Foreground(activeColor).
-		Bold(true)
+	activeStyle := styleBoldWithForeground(activeColor)
 
 	var parts []string
 
@@ -111,15 +109,7 @@ func (m *model) View() string {
 		content = m.renderUpdateSelectiveView(helpText, innerWidth, innerHeight, activeColor)
 	} else {
 		// Handle modeInstall and modeRemove
-		helpWidth := lipgloss.Width(helpText)
-		padding := (innerWidth - helpWidth) / 2
-		if padding < 0 {
-			padding = 0
-		}
-		footer := strings.Repeat(" ", padding) + helpText
-		if lipgloss.Width(footer) > innerWidth {
-			footer = truncateWithAnsi(footer, innerWidth)
-		}
+		footer := renderCenteredFooter(helpText, innerWidth)
 		content = m.renderPackageListLayout(innerWidth, innerHeight, activeColor, "", footer)
 	}
 
@@ -134,58 +124,8 @@ func (m *model) View() string {
 
 // overlaySettings manually layers the settings menu on top of base content
 func (m *model) overlaySettings(base, overlay string, width, height int) string {
-	baseLines := strings.Split(base, "\n")
-	overlayLines := strings.Split(overlay, "\n")
-
-	overlayHeight := len(overlayLines)
-	if overlayHeight == 0 {
-		return base
-	}
-
-	overlayWidth := lipgloss.Width(overlayLines[0])
-
-	// Ensure base has enough lines to match terminal height
-	if len(baseLines) < height {
-		for len(baseLines) < height {
-			baseLines = append(baseLines, strings.Repeat(" ", width))
-		}
-	}
-
-	startY := (height - overlayHeight) / 2
-	startCol := (width - overlayWidth) / 2
-
-	result := make([]string, len(baseLines))
-	copy(result, baseLines)
-
-	for y := 0; y < overlayHeight; y++ {
-		targetY := startY + y
-		if targetY >= 0 && targetY < len(result) {
-			bgLine := result[targetY]
-
-			// Ensure bgLine is at least width chars wide (considering ANSI)
-			bgWidth := lipgloss.Width(bgLine)
-			if bgWidth < width {
-				bgLine += strings.Repeat(" ", width-bgWidth)
-			}
-
-			// Reconstruct the line using precise slicing
-			left := truncateWithAnsi(bgLine, startCol)
-			// Ensure left part is exactly startCol wide by padding if needed
-			leftWidth := lipgloss.Width(left)
-			if leftWidth < startCol {
-				left += strings.Repeat(" ", startCol-leftWidth)
-			}
-
-			right := substringAnsi(bgLine, startCol+overlayWidth)
-			// Ensure right part doesn't exceed the remaining width
-			right = truncateWithAnsi(right, width-(startCol+overlayWidth))
-
-			// Composite the line: [Base Left] [Overlay Content] [Base Right]
-			result[targetY] = left + overlayLines[y] + right
-		}
-	}
-
-	return SafeJoinVertical(width, height, "", []string{strings.Join(result, "\n")}, "")
+	result := overlayOnBase(base, overlay, width, height)
+	return SafeJoinVertical(width, height, "", []string{result}, "")
 }
 
 // renderUpdateSelectiveView renders the selective update overlay on top of the simple update view
@@ -218,11 +158,11 @@ func (m *model) renderUpdateSelectiveView(helpText string, innerWidth, innerHeig
 	paddingX := (innerWidth - overlayWidth) / 2
 	paddingY := (innerHeight - overlayHeight) / 2
 
-	warningSymbol := lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Render("⚠")
-	warningText := lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Render(" Selective updates can break system dependencies")
+	warningSymbol := styleWithForeground(colorRed).Render("⚠")
+	warningText := styleWithForeground(colorRed).Render(" Selective updates can break system dependencies")
 	warningBox := lipgloss.NewStyle().
 		Border(m.getBorderStyle()).
-		BorderForeground(lipgloss.Color("196")).
+		BorderForeground(colorRed).
 		Padding(0, 1).
 		Render(warningSymbol + warningText)
 
@@ -553,38 +493,38 @@ func (m *model) renderSelectionBox(maxWidth int) string {
 	// Determine dynamic width
 	titleStr := fmt.Sprintf(" Selected (%d) [*] ", len(pkgNames))
 	maxContentWidth := lipgloss.Width(titleStr)
-	
+
 	for i := startIdx; i < endIdx; i++ {
 		nameWidth := lipgloss.Width(pkgNames[i]) + 4 // +2 for prefix/marker, +2 for inner padding
 		if nameWidth > maxContentWidth {
 			maxContentWidth = nameWidth
 		}
 	}
-	
+
 	panelWidth := 15
-	if maxContentWidth + 2 > 20 { // +2 for borders
+	if maxContentWidth+2 > 20 { // +2 for borders
 		panelWidth = 25
-	} else if maxContentWidth + 2 > 15 {
+	} else if maxContentWidth+2 > 15 {
 		panelWidth = 20
 	}
-	
+
 	if panelWidth > maxWidth {
 		panelWidth = maxWidth
 	}
 
 	panelStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("205")).
+		BorderForeground(colorMagenta).
 		Padding(0, 1)
 
 	if m.selectionPanelFocused {
-		panelStyle = panelStyle.BorderForeground(lipgloss.Color("214"))
+		panelStyle = panelStyle.BorderForeground(colorYellow)
 	}
 
-	titleText := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("205")).Render(titleStr)
+	titleText := styleBoldWithForeground(colorMagenta).Render(titleStr)
 
-	itemStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
-	selectedItemStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Bold(true)
+	itemStyle := styleWithForeground(colorWhite)
+	selectedItemStyle := styleBoldWithForeground(colorYellow)
 
 	var listBuilder strings.Builder
 	nameMaxWidth := panelWidth - 6 // 2 for border, 2 for padding, 2 for prefix
@@ -609,9 +549,9 @@ func (m *model) renderSelectionBox(maxWidth int) string {
 	listStr := listBuilder.String()
 	if len(pkgNames) > (endIdx - startIdx) {
 		// Add scrollbar for selection box (Top-down)
-		scrollbar := renderScrollbar(len(pkgNames), startIdx, (endIdx - startIdx), lipgloss.Color("205"), false)
+		scrollbar := renderScrollbar(len(pkgNames), startIdx, (endIdx - startIdx), colorMagenta, false)
 		listStr = lipgloss.JoinHorizontal(lipgloss.Top,
-			lipgloss.NewStyle().Width(panelWidth-4).Render(listStr),
+			styleWithWidth(panelWidth-4).Render(listStr),
 			lipgloss.NewStyle().MarginLeft(1).Render(scrollbar))
 	}
 
@@ -805,9 +745,9 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 		// Add repository filter hints to the right side of the search bar in install mode
 		if displayMode == modeInstall {
 			repoFilters, _ := parseRepoFilter(m.textInput.Value())
-			
-			dimStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
-			
+
+			dimStyle := styleWithForeground(colorLightGray)
+
 			var hintParts []string
 			filters := []struct {
 				char rune
@@ -818,40 +758,40 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 				{'m', "multilib"},
 				{'a', "aur"},
 			}
-			
+
 			for _, f := range filters {
 				text := string(f.char) + ":"
 				if repoFilters[f.repo] {
 					color, ok := sourceColors[f.repo]
 					if !ok {
-						color = lipgloss.Color("252")
+						color = colorWhite
 					}
-					hintParts = append(hintParts, lipgloss.NewStyle().Foreground(color).Bold(true).Render(text))
+					hintParts = append(hintParts, styleBoldWithForeground(color).Render(text))
 				} else {
 					hintParts = append(hintParts, dimStyle.Render(text))
 				}
 			}
-			
+
 			hints := strings.Join(hintParts, " ")
-			
+
 			// Total width for content inside the panel is innerWidth-2
 			availableWidth := innerWidth - 2
-			
+
 			// Hints are 11 chars + 2 padding on right = 13 chars
 			// We give it a bit more for safety or flexibility
-			hintsPaneWidth := lipgloss.Width(hints) + 2 
+			hintsPaneWidth := lipgloss.Width(hints) + 2
 			inputPaneWidth := availableWidth - hintsPaneWidth
-			
+
 			if inputPaneWidth < 20 {
 				inputPaneWidth = 20
 			}
-			
+
 			hintsView := lipgloss.NewStyle().
 				Width(hintsPaneWidth).
 				Align(lipgloss.Right).
 				PaddingRight(2).
 				Render(hints)
-				
+
 			inputLine = lipgloss.JoinHorizontal(lipgloss.Bottom,
 				lipgloss.NewStyle().Width(inputPaneWidth).Render(m.textInput.View()),
 				hintsView,
@@ -859,9 +799,7 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 		}
 
 		if m.searchStatus != "" {
-			style := lipgloss.NewStyle().
-				Foreground(lipgloss.Color("244")).
-				Italic(true)
+			style := styleItalicDim()
 
 			if m.searchError {
 				style = style.Foreground(lipgloss.Color("#FF5555"))
@@ -970,7 +908,7 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 			line := fmt.Sprintf("%s%s %s",
 				prefix,
 				displayPkgStr,
-				lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render(pkg.Version),
+				styleWithForeground(colorMediumGray).Render(pkg.Version),
 			)
 
 			if pkg.Installed && m.mode == modeInstall {
@@ -1013,7 +951,7 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 
 	bottomParts := []string{
 		resultsBox,
-		lipgloss.NewStyle().Foreground(lipgloss.Color("236")).Render(strings.Repeat("─", innerWidth-2)),
+		styleWithForeground(colorDimGray).Render(strings.Repeat("─", innerWidth-2)),
 		inputLine,
 	}
 	if statusLine != "" {
@@ -1431,15 +1369,7 @@ func (m *model) renderErrorOverlay(innerWidth, innerHeight int) string {
 func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight int, activeColor lipgloss.Color) string {
 	borderStyle := baseBorderStyle.BorderForeground(activeColor)
 
-	helpWidth := lipgloss.Width(helpText)
-	padding := (innerWidth - helpWidth) / 2
-	if padding < 0 {
-		padding = 0
-	}
-	footerLine := strings.Repeat(" ", padding) + helpText
-	if lipgloss.Width(footerLine) > innerWidth {
-		footerLine = truncateWithAnsi(footerLine, innerWidth)
-	}
+	footerLine := renderCenteredFooter(helpText, innerWidth)
 
 	footerHeight := 0
 	if footerLine != "" {
