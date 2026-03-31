@@ -118,13 +118,15 @@ func ValidateConfig(c *Config) {
 	if tool != "" && tool != "paccache" {
 		log.Printf("Warning: unsupported cache tool '%s'. Resetting to 'paccache'.", c.Commands.CacheTool)
 		c.Commands.CacheTool = "paccache"
+	} else {
+		c.Commands.CacheTool = tool // Assign trimmed value
 	}
 
 	// Clean and validate CacheDir if provided
 	if c.Advanced.CacheDir != "" {
 		c.Advanced.CacheDir = filepath.Clean(c.Advanced.CacheDir)
 		if !filepath.IsAbs(c.Advanced.CacheDir) {
-			// If it's relative, we could make it absolute or reset it. 
+			// If it's relative, we could make it absolute or reset it.
 			// For security, let's just reset it to default if it's not absolute or looks suspicious.
 			c.Advanced.CacheDir = ""
 		}
