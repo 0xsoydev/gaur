@@ -487,6 +487,12 @@ func formatBytes(bytes int64) string {
 	return fmt.Sprintf("%.2f %ciB", float64(bytes)/float64(div), "KMGTPE"[exp])
 }
 
+// fitToBox truncates a string to fit within a specified width and height.
+// This is a convenience function that combines truncateHeight and truncateWithAnsi.
+func fitToBox(s string, width, height int) string {
+	return truncateWithAnsi(truncateHeight(s, height), width)
+}
+
 // truncateWithAnsi truncates a string to a visual width, preserving ANSI codes.
 // It uses lipgloss.Width to correctly account for multibyte and wide characters.
 func truncateWithAnsi(s string, maxWidth int) string {
