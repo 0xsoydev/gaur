@@ -18,18 +18,18 @@ func (m *model) renderCacheMenu(helpText string, innerWidth, innerHeight int) st
 		menuHeight = innerHeight - 4
 	}
 
-	selectedColor := lipgloss.Color("42") // default green
+	selectedColor := colorGreen // default green
 	switch m.cacheMenuIndex {
 	case 0:
-		selectedColor = lipgloss.Color("39") // Blue
+		selectedColor = colorBlue
 	case 1:
-		selectedColor = lipgloss.Color("208") // Orange
+		selectedColor = colorOrange
 	case 2:
-		selectedColor = lipgloss.Color("42") // Green
+		selectedColor = colorGreen
 	case 3:
-		selectedColor = lipgloss.Color("196") // Red
+		selectedColor = colorRed
 	case 4:
-		selectedColor = lipgloss.Color("135") // Purple
+		selectedColor = colorPurple
 	}
 
 	titleStyle := lipgloss.NewStyle().
@@ -38,9 +38,7 @@ func (m *model) renderCacheMenu(helpText string, innerWidth, innerHeight int) st
 		MarginBottom(1).
 		Align(lipgloss.Center)
 
-	descStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("246")).
-		Italic(true)
+	descStyle := styleItalicDim()
 
 	normalItemStyle := lipgloss.NewStyle().
 		PaddingLeft(2).
@@ -74,7 +72,7 @@ func (m *model) renderCacheMenu(helpText string, innerWidth, innerHeight int) st
 			itemStr = normalItemStyle.Render("  " + opt.title)
 		}
 		menuContent.WriteString(itemStr + "\n")
-		
+
 		descPadding := 4
 		if i == m.cacheMenuIndex {
 			menuContent.WriteString(descStyle.PaddingLeft(descPadding).Foreground(selectedColor).Render(opt.desc) + "\n\n")
@@ -96,15 +94,7 @@ func (m *model) renderCacheMenu(helpText string, innerWidth, innerHeight int) st
 	var footerLine string
 	if helpText != "" {
 		footerHeight = 1
-		helpWidth := lipgloss.Width(helpText)
-		padding := (innerWidth - helpWidth) / 2
-		if padding < 0 {
-			padding = 0
-		}
-		footerLine = strings.Repeat(" ", padding) + helpText
-		if lipgloss.Width(footerLine) > innerWidth {
-			footerLine = truncateWithAnsi(footerLine, innerWidth)
-		}
+		footerLine = renderCenteredFooter(helpText, innerWidth)
 	}
 
 	mainContent := lipgloss.Place(innerWidth, innerHeight-footerHeight, lipgloss.Center, lipgloss.Center, menuBox, lipgloss.WithWhitespaceChars(" "), lipgloss.WithWhitespaceForeground(lipgloss.Color("235")))
@@ -276,22 +266,14 @@ func (m *model) renderSelectiveCacheView(helpText string, innerWidth, innerHeigh
 	)
 
 	bottomPanel := borderStyle.
-		Width(innerWidth - 2).
-		Height(targetBottomPanelHeight - 2).
+		Width(innerWidth-2).
+		Height(targetBottomPanelHeight-2).
 		Align(lipgloss.Left, lipgloss.Bottom).
 		Render(truncateHeight(bottomContent, bottomInnerHeight))
 
-	header := lipgloss.NewStyle().Bold(true).Foreground(activeColor).Render(" \uf0c7 Selective Cache Clean")
+	header := styleBoldWithForeground(activeColor).Render(" \uf0c7 Selective Cache Clean")
 
-	helpWidth := lipgloss.Width(helpText)
-	padding := (innerWidth - helpWidth) / 2
-	if padding < 0 {
-		padding = 0
-	}
-	footer := strings.Repeat(" ", padding) + helpText
-	if lipgloss.Width(footer) > innerWidth {
-		footer = truncateWithAnsi(footer, innerWidth)
-	}
+	footer := renderCenteredFooter(helpText, innerWidth)
 
 	return SafeJoinVertical(innerWidth, innerHeight, header, []string{bottomPanel}, footer)
 }
