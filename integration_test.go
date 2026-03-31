@@ -176,36 +176,35 @@ func TestUpdateKeyboardNavigation(t *testing.T) {
 		m.filtered[i] = Package{Name: fmt.Sprintf("pkg%d", i)}
 	}
 	m.loading = false
-	m.selectedIndex = 0
+	m.selectedIndex = 5 // Start in the middle to test both directions
 
-	// In this app, "up" (k) increases index, "down" (j) decreases index
-
-	// Test 'k' (Up) -> index 1
+	// Test 'k' (Up) -> moves towards top of list (index decreases)
 	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("k")})
 	m = newModel.(*model)
-	if m.selectedIndex != 1 {
-		t.Errorf("selectedIndex = %d, want 1 after 'k'", m.selectedIndex)
+	if m.selectedIndex != 4 {
+		t.Errorf("selectedIndex = %d, want 4 after 'k' (up)", m.selectedIndex)
 	}
 
-	// Test 'j' (Down) -> index 0
+	// Test 'j' (Down) -> moves towards bottom of list (index increases)
 	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("j")})
 	m = newModel.(*model)
-	if m.selectedIndex != 0 {
-		t.Errorf("selectedIndex = %d, want 0 after 'j'", m.selectedIndex)
+	if m.selectedIndex != 5 {
+		t.Errorf("selectedIndex = %d, want 5 after 'j' (down)", m.selectedIndex)
 	}
 
-	// Test PgUp -> jumps 10 UP (index increases)
+	// Test PgUp -> jumps up (index decreases by 10)
+	m.selectedIndex = 15
 	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyPgUp})
 	m = newModel.(*model)
-	if m.selectedIndex != 10 {
-		t.Errorf("selectedIndex = %d, want 10 after PgUp", m.selectedIndex)
+	if m.selectedIndex != 5 {
+		t.Errorf("selectedIndex = %d, want 5 after PgUp", m.selectedIndex)
 	}
 
-	// Test PgDown -> jumps 10 DOWN (index decreases)
+	// Test PgDown -> jumps down (index increases by 10)
 	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyPgDown})
 	m = newModel.(*model)
-	if m.selectedIndex != 0 {
-		t.Errorf("selectedIndex = %d, want 0 after PgDown", m.selectedIndex)
+	if m.selectedIndex != 15 {
+		t.Errorf("selectedIndex = %d, want 15 after PgDown", m.selectedIndex)
 	}
 }
 

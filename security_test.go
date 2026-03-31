@@ -39,19 +39,6 @@ func (m *mockRunner) RunWithInput(input string, name string, args ...string) ([]
 	return []byte{}, nil
 }
 
-// containsShellMetachar checks if any argument contains dangerous shell metacharacters
-func containsShellMetachar(args []string) (bool, string) {
-	dangerous := []string{";", "|", "&", "$", "`", "(", ")", "{", "}", "<", ">", "\n", "\r"}
-	for _, arg := range args {
-		for _, meta := range dangerous {
-			if strings.Contains(arg, meta) {
-				return true, arg
-			}
-		}
-	}
-	return false, ""
-}
-
 // ══════════════════════════════════════════════════════════════════════════════
 // 1. COMMAND INJECTION TESTS
 // ══════════════════════════════════════════════════════════════════════════════

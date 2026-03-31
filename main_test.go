@@ -212,53 +212,6 @@ func TestParseRemoveFilter(t *testing.T) {
 	}
 }
 
-// TestFormatRepoFilters tests the repo filter formatting
-func TestFormatRepoFilters(t *testing.T) {
-	tests := []struct {
-		name     string
-		filters  map[string]bool
-		expected string
-	}{
-		{"empty", nil, ""},
-		{"single", map[string]bool{"aur": true}, "aur"},
-		{"multiple", map[string]bool{"core": true, "extra": true, "aur": true}, "core+extra+aur"},
-		{"all", map[string]bool{"core": true, "extra": true, "multilib": true, "aur": true}, "core+extra+multilib+aur"},
-		{"unordered", map[string]bool{"aur": true, "core": true}, "core+aur"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := formatRepoFilters(tt.filters)
-			if result != tt.expected {
-				t.Errorf("formatRepoFilters(%v) = %q, want %q", tt.filters, result, tt.expected)
-			}
-		})
-	}
-}
-
-// TestFormatRemoveFilters tests the remove filter formatting
-func TestFormatRemoveFilters(t *testing.T) {
-	tests := []struct {
-		name     string
-		filters  map[string]bool
-		expected string
-	}{
-		{"empty", nil, ""},
-		{"total", map[string]bool{"total": true}, "total"},
-		{"explicit", map[string]bool{"explicit": true}, "explicit"},
-		{"multiple", map[string]bool{"total": true, "orphan": true}, "total+orphan"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := formatRemoveFilters(tt.filters)
-			if result != tt.expected {
-				t.Errorf("formatRemoveFilters(%v) = %q, want %q", tt.filters, result, tt.expected)
-			}
-		})
-	}
-}
-
 // TestParseSizeToBytes tests size string parsing
 func TestParseSizeToBytes(t *testing.T) {
 	tests := []struct {
@@ -449,7 +402,7 @@ core/linux 6.5.3-1 [+12] [-]
  Linux kernel
 `
 
-	result := parseSearchOutput(sampleOutput)
+	result := parsePackageOutput(sampleOutput)
 
 	// Should parse all three packages
 	if len(result) != 3 {

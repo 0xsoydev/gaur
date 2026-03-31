@@ -449,9 +449,9 @@ func (m *model) handleNavigation(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 
 	if key == "up" || key == "k" || key == "pgup" {
-		m.selectedIndex += jump
-	} else {
 		m.selectedIndex -= jump
+	} else {
+		m.selectedIndex += jump
 	}
 
 	// Clamp
@@ -462,7 +462,7 @@ func (m *model) handleNavigation(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.selectedIndex = 0
 	}
 
-		if m.selectedIndex != oldIdx {
+	if m.selectedIndex != oldIdx {
 		m.detailsScrollOffset = 0
 		pkg := m.getSelectedPkg()
 		if pkg != nil && m.mode != modeCacheSelective {
@@ -791,13 +791,16 @@ func (m *model) getPackageByName(name string) *Package {
 }
 
 func (m *model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
+	isScrollUp := msg.Action == tea.MouseActionPress && msg.Button == tea.MouseButtonWheelUp
+	isScrollDown := msg.Action == tea.MouseActionPress && msg.Button == tea.MouseButtonWheelDown
+
 	if m.showConfirmation {
-		if msg.Type == tea.MouseWheelUp {
+		if isScrollUp {
 			if m.confirmScrollOffset > 0 {
 				m.confirmScrollOffset--
 			}
 		}
-		if msg.Type == tea.MouseWheelDown {
+		if isScrollDown {
 			if m.confirmScrollOffset < m.maxConfirmScroll {
 				m.confirmScrollOffset++
 			}
@@ -805,13 +808,13 @@ func (m *model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-	if msg.Type != tea.MouseWheelUp && msg.Type != tea.MouseWheelDown {
+	if !isScrollUp && !isScrollDown {
 		return m, nil
 	}
 
 	// Details pane scroll check
 	if (m.mode == modeInstall || m.mode == modeRemove) && msg.Y < m.height/2 {
-		if msg.Type == tea.MouseWheelUp {
+		if isScrollUp {
 			if m.detailsScrollOffset > 0 {
 				m.detailsScrollOffset--
 			}
@@ -823,7 +826,7 @@ func (m *model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	if m.mode == modeUpdateSelective && msg.X >= m.width/2 {
-		if msg.Type == tea.MouseWheelUp {
+		if isScrollUp {
 			if m.detailsScrollOffset > 0 {
 				m.detailsScrollOffset--
 			}
@@ -836,7 +839,7 @@ func (m *model) handleMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	}
 
 	fake := tea.KeyMsg{Type: tea.KeyUp}
-	if msg.Type == tea.MouseWheelDown {
+	if isScrollDown {
 		fake.Type = tea.KeyDown
 	}
 	return m.handleNavigation(fake)
@@ -857,13 +860,13 @@ func (m *model) handleExecComplete(msg execCompleteMsg) (tea.Model, tea.Cmd) {
 
 	m.statusMessage = "Operation completed successfully"
 	return m, m.refreshAll()
-	}
+}
 
-	func (m *model) recalculateTextInputWidth() {
+func (m *model) recalculateTextInputWidth() {
 	if m.mode == modeInstall {
-	// Leave room for hints "c: e: m: a:" (11 chars) + padding (3 chars)
-	m.textInput.Width = max(20, m.width-20)
+		// Leave room for hints "c: e: m: a:" (11 chars) + padding (3 chars)
+		m.textInput.Width = max(20, m.width-20)
 	} else {
-	m.textInput.Width = max(20, m.width-6)
+		m.textInput.Width = max(20, m.width-6)
 	}
-	}
+}

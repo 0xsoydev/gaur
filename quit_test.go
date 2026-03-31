@@ -10,10 +10,10 @@ func TestQuitKeyWithFocus(t *testing.T) {
 	// Initialize model in Install mode where search is available
 	m := initialModel(modeInstall, DefaultConfig())
 	m.loading = false
-	
+
 	// 1. Test 'q' without focus (should quit)
 	m.textInput.Blur()
-	newModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")})
+	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")})
 	if cmd == nil {
 		t.Errorf("Expected tea.Quit command when 'q' is pressed without focus, got nil")
 	} else {
@@ -27,10 +27,10 @@ func TestQuitKeyWithFocus(t *testing.T) {
 	m = initialModel(modeInstall, DefaultConfig())
 	m.loading = false
 	m.textInput.Focus()
-	
-	newModel, cmd = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")})
+
+	newModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")})
 	updatedModel := newModel.(*model)
-	
+
 	if cmd != nil {
 		// Check if it's tea.Quit
 		msg := cmd()
@@ -38,7 +38,7 @@ func TestQuitKeyWithFocus(t *testing.T) {
 			t.Errorf("Expected application NOT to quit when 'q' is pressed with focus, but it did")
 		}
 	}
-	
+
 	// The 'q' should have been handled by the text input (though it might not be a printable char if it's just 'q')
 	// In our app, if it's focused, it should just update the text input.
 	if updatedModel.textInput.Value() == "" && m.textInput.Value() == "" {

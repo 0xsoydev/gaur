@@ -125,11 +125,11 @@ const (
 	confirmRemove
 	confirmUpdate
 	confirmSelectiveUpdate
-	confirmCleanKeep3       // paccache -r
-	confirmCleanKeep1       // paccache -rk1
-	confirmCleanRemoved     // paccache -ruk0
-	confirmCleanNuke        // paccache -rk0
-	confirmCleanSelective   // Custom selective clean
+	confirmCleanKeep3     // paccache -r
+	confirmCleanKeep1     // paccache -rk1
+	confirmCleanRemoved   // paccache -ruk0
+	confirmCleanNuke      // paccache -rk0
+	confirmCleanSelective // Custom selective clean
 	confirmRemoveOrphans
 )
 
@@ -185,9 +185,8 @@ type actionCompleteMsg struct {
 }
 
 type updateOutputMsg struct {
-	output string
-	done   bool
-	err    error
+	done bool
+	err  error
 }
 
 type updateCheckMsg struct {
@@ -213,31 +212,31 @@ type debounceTickMsg struct {
 
 // DashboardData holds system package statistics
 type DashboardData struct {
-	TotalPackages          int
-	ExplicitlyInstalled    int
-	ForeignPackages        int
-	RepoDistribution       map[string]int // core, extra, multilib, etc.
-	TotalSize              string
-	TotalSizeBytes         int64 // For comparison
-	CleanerSize            string
-	CleanerSizeBytes       int64 // For comparison and coloring
-	PacmanCacheSize        string
-	PacmanCacheSizeBytes   int64
-	PacmanCachePath        string
-	AurCacheSize           string
-	AurCacheSizeBytes      int64
-	AurCachePath           string
-	Orphans                int
-	MissingFromAUR         int
-	TopPackages            []PackageSize               // Top 10 packages by size
-	RecentlyInstalled      []RecentPackage             // Details of 5 recently installed packages
-	TopCacheHogs           []PackageSize               // Top 5 packages taking up cache space
-	AllCacheHogs           []PackageSize               // All packages taking up cache space
-	RemovedPacmanCache     []PackageSize               // Removed packages in pacman cache
-	RemovedAurCache        []PackageSize               // Removed packages in AUR helper cache
-	CacheFreedPacman       map[confirmationType]string // Estimated savings for pacman
-	CacheFreedAur          map[confirmationType]string // Estimated savings for AUR helper
-	CacheFreedEstimates    map[confirmationType]string // Total estimated savings
+	TotalPackages        int
+	ExplicitlyInstalled  int
+	ForeignPackages      int
+	RepoDistribution     map[string]int // core, extra, multilib, etc.
+	TotalSize            string
+	TotalSizeBytes       int64 // For comparison
+	CleanerSize          string
+	CleanerSizeBytes     int64 // For comparison and coloring
+	PacmanCacheSize      string
+	PacmanCacheSizeBytes int64
+	PacmanCachePath      string
+	AurCacheSize         string
+	AurCacheSizeBytes    int64
+	AurCachePath         string
+	Orphans              int
+	MissingFromAUR       int
+	TopPackages          []PackageSize               // Top 10 packages by size
+	RecentlyInstalled    []RecentPackage             // Details of 5 recently installed packages
+	TopCacheHogs         []PackageSize               // Top 5 packages taking up cache space
+	AllCacheHogs         []PackageSize               // All packages taking up cache space
+	RemovedPacmanCache   []PackageSize               // Removed packages in pacman cache
+	RemovedAurCache      []PackageSize               // Removed packages in AUR helper cache
+	CacheFreedPacman     map[confirmationType]string // Estimated savings for pacman
+	CacheFreedAur        map[confirmationType]string // Estimated savings for AUR helper
+	CacheFreedEstimates  map[confirmationType]string // Total estimated savings
 	// Disk usage dash
 	DiskTotal       string
 	DiskUsed        string
@@ -256,17 +255,6 @@ type PackageSize struct {
 type RecentPackage struct {
 	Name      string
 	Timestamp string // e.g. "2024-03-12 10:00"
-}
-
-// Dashboard action messages
-type cleanCacheMsg struct {
-	output string
-	err    error
-}
-
-type removeOrphansMsg struct {
-	output string
-	err    error
 }
 
 type syncRepositoriesMsg struct {

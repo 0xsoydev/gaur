@@ -46,12 +46,12 @@ func TestSelectiveUpdateFlow(t *testing.T) {
 		t.Errorf("Expected 1 marked package, got %d. Marked: %v", len(m.markedPackages), m.markedPackages)
 	}
 
-	// In this app, 'k' (up) increases selectedIndex.
-	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("k")}) // move to vlc (index 1)
+	// 'j' (down) increases selectedIndex (standard navigation)
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("j")}) // move to vlc (index 1)
 	m = newModel.(*model)
-	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("k")}) // move to yay (index 2)
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("j")}) // move to yay (index 2)
 	m = newModel.(*model)
-	
+
 	if m.selectedIndex != 2 {
 		t.Errorf("Expected selectedIndex 2, got %d", m.selectedIndex)
 	}
@@ -89,24 +89,24 @@ func TestSelectiveUpdateMouseScrollWithDetails(t *testing.T) {
 	m.updatableAll = []Package{{Name: "pkg1"}, {Name: "pkg2"}}
 	m.filtered = m.updatableAll
 	m.selectedIndex = 0
-	
+
 	// Set package details - this SHOULD prevent list scrolling
 	m.packageDetails = "Some multi-line\npackage details\nto scroll through."
 	m.maxDetailsScroll = 5
 	m.detailsScrollOffset = 0
 
 	// Scroll mouse wheel up - RIGHT SIDE (X=60) should scroll details
-	newModel, _ := m.Update(tea.MouseMsg{Type: tea.MouseWheelUp, X: 60})
+	newModel, _ := m.Update(tea.MouseMsg{Action: tea.MouseActionPress, Button: tea.MouseButtonWheelUp, X: 60})
 	m = newModel.(*model)
-	
+
 	if m.selectedIndex != 0 {
 		t.Errorf("Expected selectedIndex 0, got %d (should NOT move list when scrolling on right side)", m.selectedIndex)
 	}
-	
+
 	// Scroll mouse wheel down - RIGHT SIDE (X=60) should scroll details
-	newModel, _ = m.Update(tea.MouseMsg{Type: tea.MouseWheelDown, X: 60})
+	newModel, _ = m.Update(tea.MouseMsg{Action: tea.MouseActionPress, Button: tea.MouseButtonWheelDown, X: 60})
 	m = newModel.(*model)
-	
+
 	if m.selectedIndex != 0 {
 		t.Errorf("Expected selectedIndex 0, got %d (should NOT move list when scrolling on right side)", m.selectedIndex)
 	}
@@ -122,16 +122,16 @@ func TestSelectiveUpdateMouseScrollWithoutDetails(t *testing.T) {
 	m.loading = false
 	m.updatableAll = []Package{{Name: "pkg1"}, {Name: "pkg2"}}
 	m.filtered = m.updatableAll
-	m.selectedIndex = 0
-	
+	m.selectedIndex = 1 // Start at 1 so we can scroll up
+
 	// EMPTY package details
 	m.packageDetails = ""
 
-	// Scroll mouse wheel up - LEFT SIDE (X=10) should move list cursor
-	newModel, _ := m.Update(tea.MouseMsg{Type: tea.MouseWheelUp, X: 10})
+	// Scroll mouse wheel up - LEFT SIDE (X=10) should move list cursor up (decrease index)
+	newModel, _ := m.Update(tea.MouseMsg{Action: tea.MouseActionPress, Button: tea.MouseButtonWheelUp, X: 10})
 	m = newModel.(*model)
-	
-	if m.selectedIndex != 1 {
-		t.Errorf("Expected selectedIndex 1, got %d (list SHOULD move when scrolling on left side)", m.selectedIndex)
+
+	if m.selectedIndex != 0 {
+		t.Errorf("Expected selectedIndex 0, got %d (list SHOULD move up when scrolling wheel up on left side)", m.selectedIndex)
 	}
 }

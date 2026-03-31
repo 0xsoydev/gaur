@@ -116,11 +116,10 @@ func computeMatchIndices(pkg Package, query string) []int {
 
 	// Priority 2: Fuzzy match
 	pkgRunes := []rune(pkgLower)
-	queryRunes := []rune(queryLower)
 
 	// Simple greedy forward match
 	currentPkgIdx := 0
-	for _, qr := range queryRunes {
+	for _, qr := range queryLower {
 		found := false
 		for currentPkgIdx < len(pkgRunes) {
 			if pkgRunes[currentPkgIdx] == qr {
@@ -269,21 +268,6 @@ func parseRepoFilter(input string) (map[string]bool, string) {
 	return repoFilters, searchQuery
 }
 
-// formatRepoFilters returns a human-readable string of active repo filters
-func formatRepoFilters(filters map[string]bool) string {
-	if len(filters) == 0 {
-		return ""
-	}
-	var repos []string
-
-	for _, repo := range []string{"core", "extra", "multilib", "aur"} {
-		if filters[repo] {
-			repos = append(repos, repo)
-		}
-	}
-	return strings.Join(repos, "+")
-}
-
 // parseRemoveFilter extracts source filters and search query from input for remove mode
 // Supports 'a:' for AUR/foreign packages and 'l:' for local/official packages
 func parseRemoveFilter(input string) (map[string]bool, string) {
@@ -309,27 +293,6 @@ func parseRemoveFilter(input string) (map[string]bool, string) {
 	}
 
 	return sourceFilters, searchQuery
-}
-
-// formatRemoveFilters returns a human-readable string of active remove filters
-func formatRemoveFilters(filters map[string]bool) string {
-	if len(filters) == 0 {
-		return ""
-	}
-	var names []string
-	if filters["total"] {
-		names = append(names, "total")
-	}
-	if filters["explicit"] {
-		names = append(names, "explicit")
-	}
-	if filters["foreign"] {
-		names = append(names, "foreign")
-	}
-	if filters["orphan"] {
-		names = append(names, "orphan")
-	}
-	return strings.Join(names, "+")
 }
 
 // parsePackageOutput parses package search output from pacman/paru/yay.
@@ -410,12 +373,6 @@ func parsePackageOutput(output string) []Package {
 // parseAUROutput parses paru/yay -Ss output for AUR packages.
 // Deprecated: Use parsePackageOutput instead.
 func parseAUROutput(output string) []Package {
-	return parsePackageOutput(output)
-}
-
-// parseSearchOutput parses pacman -Ss output.
-// Deprecated: Use parsePackageOutput instead.
-func parseSearchOutput(output string) []Package {
 	return parsePackageOutput(output)
 }
 
@@ -702,7 +659,7 @@ func renderKeyHint(label string, b key.Binding, style lipgloss.Style) string {
 
 	// Create a segment style that preserves colors/bolding but strips layout AND padding
 	// to prevent each segment from adding its own internal gaps.
-	segStyle := style.Copy().UnsetWidth().UnsetAlign().Padding(0, 0)
+	segStyle := style.UnsetWidth().UnsetAlign().Padding(0, 0)
 
 	// Only try to embed if it's a single character
 	if len(k) == 1 {
@@ -894,38 +851,4 @@ func simplifyErrorMessage(msg string) string {
 	}
 
 	return strings.Join(uniqueParts, ": ")
-}
-
-// PackageFilterFunc is a function type for filtering packages.
-type PackageFilterFunc func(pkg Package) bool
-
-// filterPackagesWithFunc applies a filter function and fuzzy search to a package list.
-// If filterFn is nil, all packages pass the filter phase.
-// Returns the filtered/searched packages and computed match indices.
-func filterPackagesWithFunc(packages []Package, query string, filterFn PackageFilterFunc) ([]Package, map[int][]int) {
-	if len(packages) == 0 {
-		return []Package{}, nil
-	}
-
-	// Apply filter function first
-	candidates := packages
-	if filterFn != nil {
-		var filtered []Package
-		for _, pkg := range packages {
-			if filterFn(pkg) {
-				filtered = append(filtered, pkg)
-			}
-		}
-		candidates = filtered
-	}
-
-	if query == "" {
-		return candidates, nil
-	}
-
-	// Apply fuzzy filter
-	result := fuzzyFilter(candidates, query)
-	matchIndices := computeAllMatchIndices(result, query)
-
-	return result, matchIndices
 }

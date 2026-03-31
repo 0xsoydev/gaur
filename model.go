@@ -1,8 +1,6 @@
 package main
 
 import (
-	"time"
-
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -45,7 +43,6 @@ type model struct {
 	searchTerm            string // Current search term for status line
 	searchStatus          string // "Searching..." or "Search complete..."
 	searchError           bool   // Whether the last search failed
-	lastSearchDuration    time.Duration
 	spinner               spinner.Model
 	dashboard             DashboardData
 	// Confirmation dialog state
@@ -55,7 +52,6 @@ type model struct {
 	pendingUpdates      []Package // Updates available (for update confirmation)
 	confirmScrollOffset int       // Scroll offset for confirmation package list
 	maxConfirmScroll    int       // Max scroll for confirmation list
-	lastCompletedOp     string    // Description of last completed operation
 	// Update selection state
 	updatableAll       []Package // All packages available for update (before selection)
 	updateScrollOffset int       // Scroll offset for the simple update view
@@ -65,8 +61,6 @@ type model struct {
 	errorTitle       string
 	errorMessage     string
 	errorDetails     string
-	// Sync logic
-	checkAfterUpdate bool // Whether we should perform a sync+check if updates are zero
 	// Cache cleaning state
 	cacheMenuIndex int
 	cacheToFree    int64

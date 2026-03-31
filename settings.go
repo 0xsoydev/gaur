@@ -51,17 +51,17 @@ func (m *model) initSettings() {
 
 		for idx, opt := range item.Options {
 			// Case-insensitive comparison for themes/modes
-			if strings.EqualFold(opt, currentVal) || 
-			   (item.Label == "Theme" && strings.EqualFold(strings.ReplaceAll(opt, " ", "-"), currentVal)) {
+			if strings.EqualFold(opt, currentVal) ||
+				(item.Label == "Theme" && strings.EqualFold(strings.ReplaceAll(opt, " ", "-"), currentVal)) {
 				m.settingsItems[i].ActiveIndex = idx
 				break
 			}
 		}
 	}
-	}
+}
 
-	// updateConfigFromSettings applies carousel changes to the internal config struct
-	func (m *model) updateConfigFromSettings() {
+// updateConfigFromSettings applies carousel changes to the internal config struct
+func (m *model) updateConfigFromSettings() {
 	item := m.settingsItems[m.settingsIndex]
 	val := item.Options[item.ActiveIndex]
 
@@ -81,7 +81,7 @@ func (m *model) initSettings() {
 	}
 
 	// We no longer save instantly to disk to allow real-time theme preview without I/O churn
-	}
+}
 
 // saveSettingsToDisk marshals current config to TOML and writes to XDG path
 func (m *model) saveSettingsToDisk() {
@@ -91,13 +91,13 @@ func (m *model) saveSettingsToDisk() {
 	}
 
 	configPath := filepath.Join(configDir, "gaur", "config.toml")
-	
+
 	data, err := toml.Marshal(m.config)
 	if err != nil {
 		return
 	}
 
-	_ = os.WriteFile(configPath, data, 0644)
+	_ = os.WriteFile(configPath, data, 0600)
 }
 
 // getBorderStyle returns the lipgloss.Border based on configuration
@@ -130,7 +130,7 @@ func (m *model) renderSettings(innerWidth, innerHeight int) string {
 		Width(overlayWidth)
 
 	var content strings.Builder
-	
+
 	titleStyle := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(currentTheme.TitleColor).
@@ -143,16 +143,16 @@ func (m *model) renderSettings(innerWidth, innerHeight int) string {
 
 	for i, item := range m.settingsItems {
 		isFocused := i == m.settingsIndex
-		
+
 		labelStyle := lipgloss.NewStyle().Width(20).Foreground(currentTheme.TextColor)
 		if isFocused {
 			labelStyle = labelStyle.Foreground(currentTheme.SelectedColor).Bold(true)
 		}
 
 		label := labelStyle.Render(item.Label)
-		
+
 		val := item.Options[item.ActiveIndex]
-		
+
 		// Carousel rendering: < value >
 		leftArrow := "  "
 		rightArrow := "  "
@@ -165,16 +165,16 @@ func (m *model) renderSettings(innerWidth, innerHeight int) string {
 		if isFocused {
 			valStyle = valStyle.Foreground(currentTheme.SelectedColor).Bold(true)
 		}
-		
+
 		carousel := fmt.Sprintf("%s%s%s", leftArrow, valStyle.Render(fmt.Sprintf(" %s ", val)), rightArrow)
-		
+
 		row := fmt.Sprintf("%s %s", label, carousel)
-		
+
 		// Ensure the entire row has a consistent background when focused
 		var renderedRow string
 		if isFocused {
 			bgColor := lipgloss.Color("235")
-			
+
 			// Pad the row manually before styling to ensure background covers full area
 			targetWidth := overlayWidth - 4
 			rowWidth := lipgloss.Width(row)
@@ -185,7 +185,7 @@ func (m *model) renderSettings(innerWidth, innerHeight int) string {
 
 			// Apply background maintenance to the entire padded row content
 			maintainedRow := maintainBackground(paddedRow, bgColor)
-			
+
 			renderedRow = lipgloss.NewStyle().
 				Background(bgColor).
 				Render(maintainedRow)
@@ -194,17 +194,17 @@ func (m *model) renderSettings(innerWidth, innerHeight int) string {
 				Width(overlayWidth - 4).
 				Render(row)
 		}
-		
+
 		content.WriteString(renderedRow + "\n")
 	}
 
 	content.WriteString("\n")
 	helpStyle := lipgloss.NewStyle().Foreground(currentTheme.SubtleColor).Italic(true)
-	
-	hints := fmt.Sprintf("↑/↓:navigate • ←/→:cycle • %s • %s", 
+
+	hints := fmt.Sprintf("↑/↓:navigate • ←/→:cycle • %s • %s",
 		renderKeyHint("close", m.keys.Cancel, helpStyle),
 		renderKeyHint("quit", m.keys.Quit, helpStyle))
-	
+
 	// Apply layout style (centering) to the entire hints line
 	centeredHints := lipgloss.NewStyle().Width(overlayWidth - 4).Align(lipgloss.Center).Render(hints)
 	content.WriteString(centeredHints)

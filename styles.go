@@ -338,25 +338,12 @@ func setTheme(t themeType) {
 		currentTheme = theme
 
 		defaultBorderColor = currentTheme.BorderColor
-		selectedColor = currentTheme.SelectedColor
 		modeColors = getModeColors()
 		sourceColors = getSourceColors()
-
-		baseTitleStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(currentTheme.TitleColor).
-			Padding(0, 1)
 
 		selectedStyle = lipgloss.NewStyle().
 			Bold(true).
 			Foreground(currentTheme.SelectedColor)
-
-		normalStyle = lipgloss.NewStyle().
-			Foreground(currentTheme.TextColor)
-
-		packageDetailsStyle = lipgloss.NewStyle().
-			Foreground(currentTheme.TextColor).
-			Padding(1)
 
 		statusStyle = lipgloss.NewStyle().
 			Foreground(currentTheme.SubtleColor)
@@ -372,21 +359,6 @@ func setTheme(t themeType) {
 		matchHighlightStyle = lipgloss.NewStyle().
 			Foreground(currentTheme.HighlightColor).
 			Bold(true)
-
-		detailsLabelStyle = lipgloss.NewStyle().
-			Foreground(currentTheme.DashboardLabel).
-			Bold(true)
-
-		detailsValueStyle = lipgloss.NewStyle().
-			Foreground(currentTheme.DashboardValue).
-			Bold(true)
-
-		detailsWarningStyle = lipgloss.NewStyle().
-			Foreground(currentTheme.DashboardWarning).
-			Bold(true)
-
-		detailsDescStyle = lipgloss.NewStyle().
-			Foreground(currentTheme.DashboardDesc)
 	}
 }
 
@@ -438,18 +410,11 @@ func getSourceColors() map[string]lipgloss.Color {
 // Styles - initialized with theme colors
 var (
 	defaultBorderColor = currentTheme.BorderColor
-	selectedColor      = currentTheme.SelectedColor
 
 	// Mode-specific colors for active view highlighting
 	modeColors = getModeColors()
 
 	sourceColors = getSourceColors()
-
-	// Base styles (will be customized per mode in View)
-	baseTitleStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(currentTheme.TitleColor).
-			Padding(0, 1)
 
 	baseBorderStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder())
@@ -457,13 +422,6 @@ var (
 	selectedStyle = lipgloss.NewStyle().
 			Bold(true).
 			Foreground(currentTheme.SelectedColor)
-
-	normalStyle = lipgloss.NewStyle().
-			Foreground(currentTheme.TextColor)
-
-	packageDetailsStyle = lipgloss.NewStyle().
-				Foreground(currentTheme.TextColor).
-				Padding(1)
 
 	statusStyle = lipgloss.NewStyle().
 			Foreground(currentTheme.SubtleColor)
@@ -479,21 +437,6 @@ var (
 	matchHighlightStyle = lipgloss.NewStyle().
 				Foreground(currentTheme.HighlightColor).
 				Bold(true)
-
-	detailsLabelStyle = lipgloss.NewStyle().
-				Foreground(currentTheme.DashboardLabel).
-				Bold(true)
-
-	detailsValueStyle = lipgloss.NewStyle().
-				Foreground(currentTheme.DashboardValue).
-				Bold(true)
-
-	detailsWarningStyle = lipgloss.NewStyle().
-				Foreground(currentTheme.DashboardWarning).
-				Bold(true)
-
-	detailsDescStyle = lipgloss.NewStyle().
-				Foreground(currentTheme.DashboardDesc)
 )
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -505,34 +448,14 @@ func styleWithWidth(width int) lipgloss.Style {
 	return lipgloss.NewStyle().Width(width)
 }
 
-// styleWithWidthAlign returns a style with specified width and alignment.
-func styleWithWidthAlign(width int, align lipgloss.Position) lipgloss.Style {
-	return lipgloss.NewStyle().Width(width).Align(align)
-}
-
 // styleWithForeground returns a style with the specified foreground color.
 func styleWithForeground(color lipgloss.Color) lipgloss.Style {
 	return lipgloss.NewStyle().Foreground(color)
 }
 
-// styleWithBackground returns a style with the specified background color.
-func styleWithBackground(color lipgloss.Color) lipgloss.Style {
-	return lipgloss.NewStyle().Background(color)
-}
-
-// styleWithColors returns a style with both foreground and background colors.
-func styleWithColors(fg, bg lipgloss.Color) lipgloss.Style {
-	return lipgloss.NewStyle().Foreground(fg).Background(bg)
-}
-
 // styleBoldWithForeground returns a bold style with foreground color.
 func styleBoldWithForeground(color lipgloss.Color) lipgloss.Style {
 	return lipgloss.NewStyle().Bold(true).Foreground(color)
-}
-
-// styleDim returns a style with dimmed (subtle) foreground color.
-func styleDim() lipgloss.Style {
-	return lipgloss.NewStyle().Foreground(currentTheme.SubtleColor)
 }
 
 // styleItalicDim returns an italic style with dimmed foreground color.
@@ -546,13 +469,10 @@ func styleItalicDim() lipgloss.Style {
 
 var (
 	// UI Colors
-	colorDimGray     = lipgloss.Color("236")
-	colorLightGray   = lipgloss.Color("240")
-	colorMediumGray  = lipgloss.Color("241")
-	colorTextGray    = lipgloss.Color("244")
-	colorBrightGray  = lipgloss.Color("246")
-	colorWhite       = lipgloss.Color("252")
-	colorBrightWhite = lipgloss.Color("255")
+	colorDimGray    = lipgloss.Color("236")
+	colorLightGray  = lipgloss.Color("240")
+	colorMediumGray = lipgloss.Color("241")
+	colorWhite      = lipgloss.Color("252")
 
 	// Semantic Colors
 	colorRed     = lipgloss.Color("196")

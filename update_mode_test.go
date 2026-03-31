@@ -10,35 +10,35 @@ func TestUpdateNavigation(t *testing.T) {
 	m := initialModel(modeInstall, DefaultConfig())
 	m.filtered = []Package{{Name: "pkg1"}, {Name: "pkg2"}, {Name: "pkg3"}}
 	m.loading = false
-	m.selectedIndex = 0
+	m.selectedIndex = 1 // Start in the middle so we can go both directions
 
-	// In this app, "up" (k) increases index, "down" (j) decreases index
-	// Test up navigation
+	// Up/k decreases index, Down/j increases index (standard navigation)
+	// Test up navigation (should decrease index)
 	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyUp})
 	m = newModel.(*model)
-	if m.selectedIndex != 1 {
-		t.Errorf("selectedIndex = %d, want 1 after Up", m.selectedIndex)
+	if m.selectedIndex != 0 {
+		t.Errorf("selectedIndex = %d, want 0 after Up", m.selectedIndex)
 	}
 
-	// Test down navigation
+	// Test down navigation (should increase index)
 	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyDown})
 	m = newModel.(*model)
-	if m.selectedIndex != 0 {
-		t.Errorf("selectedIndex = %d, want 0 after Down", m.selectedIndex)
+	if m.selectedIndex != 1 {
+		t.Errorf("selectedIndex = %d, want 1 after Down", m.selectedIndex)
 	}
 
-	// Test 'k' navigation (up)
+	// Test 'k' navigation (up - should decrease index)
 	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("k")})
 	m = newModel.(*model)
-	if m.selectedIndex != 1 {
-		t.Errorf("selectedIndex = %d, want 1 after 'k'", m.selectedIndex)
+	if m.selectedIndex != 0 {
+		t.Errorf("selectedIndex = %d, want 0 after 'k'", m.selectedIndex)
 	}
 
-	// Test 'j' navigation (down)
+	// Test 'j' navigation (down - should increase index)
 	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("j")})
 	m = newModel.(*model)
-	if m.selectedIndex != 0 {
-		t.Errorf("selectedIndex = %d, want 0 after 'j'", m.selectedIndex)
+	if m.selectedIndex != 1 {
+		t.Errorf("selectedIndex = %d, want 1 after 'j'", m.selectedIndex)
 	}
 }
 

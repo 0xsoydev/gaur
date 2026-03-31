@@ -150,8 +150,7 @@ func TestSpinnerIntegration(t *testing.T) {
 
 	// Test that spinner tick updates the model's spinner
 	tick := spinner.TickMsg{Time: time.Now()}
-	resModel, cmd := m.Update(tick)
-	m = resModel.(*model)
+	_, cmd := m.Update(tick)
 
 	if cmd == nil {
 		t.Error("Spinner tick should return a new tick command")
