@@ -33,6 +33,11 @@ func (m *model) initSettings() {
 			ConfigKey: "ui.border_type",
 			Options:   []string{"rounded", "normal", "thick", "double"},
 		},
+		{
+			Label:     "Log Level",
+			ConfigKey: "logging.level",
+			Options:   []string{"off", "error", "warn", "info", "debug", "verbose"},
+		},
 	}
 
 	// Set active indices based on current config
@@ -47,6 +52,8 @@ func (m *model) initSettings() {
 			currentVal = m.config.Startup.DefaultMode
 		case "ui.border_type":
 			currentVal = m.config.UI.BorderType
+		case "logging.level":
+			currentVal = m.config.Logging.Level
 		}
 
 		for idx, opt := range item.Options {
@@ -78,6 +85,11 @@ func (m *model) updateConfigFromSettings() {
 		m.config.Startup.DefaultMode = val
 	case "ui.border_type":
 		m.config.UI.BorderType = val
+	case "logging.level":
+		m.config.Logging.Level = val
+		// Instant update: apply log level
+		SetLogLevel(LogLevelFromString(val))
+		LogInfo("SETTINGS", "Log level changed to %s", val)
 	}
 
 	// We no longer save instantly to disk to allow real-time theme preview without I/O churn

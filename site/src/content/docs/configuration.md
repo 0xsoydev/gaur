@@ -15,6 +15,7 @@ Press `,` anywhere in gaur to open the settings overlay. From there you can adju
 - **Theme:** Preview and apply color schemes instantly
 - **Default View:** Choose what gaur opens to (`dashboard`, `install`, `update`, `remove`)
 - **Border Style:** Pick your aesthetic (`rounded`, `normal`, `thick`, `double`)
+- **Log Level:** Control logging verbosity (`off`, `error`, `warn`, `info`, `debug`, `verbose`)
 
 Changes apply immediately and are saved automatically. No restart needed.
 
@@ -83,6 +84,26 @@ debounce_ms = 150
 cache_dir = ""
 ```
 
+### logging
+
+Control diagnostic logging:
+
+```toml
+[logging]
+# Log level: "off", "error", "warn", "info", "debug", "verbose"
+level = "info"
+```
+
+Log files are stored at `~/.config/gaur/gaur-YYYY-MM-DD.log` with daily rotation.
+
+**Log Levels:**
+- `off` - No logging
+- `error` - Only errors
+- `warn` - Warnings and errors
+- `info` - General operations (default)
+- `debug` - Detailed diagnostics
+- `verbose` - Everything including key presses
+
 ## custom keybindings
 
 Remap any key to fit your muscle memory:
@@ -144,7 +165,7 @@ gaur follows XDG conventions:
 | Path | Purpose |
 |------|---------|
 | `~/.config/gaur/config.toml` | Configuration file |
-| `~/.config/gaur/gaur.log` | Error log |
+| `~/.config/gaur/gaur-YYYY-MM-DD.log` | Daily log file |
 | `/var/cache/pacman/pkg` | Pacman cache (system) |
 | `~/.cache/paru/clone` | Paru build cache |
 | `~/.cache/yay` | Yay build cache |

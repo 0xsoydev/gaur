@@ -93,8 +93,35 @@ When updates are available, you have two options:
 |-----|--------|
 | `Enter` / `y` / `a` | Full system upgrade |
 | `s` | Switch to selective mode |
+| `m` | Open mirror configuration |
 
 **Heads up:** Selective updates can break dependencies. Arch recommends full system upgrades. Proceed with caution.
+
+## mirror management
+
+Press `m` from the update view to configure package mirrors using [reflector](https://wiki.archlinux.org/title/Reflector).
+
+### mirror configuration
+
+| Option | Description |
+|--------|-------------|
+| **Sort by** | Rate (speed), Age, Score, Country, or Delay |
+| **Country** | Filter by country or use Worldwide |
+| **Latest** | Number of recently synced mirrors (5-100) |
+| **Protocol** | HTTPS, HTTP, or Both |
+
+### mirror overlay controls
+
+| Key | Action |
+|-----|--------|
+| `j` / `k` | Navigate options |
+| `h` / `l` | Change selected value |
+| `Enter` | Execute mirror update |
+| `Esc` | Close without changes |
+
+**Requires:** The `reflector` package must be installed (`pacman -S reflector`).
+
+Mirror updates write to `/etc/pacman.d/mirrorlist` and require sudo.
 
 ## dashboard shortcuts
 

@@ -17,6 +17,7 @@ type Config struct {
 	Commands CommandConfig  `toml:"commands"`
 	Advanced AdvancedConfig `toml:"advanced"`
 	Keys     KeyConfig      `toml:"keys"`
+	Logging  LogConfig      `toml:"logging"`
 }
 
 type StartupConfig struct {
@@ -38,6 +39,10 @@ type CommandConfig struct {
 type AdvancedConfig struct {
 	DebounceMs int    `toml:"debounce_ms"`
 	CacheDir   string `toml:"cache_dir"`
+}
+
+type LogConfig struct {
+	Level string `toml:"level"` // off, error, warn, info, debug, verbose
 }
 
 type KeyConfig struct {

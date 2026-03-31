@@ -120,42 +120,54 @@ func checkDependencies() error {
 
 // executeInstallInTerminal runs the AUR helper interactively using tea.ExecProcess
 func executeInstallInTerminal(m *model, packages []string) tea.Cmd {
+	LogCommand("install", packages)
 
 	validNames, _ := sanitizePackageNames(packages)
 	if len(validNames) == 0 {
+		LogError("CMD", "Install aborted: no valid package names from %v", packages)
 		return func() tea.Msg {
 			return execCompleteMsg{operation: confirmInstall, packages: packages, err: fmt.Errorf("no valid package names")}
 		}
 	}
 
 	args := BuildAURCommand(&m.config, "install", validNames...)
+	LogDebug("CMD", "Executing: %s", strings.Join(args, " "))
 
 	return runner.Interactive(func(err error) tea.Msg {
+		LogCommandResult("install", err == nil, err)
 		return execCompleteMsg{operation: confirmInstall, packages: validNames, err: err}
 	}, args[0], args[1:]...)
 }
 
 // executeRemoveInTerminal runs the AUR helper interactively using tea.ExecProcess
 func executeRemoveInTerminal(m *model, packages []string) tea.Cmd {
+	LogCommand("remove", packages)
 
 	validNames, _ := sanitizePackageNames(packages)
 	if len(validNames) == 0 {
+		LogError("CMD", "Remove aborted: no valid package names from %v", packages)
 		return func() tea.Msg {
 			return execCompleteMsg{operation: confirmRemove, packages: packages, err: fmt.Errorf("no valid package names")}
 		}
 	}
 
 	args := BuildAURCommand(&m.config, "remove", validNames...)
+	LogDebug("CMD", "Executing: %s", strings.Join(args, " "))
 
 	return runner.Interactive(func(err error) tea.Msg {
+		LogCommandResult("remove", err == nil, err)
 		return execCompleteMsg{operation: confirmRemove, packages: validNames, err: err}
 	}, args[0], args[1:]...)
 }
 
 // executeUpdateInTerminal runs the AUR helper interactively using tea.ExecProcess
 func executeUpdateInTerminal(m *model) tea.Cmd {
+	LogInfo("CMD", "Starting full system update")
 	args := BuildAURCommand(&m.config, "full-update")
+	LogDebug("CMD", "Executing: %s", strings.Join(args, " "))
+
 	return runner.Interactive(func(err error) tea.Msg {
+		LogCommandResult("full-update", err == nil, err)
 		return execCompleteMsg{operation: confirmUpdate, err: err}
 	}, args[0], args[1:]...)
 }
@@ -163,6 +175,8 @@ func executeUpdateInTerminal(m *model) tea.Cmd {
 // executeCleanCache cleans both pacman and AUR helper caches.
 // It executes commands directly instead of using a shell string to prevent injection.
 func executeCleanCache(m *model, op confirmationType, keep int, removed bool) tea.Cmd {
+	LogCacheOperation(fmt.Sprintf("keep=%d, removed=%v", keep, removed), "calculating")
+
 	cacheTool := m.config.Commands.CacheTool
 	if cacheTool == "" {
 		cacheTool = "paccache"
@@ -324,8 +338,12 @@ func executeSelectiveUpdateInTerminal(m *model, packages []string) tea.Cmd {
 
 // syncRepositoriesInTerminal runs the AUR helper interactively to sync databases
 func syncRepositoriesInTerminal(m *model) tea.Cmd {
+	LogInfo("CMD", "Syncing package databases")
 	args := BuildAURCommand(&m.config, "sync")
+	LogDebug("CMD", "Executing: %s", strings.Join(args, " "))
+
 	return runner.Interactive(func(err error) tea.Msg {
+		LogCommandResult("sync", err == nil, err)
 		return syncRepositoriesMsg{err: err}
 	}, args[0], args[1:]...)
 }

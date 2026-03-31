@@ -33,6 +33,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		// 2. Overlays & Panel Intercepts
+		if m.showMirrorOverlay {
+			return m.handleMirrorOverlayKey(msg)
+		}
 		if m.mode == modeSettings {
 			switch {
 			case key.Matches(msg, m.keys.Cancel) || key.Matches(msg, m.keys.Settings):
@@ -211,6 +214,14 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, getPackageDetails(m, m.filtered[0])
 				}
 			}
+		case msg.String() == "m" || msg.String() == "M":
+			if m.mode == modeUpdate && !m.loading {
+				m.showMirrorOverlay = true
+				m.mirrorSelectedItem = mirrorItemSortBy
+				m.mirrorError = ""
+				LogDebug("MIRROR", "Mirror overlay opened")
+				return m, nil
+			}
 		case key.Matches(msg, m.keys.Confirm):
 			return m.handleActionTrigger()
 		case msg.String() == "y" || msg.String() == "Y" || msg.String() == "a":
@@ -386,6 +397,21 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case execCompleteMsg:
 		return m.handleExecComplete(msg)
+
+	case mirrorUpdateMsg:
+		m.mirrorUpdating = false
+		if msg.err != nil {
+			m.mirrorError = msg.err.Error()
+			LogError("MIRROR", "Mirror update failed: %v", msg.err)
+		} else {
+			m.showMirrorOverlay = false
+			m.mirrorError = ""
+			m.statusMessage = "Mirrors updated successfully"
+			LogInfo("MIRROR", "Mirror update completed successfully")
+			// Refresh updates after mirror change
+			m.loading = true
+			return m, syncRepositoriesInTerminal(m)
+		}
 	}
 
 	return m, tea.Batch(cmds...)
@@ -868,5 +894,88 @@ func (m *model) recalculateTextInputWidth() {
 		m.textInput.Width = max(20, m.width-20)
 	} else {
 		m.textInput.Width = max(20, m.width-6)
+	}
+}
+
+// handleMirrorOverlayKey handles keyboard input when the mirror overlay is active
+func (m *model) handleMirrorOverlayKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if m.mirrorUpdating {
+		// Don't allow interaction while updating
+		return m, nil
+	}
+
+	switch {
+	case key.Matches(msg, m.keys.Cancel):
+		m.showMirrorOverlay = false
+		m.mirrorError = ""
+		LogDebug("MIRROR", "Mirror overlay closed")
+		return m, nil
+
+	case msg.String() == "up" || msg.String() == "k":
+		if m.mirrorSelectedItem > 0 {
+			m.mirrorSelectedItem--
+		}
+
+	case msg.String() == "down" || msg.String() == "j":
+		if m.mirrorSelectedItem < mirrorItemExecute {
+			m.mirrorSelectedItem++
+		}
+
+	case msg.String() == "left" || msg.String() == "h":
+		m.adjustMirrorOption(-1)
+
+	case msg.String() == "right" || msg.String() == "l":
+		m.adjustMirrorOption(1)
+
+	case key.Matches(msg, m.keys.Confirm):
+		if m.mirrorSelectedItem == mirrorItemExecute {
+			if !checkReflectorInstalled() {
+				m.mirrorError = "reflector is not installed"
+				return m, nil
+			}
+			m.mirrorUpdating = true
+			m.mirrorError = ""
+			LogInfo("MIRROR", "Executing mirror update")
+			return m, executeMirrorUpdate(m.mirrorConfig)
+		}
+	}
+
+	return m, nil
+}
+
+// adjustMirrorOption adjusts the currently selected mirror option by delta
+func (m *model) adjustMirrorOption(delta int) {
+	switch m.mirrorSelectedItem {
+	case mirrorItemSortBy:
+		m.mirrorConfig.SortBy += delta
+		if m.mirrorConfig.SortBy < 0 {
+			m.mirrorConfig.SortBy = len(MirrorSortOptions) - 1
+		} else if m.mirrorConfig.SortBy >= len(MirrorSortOptions) {
+			m.mirrorConfig.SortBy = 0
+		}
+
+	case mirrorItemCountry:
+		m.mirrorConfig.CountryIndex += delta
+		if m.mirrorConfig.CountryIndex < 0 {
+			m.mirrorConfig.CountryIndex = len(MirrorCountries) - 1
+		} else if m.mirrorConfig.CountryIndex >= len(MirrorCountries) {
+			m.mirrorConfig.CountryIndex = 0
+		}
+
+	case mirrorItemLatest:
+		m.mirrorConfig.Latest += delta * 5 // Increment by 5
+		if m.mirrorConfig.Latest < 5 {
+			m.mirrorConfig.Latest = 5
+		} else if m.mirrorConfig.Latest > 100 {
+			m.mirrorConfig.Latest = 100
+		}
+
+	case mirrorItemProtocol:
+		m.mirrorConfig.Protocol += delta
+		if m.mirrorConfig.Protocol < 0 {
+			m.mirrorConfig.Protocol = len(MirrorProtocols) - 1
+		} else if m.mirrorConfig.Protocol >= len(MirrorProtocols) {
+			m.mirrorConfig.Protocol = 0
+		}
 	}
 }

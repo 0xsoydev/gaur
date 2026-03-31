@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,7 +12,6 @@ import (
 const (
 	defaultConfigDir      = "gaur"
 	defaultConfigFile     = "config.toml"
-	defaultLogFile        = "gaur.log"
 	textInputCharLimit    = 100
 	textInputDefaultWidth = 50
 )
@@ -50,6 +48,9 @@ func DefaultConfig() Config {
 			Settings:      ",",
 			Confirm:       "enter",
 			Cancel:        "esc",
+		},
+		Logging: LogConfig{
+			Level: "info",
 		},
 	}
 }
@@ -88,18 +89,13 @@ func LoadConfig() (Config, error) {
 
 	var cfg Config
 	if err := toml.Unmarshal(data, &cfg); err != nil {
-		// Log error and fallback
-		logFile := filepath.Join(fullDir, defaultLogFile)
-		f, _ := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
-		if f != nil {
-			defer f.Close()
-			logger := log.New(f, "CONFIG ERROR: ", log.LstdFlags)
-			logger.Println(err)
-		}
+		// Log to file if possible (logger may not be initialized yet)
+		LogError("CONFIG", "Failed to parse config file: %v", err)
 		return DefaultConfig(), nil
 	}
 
 	ValidateConfig(&cfg)
+	LogDebug("CONFIG", "Configuration loaded from %s", configPath)
 	return cfg, nil
 }
 
@@ -107,7 +103,7 @@ func LoadConfig() (Config, error) {
 func ValidateConfig(c *Config) {
 	helper := strings.ToLower(strings.TrimSpace(c.Commands.AurHelper))
 	if helper == "" || (helper != "paru" && helper != "yay") {
-		log.Printf("Warning: unsupported AUR helper '%s'. Resetting to 'paru'.", c.Commands.AurHelper)
+		LogWarn("CONFIG", "Unsupported AUR helper '%s'. Resetting to 'paru'.", c.Commands.AurHelper)
 		c.Commands.AurHelper = "paru"
 	} else {
 		c.Commands.AurHelper = helper
@@ -116,7 +112,7 @@ func ValidateConfig(c *Config) {
 	// Validate CacheTool - only allow known safe tools
 	tool := strings.TrimSpace(c.Commands.CacheTool)
 	if tool != "" && tool != "paccache" {
-		log.Printf("Warning: unsupported cache tool '%s'. Resetting to 'paccache'.", c.Commands.CacheTool)
+		LogWarn("CONFIG", "Unsupported cache tool '%s'. Resetting to 'paccache'.", c.Commands.CacheTool)
 		c.Commands.CacheTool = "paccache"
 	} else {
 		c.Commands.CacheTool = tool // Assign trimmed value
@@ -128,8 +124,21 @@ func ValidateConfig(c *Config) {
 		if !filepath.IsAbs(c.Advanced.CacheDir) {
 			// If it's relative, we could make it absolute or reset it.
 			// For security, let's just reset it to default if it's not absolute or looks suspicious.
+			LogWarn("CONFIG", "Cache directory must be absolute path. Resetting to default.")
 			c.Advanced.CacheDir = ""
 		}
+	}
+
+	// Validate log level
+	validLevels := map[string]bool{"off": true, "error": true, "warn": true, "info": true, "debug": true, "verbose": true}
+	level := strings.ToLower(strings.TrimSpace(c.Logging.Level))
+	if level == "" {
+		c.Logging.Level = "info"
+	} else if !validLevels[level] {
+		LogWarn("CONFIG", "Unknown log level '%s'. Resetting to 'info'.", c.Logging.Level)
+		c.Logging.Level = "info"
+	} else {
+		c.Logging.Level = level
 	}
 }
 

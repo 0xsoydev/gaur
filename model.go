@@ -69,6 +69,12 @@ type model struct {
 	settingsIndex  int
 	previousMode   viewMode
 	originalHelper string // Track AUR helper change for refresh
+	// Mirror overlay state
+	showMirrorOverlay  bool
+	mirrorConfig       MirrorConfig
+	mirrorSelectedItem MirrorOverlayItem
+	mirrorUpdating     bool
+	mirrorError        string
 }
 
 func initialModel(initialMode viewMode, cfg Config) *model {
@@ -95,6 +101,7 @@ func initialModel(initialMode viewMode, cfg Config) *model {
 		mode:           initialMode,
 		loading:        true,
 		spinner:        s,
+		mirrorConfig:   DefaultMirrorConfig(),
 	}
 
 	m.updatePlaceholder()

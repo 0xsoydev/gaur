@@ -119,6 +119,12 @@ func (m *model) View() string {
 		content = m.overlaySettings(content, settingsOverlay, innerWidth, innerHeight)
 	}
 
+	// If mirror overlay is active, overlay it on top
+	if m.showMirrorOverlay {
+		mirrorOverlay := m.renderMirrorOverlay(innerWidth, innerHeight)
+		content = overlayOnBase(content, mirrorOverlay, innerWidth, innerHeight)
+	}
+
 	return content
 }
 
@@ -1365,6 +1371,134 @@ func (m *model) renderErrorOverlay(innerWidth, innerHeight int) string {
 	return SafeJoinVertical(innerWidth, innerHeight, "", []string{lipgloss.Place(innerWidth, innerHeight, lipgloss.Center, lipgloss.Center, dialog)}, "")
 }
 
+// renderMirrorOverlay renders the mirror configuration overlay
+func (m *model) renderMirrorOverlay(innerWidth, innerHeight int) string {
+	overlayWidth := 60
+	if overlayWidth > innerWidth-4 {
+		overlayWidth = innerWidth - 4
+	}
+
+	activeColor := lipgloss.Color("135") // Purple for mirror feature
+	dimStyle := styleWithForeground(colorLightGray)
+	activeStyle := styleBoldWithForeground(activeColor)
+	labelStyle := lipgloss.NewStyle().Width(12).Foreground(colorLightGray)
+
+	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(activeColor).Width(overlayWidth - 4).Align(lipgloss.Center)
+
+	var content []string
+
+	// Title
+	content = append(content, titleStyle.Render("Mirror Configuration"))
+	content = append(content, "")
+
+	// Reflector check
+	if !checkReflectorInstalled() {
+		errorStyle := lipgloss.NewStyle().Foreground(colorRed).Width(overlayWidth - 4).Align(lipgloss.Center)
+		content = append(content, errorStyle.Render("reflector is not installed!"))
+		content = append(content, "")
+		content = append(content, dimStyle.Render("Install with: sudo pacman -S reflector"))
+		content = append(content, "")
+		content = append(content, dimStyle.Render("Press [esc] to close"))
+	} else {
+		// Sort By option
+		sortStyle := dimStyle
+		if m.mirrorSelectedItem == mirrorItemSortBy {
+			sortStyle = activeStyle
+		}
+		sortValue := MirrorSortOptions[m.mirrorConfig.SortBy].Name
+		sortLine := fmt.Sprintf("%s %s %s %s",
+			labelStyle.Render("Sort by:"),
+			dimStyle.Render("<"),
+			sortStyle.Render(sortValue),
+			dimStyle.Render(">"))
+		content = append(content, sortLine)
+
+		// Country option
+		countryStyle := dimStyle
+		if m.mirrorSelectedItem == mirrorItemCountry {
+			countryStyle = activeStyle
+		}
+		countryValue := MirrorCountries[m.mirrorConfig.CountryIndex].Name
+		countryLine := fmt.Sprintf("%s %s %s %s",
+			labelStyle.Render("Country:"),
+			dimStyle.Render("<"),
+			countryStyle.Render(countryValue),
+			dimStyle.Render(">"))
+		content = append(content, countryLine)
+
+		// Latest count option
+		latestStyle := dimStyle
+		if m.mirrorSelectedItem == mirrorItemLatest {
+			latestStyle = activeStyle
+		}
+		latestLine := fmt.Sprintf("%s %s %s %s",
+			labelStyle.Render("Latest:"),
+			dimStyle.Render("<"),
+			latestStyle.Render(fmt.Sprintf("%d", m.mirrorConfig.Latest)),
+			dimStyle.Render(">"))
+		content = append(content, latestLine)
+
+		// Protocol option
+		protocolStyle := dimStyle
+		if m.mirrorSelectedItem == mirrorItemProtocol {
+			protocolStyle = activeStyle
+		}
+		protocolValue := MirrorProtocols[m.mirrorConfig.Protocol].Name
+		protocolLine := fmt.Sprintf("%s %s %s %s",
+			labelStyle.Render("Protocol:"),
+			dimStyle.Render("<"),
+			protocolStyle.Render(protocolValue),
+			dimStyle.Render(">"))
+		content = append(content, protocolLine)
+
+		content = append(content, "")
+
+		// Command preview
+		previewStyle := lipgloss.NewStyle().Foreground(colorDimGray).Width(overlayWidth - 6)
+		preview := GetReflectorCommandPreview(m.mirrorConfig)
+		content = append(content, previewStyle.Render(preview))
+
+		content = append(content, "")
+
+		// Execute button
+		executeStyle := dimStyle
+		if m.mirrorSelectedItem == mirrorItemExecute {
+			executeStyle = lipgloss.NewStyle().Bold(true).Background(activeColor).Foreground(lipgloss.Color("255"))
+		}
+
+		if m.mirrorUpdating {
+			content = append(content, lipgloss.PlaceHorizontal(overlayWidth-4, lipgloss.Center,
+				dimStyle.Render("Updating mirrors...")))
+		} else {
+			content = append(content, lipgloss.PlaceHorizontal(overlayWidth-4, lipgloss.Center,
+				executeStyle.Padding(0, 2).Render("Update Mirrors")))
+		}
+
+		// Error message if any
+		if m.mirrorError != "" {
+			content = append(content, "")
+			errorStyle := lipgloss.NewStyle().Foreground(colorRed).Width(overlayWidth - 4).Align(lipgloss.Center)
+			content = append(content, errorStyle.Render(m.mirrorError))
+		}
+
+		content = append(content, "")
+		hintStyle := lipgloss.NewStyle().Foreground(colorDimGray).Width(overlayWidth - 4).Align(lipgloss.Center)
+		content = append(content, hintStyle.Render("[j/k] navigate  [h/l] change  [enter] execute  [esc] close"))
+	}
+
+	dialogContent := strings.Join(content, "\n")
+
+	dialogStyle := lipgloss.NewStyle().
+		Border(m.getBorderStyle()).
+		BorderForeground(activeColor).
+		Padding(1, 2).
+		Width(overlayWidth)
+
+	dialog := dialogStyle.Render(dialogContent)
+
+	return lipgloss.Place(innerWidth, innerHeight, lipgloss.Center, lipgloss.Center, dialog)
+}
+
 // renderSimpleUpdateView renders the simple overview page for pending updates
 func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight int, activeColor lipgloss.Color) string {
 	borderStyle := baseBorderStyle.BorderForeground(activeColor)
@@ -1462,7 +1596,7 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 
 	// Build buttons separately to pin them to the bottom right
 	var buttonsContent string
-	if !m.loading && len(m.pendingUpdates) > 0 {
+	if !m.loading {
 		buttonStyle := lipgloss.NewStyle().
 			Background(lipgloss.Color("238")).
 			Foreground(lipgloss.Color("255")).
@@ -1475,13 +1609,23 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 			Padding(0, 1).
 			Bold(true)
 
-		btnUpdate := buttonStyle.Render(renderKeyHint("update", m.keys.Confirm, buttonStyle))
-		btnSelective := buttonStyleRed.Render(renderKeyHint("select", m.keys.Selective, buttonStyleRed))
+		buttonStylePurple := lipgloss.NewStyle().
+			Background(lipgloss.Color("135")).
+			Foreground(lipgloss.Color("255")).
+			Padding(0, 1).
+			Bold(true)
 
-		buttons := btnUpdate + "   " + btnSelective
+		// Mirror button is always shown (even with no updates)
+		btnMirror := buttonStylePurple.Render("[m] mirrors")
 
-		// Total inner width is innerWidth - 2 (borders) - 2 (padding) = innerWidth - 4
-		buttonsContent = lipgloss.PlaceHorizontal(innerWidth-4, lipgloss.Right, buttons)
+		if len(m.pendingUpdates) > 0 {
+			btnUpdate := buttonStyle.Render(renderKeyHint("update", m.keys.Confirm, buttonStyle))
+			btnSelective := buttonStyleRed.Render(renderKeyHint("select", m.keys.Selective, buttonStyleRed))
+			buttons := btnUpdate + "   " + btnSelective + "   " + btnMirror
+			buttonsContent = lipgloss.PlaceHorizontal(innerWidth-4, lipgloss.Right, buttons)
+		} else {
+			buttonsContent = lipgloss.PlaceHorizontal(innerWidth-4, lipgloss.Right, btnMirror)
+		}
 	}
 
 	// Total available inner height is panelHeight - 2
