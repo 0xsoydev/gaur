@@ -577,6 +577,21 @@ func substringAnsi(s string, skipWidth int) string {
 	return result.String()
 }
 
+// renderCenteredFooter creates a footer line centered within the given width.
+// It takes the content to center and truncates if necessary.
+func renderCenteredFooter(content string, width int) string {
+	contentWidth := lipgloss.Width(content)
+	padding := (width - contentWidth) / 2
+	if padding < 0 {
+		padding = 0
+	}
+	footer := strings.Repeat(" ", padding) + content
+	if lipgloss.Width(footer) > width {
+		footer = truncateWithAnsi(footer, width)
+	}
+	return footer
+}
+
 // GetAURCacheDir resolves the AUR build/clone directory based on the helper or override.
 func GetAURCacheDir(c *Config) (string, error) {
 	if c.Advanced.CacheDir != "" {
