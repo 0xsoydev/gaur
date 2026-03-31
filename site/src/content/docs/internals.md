@@ -1,31 +1,42 @@
 ---
 title: "internals"
-description: "How gaur works under the hood"
+description: "A look under the hood"
 ---
 
-# project internals
+# internals
 
-This section provides a technical deep dive into how gaur operates, its architecture, and the design decisions that power its interactive experience.
+Curious how gaur works? Here's the technical breakdown.
 
-## Architecture Overview
+## architecture
 
-gaur is built using a modular architecture that separates the UI logic from the system package management operations.
+gaur follows a clean separation between UI and system operations. The codebase is modular and readable.
 
-### Component Breakdown
+### core components
 
-1.  **The Model (`model.go`)**: The central state of the application. It holds configuration, package lists, search results, and UI state (like selected index and marked packages).
-2.  **The View (`view.go`, `styles.go`)**: Responsible for rendering the TUI using the [Lip Gloss](https://github.com/charmbracelet/lipgloss) library. It calculates layout dimensions and applies themes.
-3.  **The Commands (`commands.go`)**: Handles interaction with the host system. This includes executing `pacman`, the AUR helper (`paru`/`yay`), and `fzf` for fuzzy searching.
-4.  **The Dashboard (`feature_dashboard.go`)**: A specialized module that gathers system statistics, calculates disk usage, and identifies cache hogs.
+1. **Model (`model.go`):** Central state management. Holds config, package lists, search results, selected items, and UI state.
 
-## Working with AUR Helpers
+2. **View (`view.go`, `styles.go`):** Renders the TUI using [Lip Gloss](https://github.com/charmbracelet/lipgloss). Handles layout calculations and theme application.
 
-gaur doesn't reinvent package management. Instead, it acts as a high-fidelity wrapper around established tools:
+3. **Commands (`commands.go`):** System interaction layer. Executes `pacman`, AUR helpers (`paru`/`yay`), and `fzf` for searching.
 
-- **Searching**: When you type in Install mode, gaur triggers a debounced search that queries the local `pacman` database and the AUR (via the configured helper).
-- **Fuzzy Matching**: Results are piped through `fzf` for lightning-fast, relevance-ranked matching.
-- **Hand-off**: For operations that require user interaction (like password entry or conflict resolution), gaur uses `tea.ExecProcess` to hand control over to the AUR helper in the terminal, ensuring full interactivity and safety.
+4. **Dashboard (`feature_dashboard.go`):** Gathers system stats: disk usage, cache size, orphan counts, repo distribution.
 
-## Real-time Refresh Logic
+## aur helper integration
 
-After any operation that modifies the system state (install, remove, update), gaur triggers a unified refresh. This re-scans the system to update dashboard stats, repo distributions, and package lists instantly, ensuring the UI always reflects the current state of your Arch Linux installation.
+gaur doesn't replace your package manager. It wraps it.
+
+- **Search:** When you type in install mode, gaur queries the local `pacman` database and the AUR through your configured helper. Results are debounced to avoid hammering the system.
+
+- **Fuzzy matching:** Search results pipe through `fzf` for fast, relevance-ranked filtering.
+
+- **Handoff:** Operations that need user input (password prompts, conflict resolution) hand control to the AUR helper via `tea.ExecProcess`. This keeps the terminal interactive and safe.
+
+## real-time state sync
+
+After every install, remove, or update operation, gaur runs a full refresh. It re-scans the system to update:
+
+- Dashboard statistics
+- Repository distribution charts
+- Package lists and counts
+
+The UI always reflects the actual state of your Arch installation. No stale data, no manual refreshes.
