@@ -495,3 +495,72 @@ var (
 	detailsDescStyle = lipgloss.NewStyle().
 				Foreground(currentTheme.DashboardDesc)
 )
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Reusable Style Helpers - avoid inline lipgloss.NewStyle() calls
+// ══════════════════════════════════════════════════════════════════════════════
+
+// styleWithWidth returns a style with the specified width.
+func styleWithWidth(width int) lipgloss.Style {
+	return lipgloss.NewStyle().Width(width)
+}
+
+// styleWithWidthAlign returns a style with specified width and alignment.
+func styleWithWidthAlign(width int, align lipgloss.Position) lipgloss.Style {
+	return lipgloss.NewStyle().Width(width).Align(align)
+}
+
+// styleWithForeground returns a style with the specified foreground color.
+func styleWithForeground(color lipgloss.Color) lipgloss.Style {
+	return lipgloss.NewStyle().Foreground(color)
+}
+
+// styleWithBackground returns a style with the specified background color.
+func styleWithBackground(color lipgloss.Color) lipgloss.Style {
+	return lipgloss.NewStyle().Background(color)
+}
+
+// styleWithColors returns a style with both foreground and background colors.
+func styleWithColors(fg, bg lipgloss.Color) lipgloss.Style {
+	return lipgloss.NewStyle().Foreground(fg).Background(bg)
+}
+
+// styleBoldWithForeground returns a bold style with foreground color.
+func styleBoldWithForeground(color lipgloss.Color) lipgloss.Style {
+	return lipgloss.NewStyle().Bold(true).Foreground(color)
+}
+
+// styleDim returns a style with dimmed (subtle) foreground color.
+func styleDim() lipgloss.Style {
+	return lipgloss.NewStyle().Foreground(currentTheme.SubtleColor)
+}
+
+// styleItalicDim returns an italic style with dimmed foreground color.
+func styleItalicDim() lipgloss.Style {
+	return lipgloss.NewStyle().Foreground(currentTheme.SubtleColor).Italic(true)
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Common Color Constants - avoid repeated color string definitions
+// ══════════════════════════════════════════════════════════════════════════════
+
+var (
+	// UI Colors
+	colorDimGray     = lipgloss.Color("236")
+	colorLightGray   = lipgloss.Color("240")
+	colorMediumGray  = lipgloss.Color("241")
+	colorTextGray    = lipgloss.Color("244")
+	colorBrightGray  = lipgloss.Color("246")
+	colorWhite       = lipgloss.Color("252")
+	colorBrightWhite = lipgloss.Color("255")
+
+	// Semantic Colors
+	colorRed     = lipgloss.Color("196")
+	colorOrange  = lipgloss.Color("208")
+	colorYellow  = lipgloss.Color("214")
+	colorGreen   = lipgloss.Color("42")
+	colorCyan    = lipgloss.Color("51")
+	colorBlue    = lipgloss.Color("39")
+	colorPurple  = lipgloss.Color("135")
+	colorMagenta = lipgloss.Color("205")
+)
