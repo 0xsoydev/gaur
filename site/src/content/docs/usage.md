@@ -1,109 +1,109 @@
 ---
 title: "usage"
-description: "How to use gaur to manage packages"
+description: "Master the keyboard shortcuts and workflows"
 ---
 
 # usage
 
-gaur is designed for speed and productivity, with a focus on keyboard-driven interactions. Master its keybindings to navigate and manage packages efficiently.
+gaur is built for speed. Everything happens through the keyboard, no mouse required. Learn these shortcuts and you'll fly through package management.
 
-## Global Keybindings
+## mode switching
 
-These keybindings are available across the main interface:
+Jump between views instantly:
 
-| Key      | Action                                        |
-| -------- | --------------------------------------------- |
-| `i`      | Switch to **Install** mode                    |
-| `d`      | Switch to **Dashboard** mode                  |
-| `r`      | Switch to **Remove** mode                     |
-| `u`      | Switch to **Update** mode / Check for updates |
-| `,`      | Open **Settings** Menu                        |
-| `q`      | Quit                                          |
-| `Ctrl+C` | Force quit                                    |
+| Key      | Action                      |
+| -------- | --------------------------- |
+| `i`      | Install mode                |
+| `r`      | Remove mode                 |
+| `u`      | Update mode                 |
+| `d`      | Dashboard mode              |
+| `,`      | Open settings               |
+| `q`      | Quit                        |
+| `Ctrl+C` | Force quit                  |
 
-## Navigation
+## getting around
 
-Use these keys to move through lists and search for packages:
+Navigate lists and search:
+
+| Key       | Action                     |
+| --------- | -------------------------- |
+| `/`       | Focus search box           |
+| `↑` / `k` | Move up                    |
+| `↓` / `j` | Move down                  |
+| `PgUp`    | Jump 10 items up           |
+| `PgDown`  | Jump 10 items down         |
+| `Esc`     | Clear focus / deselect all |
+
+## working with packages
+
+Install, remove, or mark packages for batch operations:
 
 | Key       | Action                           |
 | --------- | -------------------------------- |
-| `/`       | Focus search input               |
-| `↑` / `k` | Move selection up                |
-| `↓` / `j` | Move selection down              |
-| `PgUp`    | Jump 10 items up                 |
-| `PgDown`  | Jump 10 items down               |
-| `Esc`     | Defocus input / Clear selections |
+| `Tab`/`m` | Mark/unmark for batch processing |
+| `Enter`   | Execute on selected/marked       |
+| `*`       | Toggle selection panel           |
 
-## Package Operations
+## updating
 
-Manage your packages with these actions:
+When updates are available, you have two options:
 
-| Key       | Action                                     |
-| --------- | ------------------------------------------ |
-| `Tab`/`m` | Mark/unmark package for batch operation    |
-| `Enter`   | Install/remove selected or marked packages |
-| `*`       | Toggle selection panel focus               |
+| Key     | Action                        |
+| ------- | ----------------------------- |
+| `Enter` | Full system upgrade           |
+| `s`     | Switch to selective mode      |
 
-## Update Mode
+**Heads up:** Selective updates can break dependencies. Proceed with caution.
 
-When viewing available updates, gaur provides two paths:
+## dashboard shortcuts
 
-| Key     | Action                                         |
-| ------- | ---------------------------------------------- |
-| `Enter` | Proceed with a full system update              |
-| `s`     | Switch to **Selective Update** mode            |
+The dashboard gives you quick access to different package categories:
 
-**Note:** Selective updates can break system dependencies. Use with caution.
+| Key | Action                         |
+| --- | ------------------------------ |
+| `t` | Remove mode → all packages     |
+| `e` | Remove mode → explicit only    |
+| `f` | Remove mode → AUR/foreign      |
+| `o` | Remove mode → orphans          |
+| `c` | Cache cleaning menu            |
+| `R` | Nuke all orphan packages       |
 
-## Dashboard Mode
+## confirmation prompts
 
-Monitor and manage your system in **Dashboard Mode**:
+When gaur asks "are you sure?":
 
-| Key | Action                                       |
-| --- | -------------------------------------------- |
-| `t` | Jump to Remove mode → All packages           |
-| `e` | Jump to Remove mode → Explicit packages      |
-| `f` | Jump to Remove mode → Foreign (AUR) packages |
-| `o` | Jump to Remove mode → Orphan packages        |
-| `c` | Open **Cache Cleaning** Menu                 |
-| `R` | Remove all orphan packages                   |
+| Key           | Action            |
+| ------------- | ----------------- |
+| `y` / `Enter` | Confirm           |
+| `n` / `Esc`   | Cancel            |
+| `↑` / `↓`     | Scroll the list   |
 
-## Confirmation Dialogs
+## search filters
 
-When gaur prompts for confirmation, use these keys:
+Narrow down results with prefixes.
 
-| Key           | Action              |
-| ------------- | ------------------- |
-| `y` / `Enter` | Confirm operation   |
-| `n` / `Esc`   | Cancel operation    |
-| `↑` / `↓`     | Scroll package list |
+### install mode
 
-## Search Filters
+Filter by repository:
 
-gaur supports powerful search filters to narrow down your results.
+| Prefix | Repo     |
+| ------ | -------- |
+| `c:`   | Core     |
+| `e:`   | Extra    |
+| `m:`   | Multilib |
+| `a:`   | AUR      |
 
-### Install Mode
+**Example:** `ae:firefox` searches both official repos and the AUR for "firefox".
 
-Prefix your search with repository filters:
+### remove mode
 
-| Prefix | Repository |
-| ------ | ---------- |
-| `c:`   | Core       |
-| `e:`   | Extra      |
-| `m:`   | Multilib   |
-| `a:`   | AUR        |
+Filter installed packages by category:
 
-**Example:** `ae:firefox` searches for "firefox" in both official repos and the AUR.
+| Prefix      | Shows                       |
+| ----------- | --------------------------- |
+| `t:`        | All installed packages      |
+| `e:` / `l:` | Explicitly installed        |
+| `f:` / `a:` | AUR/foreign packages        |
+| `o:`        | Orphans                     |
 
-### Remove Mode
-
-Filter installed packages by type:
-
-| Prefix | Filter                       |
-| ------ | ---------------------------- |
-| `t:`   | Total (all packages)         |
-| `e:` / `l:` | Explicitly installed (local) |
-| `f:` / `a:` | Foreign (AUR) packages       |
-| `o:`   | Orphan packages              |
-
-**Example:** `of:google` searches for orphaned AUR packages matching "google".
+**Example:** `of:google` finds orphaned AUR packages matching "google".
