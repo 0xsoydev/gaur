@@ -240,7 +240,7 @@ func getDashboardData(c *Config) tea.Cmd {
 				}
 			}
 
-			filepath.WalkDir(aurClonePath, func(path string, d os.DirEntry, err error) error {
+			_ = filepath.WalkDir(aurClonePath, func(path string, d os.DirEntry, err error) error {
 				if err != nil || d.IsDir() {
 					return nil
 				}
@@ -428,14 +428,35 @@ func getDashboardData(c *Config) tea.Cmd {
 			defer wg.Done()
 			var stat syscall.Statfs_t
 			if err := syscall.Statfs("/", &stat); err == nil {
-				total := stat.Blocks * uint64(stat.Bsize)
-				free := stat.Bfree * uint64(stat.Bsize)
+				// Safe conversion: Bsize is int64, we need to handle it safely for uint64 multiplication
+				// On Linux, Bsize is always positive, so this is safe
+				var bsize uint64
+				if stat.Bsize > 0 {
+					bsize = uint64(stat.Bsize) // #nosec G115 - Bsize is always positive on Linux
+				}
+				total := stat.Blocks * bsize
+				free := stat.Bfree * bsize
 				used := total - free
 
+				// Safe conversion for formatBytes: cap at max int64 to prevent overflow
+				const maxInt64 = uint64(1<<63 - 1)
+				safeTotal := total
+				if safeTotal > maxInt64 {
+					safeTotal = maxInt64
+				}
+				safeFree := free
+				if safeFree > maxInt64 {
+					safeFree = maxInt64
+				}
+				safeUsed := used
+				if safeUsed > maxInt64 {
+					safeUsed = maxInt64
+				}
+
 				dataMu.Lock()
-				data.DiskTotal = formatBytes(int64(total))
-				data.DiskFree = formatBytes(int64(free))
-				data.DiskUsed = formatBytes(int64(used))
+				data.DiskTotal = formatBytes(int64(safeTotal)) // #nosec G115 - capped at maxInt64
+				data.DiskFree = formatBytes(int64(safeFree))   // #nosec G115 - capped at maxInt64
+				data.DiskUsed = formatBytes(int64(safeUsed))   // #nosec G115 - capped at maxInt64
 				if total > 0 {
 					data.DiskUsedPercent = float64(used) / float64(total)
 				}
@@ -525,7 +546,7 @@ func parsePaccacheDryRunDetailed(output string) (int, string) {
 	// Format: ==> finished dry run: 78 candidates (disk space saved: 782.43 MiB)
 	var count int
 	if idx := strings.Index(output, "finished dry run: "); idx != -1 {
-		fmt.Sscanf(output[idx+len("finished dry run: "):], "%d", &count)
+		_, _ = fmt.Sscanf(output[idx+len("finished dry run: "):], "%d", &count)
 	}
 
 	parts := strings.Split(output, "disk space saved: ")
