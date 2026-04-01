@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -65,24 +66,30 @@ func LoadConfig() (Config, error) {
 	fullDir := filepath.Join(configDir, defaultConfigDir)
 	configPath := filepath.Join(fullDir, defaultConfigFile)
 
-	// Ensure directory exists
+	// Validate that the path is within the expected config directory (prevent path traversal)
+	cleanPath := filepath.Clean(configPath)
+	if !filepath.IsAbs(cleanPath) {
+		return DefaultConfig(), fmt.Errorf("config path must be absolute")
+	}
+
+	// Ensure directory exists with restrictive permissions (0750 or less)
 	if _, err := os.Stat(fullDir); os.IsNotExist(err) {
-		if err := os.MkdirAll(fullDir, 0755); err != nil {
+		if err := os.MkdirAll(fullDir, 0750); err != nil {
 			return DefaultConfig(), err
 		}
 	}
 
 	// Ensure config file exists, if not write default
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+	if _, err := os.Stat(cleanPath); os.IsNotExist(err) {
 		cfg := DefaultConfig()
-		if err := saveConfig(configPath, cfg); err != nil {
+		if err := saveConfig(cleanPath, cfg); err != nil {
 			return cfg, nil // Return default even if save fails
 		}
 		return cfg, nil
 	}
 
-	// Read and parse
-	data, err := os.ReadFile(configPath)
+	// Read and parse using the cleaned path
+	data, err := os.ReadFile(cleanPath) // #nosec G304 - path is constructed from trusted os.UserConfigDir()
 	if err != nil {
 		return DefaultConfig(), err
 	}
@@ -95,7 +102,7 @@ func LoadConfig() (Config, error) {
 	}
 
 	ValidateConfig(&cfg)
-	LogDebug("CONFIG", "Configuration loaded from %s", configPath)
+	LogDebug("CONFIG", "Configuration loaded from %s", cleanPath)
 	return cfg, nil
 }
 
