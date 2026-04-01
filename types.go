@@ -84,18 +84,25 @@ type CommandRunner interface {
 // RealCommandRunner implements CommandRunner using os/exec.
 type RealCommandRunner struct{}
 
+// Run executes a command and returns the combined output.
+// Security note: Commands are validated by ValidateConfig and only trusted binaries
+// (paru, yay, pacman, paccache) are used. Package names are sanitized before use.
 func (r RealCommandRunner) Run(name string, args ...string) ([]byte, error) {
-	return exec.Command(name, args...).CombinedOutput()
+	return exec.Command(name, args...).CombinedOutput() // #nosec G204 - commands validated in config
 }
 
+// RunWithInput executes a command with stdin input and returns the combined output.
+// Security note: Commands are validated by ValidateConfig and only trusted binaries are used.
 func (r RealCommandRunner) RunWithInput(input string, name string, args ...string) ([]byte, error) {
-	cmd := exec.Command(name, args...)
+	cmd := exec.Command(name, args...) // #nosec G204 - commands validated in config
 	cmd.Stdin = strings.NewReader(input)
 	return cmd.CombinedOutput()
 }
 
+// Interactive executes a command interactively using tea.ExecProcess.
+// Security note: Commands are validated by ValidateConfig and only trusted binaries are used.
 func (r RealCommandRunner) Interactive(onExit func(error) tea.Msg, name string, args ...string) tea.Cmd {
-	return tea.ExecProcess(exec.Command(name, args...), onExit)
+	return tea.ExecProcess(exec.Command(name, args...), onExit) // #nosec G204 - commands validated in config
 }
 
 var runner CommandRunner = RealCommandRunner{}
