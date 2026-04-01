@@ -116,7 +116,6 @@ jobs:
 
       - name: Run Gosec with console output
         run: gosec -fmt text ./...
-        continue-on-error: true
 
   # ════════════════════════════════════════════════════════════════════════════
   # Static Analysis
@@ -157,13 +156,21 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: true
 
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
       - name: Run govulncheck
-        uses: golang/govulncheck-action@v1
-        with:
-          go-version-input: ${{ env.GO_VERSION }}
-          go-package: ./...
-        # Don't fail CI for stdlib vulnerabilities with no available fix
-        continue-on-error: true
+        run: |
+          # Run govulncheck and capture output
+          # Exit code 3 means vulnerabilities found - we handle this gracefully
+          # for stdlib vulnerabilities that require a Go version upgrade
+          govulncheck -format text ./... || exit_code=$?
+          if [ "${exit_code:-0}" -eq 3 ]; then
+            echo "::warning::Vulnerabilities detected. Review output above."
+            echo "Note: Standard library vulnerabilities require Go version upgrade."
+          elif [ "${exit_code:-0}" -ne 0 ]; then
+            exit $exit_code
+          fi
 
   # ════════════════════════════════════════════════════════════════════════════
   # Dependency Review (for PRs)
