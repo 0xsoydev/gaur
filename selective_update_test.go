@@ -46,10 +46,10 @@ func TestSelectiveUpdateFlow(t *testing.T) {
 		t.Errorf("Expected 1 marked package, got %d. Marked: %v", len(m.markedPackages), m.markedPackages)
 	}
 
-	// 'j' (down) increases selectedIndex (standard navigation)
-	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("j")}) // move to vlc (index 1)
+	// In bottom-up menus: 'k' (up) increases index (moves visually up toward higher indices)
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("k")}) // move to vlc (index 1)
 	m = newModel.(*model)
-	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("j")}) // move to yay (index 2)
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("k")}) // move to yay (index 2)
 	m = newModel.(*model)
 
 	if m.selectedIndex != 2 {
@@ -120,18 +120,19 @@ func TestSelectiveUpdateMouseScrollWithoutDetails(t *testing.T) {
 	m.width = 80
 	m.height = 24
 	m.loading = false
-	m.updatableAll = []Package{{Name: "pkg1"}, {Name: "pkg2"}}
+	m.updatableAll = []Package{{Name: "pkg1"}, {Name: "pkg2"}, {Name: "pkg3"}}
 	m.filtered = m.updatableAll
-	m.selectedIndex = 1 // Start at 1 so we can scroll up
+	m.selectedIndex = 1 // Start at 1 so we can scroll in both directions
 
 	// EMPTY package details
 	m.packageDetails = ""
 
-	// Scroll mouse wheel up - LEFT SIDE (X=10) should move list cursor up (decrease index)
+	// In bottom-up menus: scroll wheel up visually moves selection up (increases index)
+	// LEFT SIDE (X=10) should move list cursor
 	newModel, _ := m.Update(tea.MouseMsg{Action: tea.MouseActionPress, Button: tea.MouseButtonWheelUp, X: 10})
 	m = newModel.(*model)
 
-	if m.selectedIndex != 0 {
-		t.Errorf("Expected selectedIndex 0, got %d (list SHOULD move up when scrolling wheel up on left side)", m.selectedIndex)
+	if m.selectedIndex != 2 {
+		t.Errorf("Expected selectedIndex 2, got %d (bottom-up: scroll up increases index)", m.selectedIndex)
 	}
 }

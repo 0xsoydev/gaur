@@ -21,8 +21,8 @@ func TestMouseScrollStandardMode(t *testing.T) {
 	m.packageDetails = "Some details"
 	m.maxDetailsScroll = 10
 	m.detailsScrollOffset = 0
-	m.filtered = []Package{{Name: "pkg1"}, {Name: "pkg2"}}
-	m.selectedIndex = 1 // Start at 1 so we can go up
+	m.filtered = []Package{{Name: "pkg1"}, {Name: "pkg2"}, {Name: "pkg3"}}
+	m.selectedIndex = 1 // Start at 1 so we can go both directions
 
 	// 1. TOP HALF (Y < height/2) should scroll details
 	newModel, _ := m.Update(mouseWheelDown(10, 5))
@@ -35,12 +35,11 @@ func TestMouseScrollStandardMode(t *testing.T) {
 	}
 
 	// 2. BOTTOM HALF (Y >= height/2) should navigate list
-	// Scroll down increases index (moves down in list)
+	// In bottom-up menus: scroll down visually moves selection down, which DECREASES index
 	newModel, _ = m.Update(mouseWheelDown(10, 20))
 	m = newModel.(*model)
-	// selectedIndex should not exceed max (1 in this case with 2 items)
-	if m.selectedIndex != 1 {
-		t.Errorf("Bottom half scroll down: expected selectedIndex 1 (clamped), got %d", m.selectedIndex)
+	if m.selectedIndex != 0 {
+		t.Errorf("Bottom half scroll down: expected selectedIndex 0 (bottom-up: scroll down decreases index), got %d", m.selectedIndex)
 	}
 }
 
@@ -64,11 +63,12 @@ func TestMouseScrollSelectiveUpdateMode(t *testing.T) {
 		t.Errorf("Right side: expected detailsScrollOffset 1, got %d", m.detailsScrollOffset)
 	}
 
-	// 2. LEFT SIDE (X < width/2): navigate list (scroll down = increase index)
+	// 2. LEFT SIDE (X < width/2): navigate list
+	// In bottom-up menus: scroll down visually moves selection down, which DECREASES index
 	newModel, _ = m.Update(mouseWheelDown(10, 10))
 	m = newModel.(*model)
-	if m.selectedIndex != 2 {
-		t.Errorf("Left side scroll down: expected selectedIndex 2, got %d", m.selectedIndex)
+	if m.selectedIndex != 0 {
+		t.Errorf("Left side scroll down: expected selectedIndex 0 (bottom-up: scroll down decreases index), got %d", m.selectedIndex)
 	}
 }
 

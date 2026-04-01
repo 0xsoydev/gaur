@@ -178,33 +178,34 @@ func TestUpdateKeyboardNavigation(t *testing.T) {
 	m.loading = false
 	m.selectedIndex = 5 // Start in the middle to test both directions
 
-	// Test 'k' (Up) -> moves towards top of list (index decreases)
+	// In bottom-up menus (modeInstall), navigation is inverted:
+	// Test 'k' (Up) -> visually moves up, but index INCREASES in bottom-up view
 	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("k")})
 	m = newModel.(*model)
-	if m.selectedIndex != 4 {
-		t.Errorf("selectedIndex = %d, want 4 after 'k' (up)", m.selectedIndex)
+	if m.selectedIndex != 6 {
+		t.Errorf("selectedIndex = %d, want 6 after 'k' (up in bottom-up menu)", m.selectedIndex)
 	}
 
-	// Test 'j' (Down) -> moves towards bottom of list (index increases)
+	// Test 'j' (Down) -> visually moves down, but index DECREASES in bottom-up view
 	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("j")})
 	m = newModel.(*model)
 	if m.selectedIndex != 5 {
-		t.Errorf("selectedIndex = %d, want 5 after 'j' (down)", m.selectedIndex)
+		t.Errorf("selectedIndex = %d, want 5 after 'j' (down in bottom-up menu)", m.selectedIndex)
 	}
 
-	// Test PgUp -> jumps up (index decreases by 10)
-	m.selectedIndex = 15
+	// Test PgUp -> jumps up visually (index increases by 10 in bottom-up view)
+	m.selectedIndex = 5
 	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyPgUp})
 	m = newModel.(*model)
-	if m.selectedIndex != 5 {
-		t.Errorf("selectedIndex = %d, want 5 after PgUp", m.selectedIndex)
+	if m.selectedIndex != 15 {
+		t.Errorf("selectedIndex = %d, want 15 after PgUp (bottom-up menu)", m.selectedIndex)
 	}
 
-	// Test PgDown -> jumps down (index increases by 10)
+	// Test PgDown -> jumps down visually (index decreases by 10 in bottom-up view)
 	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyPgDown})
 	m = newModel.(*model)
-	if m.selectedIndex != 15 {
-		t.Errorf("selectedIndex = %d, want 15 after PgDown", m.selectedIndex)
+	if m.selectedIndex != 5 {
+		t.Errorf("selectedIndex = %d, want 5 after PgDown (bottom-up menu)", m.selectedIndex)
 	}
 }
 
