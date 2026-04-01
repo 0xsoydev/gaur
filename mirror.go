@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"os/exec"
 	"sort"
 	"strings"
 
@@ -115,7 +117,6 @@ const mirrorItemCount = 5
 // mirrorUpdateMsg is sent when mirror update completes
 type mirrorUpdateMsg struct {
 	success bool
-	output  string
 	err     error
 }
 
@@ -198,9 +199,19 @@ func GetMirrorProtocolNames() []string {
 	return names
 }
 
-// executeMirrorUpdate runs reflector with the given configuration
+// mirrorProgressMsg is sent for each line of reflector output during mirror update
+type mirrorProgressMsg struct {
+	current int
+	total   int
+	ch      chan tea.Msg
+}
+
+// executeMirrorUpdate runs reflector with the given configuration,
+// streaming stderr to report per-mirror progress back to the TUI.
 func executeMirrorUpdate(cfg MirrorConfig) tea.Cmd {
-	return func() tea.Msg {
+	ch := make(chan tea.Msg, 1)
+
+	go func() {
 		LogInfo("MIRROR", "Starting mirror update with reflector")
 		LogDebug("MIRROR", "Config: sort=%s, country=%s, latest=%d, protocol=%s",
 			MirrorSortOptions[cfg.SortBy].Name,
@@ -214,22 +225,47 @@ func executeMirrorUpdate(cfg MirrorConfig) tea.Cmd {
 		// reflector needs sudo to write to /etc/pacman.d/mirrorlist
 		fullArgs := append([]string{"reflector"}, args...)
 
-		output, err := runner.Run("sudo", fullArgs...)
+		cmd := exec.Command("sudo", fullArgs...)
+		stderr, err := cmd.StderrPipe()
+		if err != nil {
+			LogError("MIRROR", "Failed to create stderr pipe: %v", err)
+			ch <- mirrorUpdateMsg{success: false, err: fmt.Errorf("reflector failed: %w", err)}
+			return
+		}
+
+		if err := cmd.Start(); err != nil {
+			LogError("MIRROR", "Failed to start reflector: %v", err)
+			ch <- mirrorUpdateMsg{success: false, err: fmt.Errorf("reflector failed: %w", err)}
+			return
+		}
+
+		total := cfg.Latest
+		current := 0
+		scanner := bufio.NewScanner(stderr)
+		for scanner.Scan() {
+			current++
+			ch <- mirrorProgressMsg{current: current, total: total, ch: ch}
+		}
+
+		err = cmd.Wait()
 		if err != nil {
 			LogError("MIRROR", "Reflector failed: %v", err)
-			return mirrorUpdateMsg{
-				success: false,
-				output:  string(output),
-				err:     fmt.Errorf("reflector failed: %w", err),
-			}
+			ch <- mirrorUpdateMsg{success: false, err: fmt.Errorf("reflector failed: %w", err)}
+			return
 		}
 
 		LogInfo("MIRROR", "Mirror update completed successfully")
-		return mirrorUpdateMsg{
-			success: true,
-			output:  string(output),
-			err:     nil,
-		}
+		ch <- mirrorUpdateMsg{success: true}
+	}()
+
+	// Return the initial listener command
+	return waitForMirrorProgress(ch)
+}
+
+// waitForMirrorProgress returns a tea.Cmd that reads the next message from the channel
+func waitForMirrorProgress(ch chan tea.Msg) tea.Cmd {
+	return func() tea.Msg {
+		return <-ch
 	}
 }
 

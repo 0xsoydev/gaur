@@ -70,11 +70,13 @@ type model struct {
 	previousMode   viewMode
 	originalHelper string // Track AUR helper change for refresh
 	// Mirror overlay state
-	showMirrorOverlay  bool
-	mirrorConfig       MirrorConfig
-	mirrorSelectedItem MirrorOverlayItem
-	mirrorUpdating     bool
-	mirrorError        string
+	showMirrorOverlay     bool
+	mirrorConfig          MirrorConfig
+	mirrorSelectedItem    MirrorOverlayItem
+	mirrorUpdating        bool
+	mirrorError           string
+	mirrorProgressCurrent int // Current number of mirrors processed
+	mirrorProgressTotal   int // Total number of mirrors to process
 }
 
 func initialModel(initialMode viewMode, cfg Config) *model {

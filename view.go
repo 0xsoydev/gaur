@@ -1495,8 +1495,37 @@ func (m *model) renderMirrorOverlay(innerWidth, innerHeight int) string {
 		}
 
 		if m.mirrorUpdating {
+			// Progress percentage
+			pct := 0
+			if m.mirrorProgressTotal > 0 {
+				pct = m.mirrorProgressCurrent * 100 / m.mirrorProgressTotal
+				if pct > 100 {
+					pct = 100
+				}
+			}
+			progressLabel := fmt.Sprintf("Updating mirrors... %d%%", pct)
 			content = append(content, lipgloss.PlaceHorizontal(overlayWidth-4, lipgloss.Center,
-				dimStyle.Render("Updating mirrors...")))
+				dimStyle.Render(progressLabel)))
+
+			// Determinate progress bar
+			barWidth := overlayWidth - 12
+			if barWidth < 10 {
+				barWidth = 10
+			}
+			filled := 0
+			if m.mirrorProgressTotal > 0 {
+				filled = m.mirrorProgressCurrent * barWidth / m.mirrorProgressTotal
+				if filled > barWidth {
+					filled = barWidth
+				}
+			}
+			empty := barWidth - filled
+
+			trackColor := lipgloss.Color("237")
+			filledColor := activeColor
+			bar := lipgloss.NewStyle().Background(filledColor).Render(strings.Repeat(" ", filled)) +
+				lipgloss.NewStyle().Background(trackColor).Render(strings.Repeat(" ", empty))
+			content = append(content, lipgloss.PlaceHorizontal(overlayWidth-4, lipgloss.Center, bar))
 		} else {
 			content = append(content, lipgloss.PlaceHorizontal(overlayWidth-4, lipgloss.Center,
 				executeStyle.Padding(0, 2).Render("Update Mirrors")))

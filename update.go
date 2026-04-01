@@ -398,6 +398,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case execCompleteMsg:
 		return m.handleExecComplete(msg)
 
+	case mirrorProgressMsg:
+		m.mirrorProgressCurrent = msg.current
+		m.mirrorProgressTotal = msg.total
+		return m, waitForMirrorProgress(msg.ch)
+
 	case mirrorUpdateMsg:
 		m.mirrorUpdating = false
 		if msg.err != nil {
@@ -934,6 +939,8 @@ func (m *model) handleMirrorOverlayKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			m.mirrorUpdating = true
+			m.mirrorProgressCurrent = 0
+			m.mirrorProgressTotal = m.mirrorConfig.Latest
 			m.mirrorError = ""
 			LogInfo("MIRROR", "Executing mirror update")
 			return m, executeMirrorUpdate(m.mirrorConfig)
