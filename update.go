@@ -922,7 +922,7 @@ func (m *model) handleMirrorOverlayKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 
 	case msg.String() == "down" || msg.String() == "j":
-		if m.mirrorSelectedItem < mirrorItemExecute {
+		if m.mirrorSelectedItem < mirrorItemProtocol {
 			m.mirrorSelectedItem++
 		}
 
@@ -933,18 +933,16 @@ func (m *model) handleMirrorOverlayKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.adjustMirrorOption(1)
 
 	case key.Matches(msg, m.keys.Confirm):
-		if m.mirrorSelectedItem == mirrorItemExecute {
-			if !checkReflectorInstalled() {
-				m.mirrorError = "reflector is not installed"
-				return m, nil
-			}
-			m.mirrorUpdating = true
-			m.mirrorProgressCurrent = 0
-			m.mirrorProgressTotal = m.mirrorConfig.Latest
-			m.mirrorError = ""
-			LogInfo("MIRROR", "Executing mirror update")
-			return m, executeMirrorUpdate(m.mirrorConfig)
+		if !checkReflectorInstalled() {
+			m.mirrorError = "reflector is not installed"
+			return m, nil
 		}
+		m.mirrorUpdating = true
+		m.mirrorProgressCurrent = 0
+		m.mirrorProgressTotal = m.mirrorConfig.Latest
+		m.mirrorError = ""
+		LogInfo("MIRROR", "Executing mirror update")
+		return m, executeMirrorUpdate(m.mirrorConfig)
 	}
 
 	return m, nil

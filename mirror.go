@@ -109,10 +109,9 @@ const (
 	mirrorItemCountry
 	mirrorItemLatest
 	mirrorItemProtocol
-	mirrorItemExecute
 )
 
-const mirrorItemCount = 5
+const mirrorItemCount = 4
 
 // mirrorUpdateMsg is sent when mirror update completes
 type mirrorUpdateMsg struct {

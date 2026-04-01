@@ -531,11 +531,8 @@ func TestMirrorOverlayItemConstants(t *testing.T) {
 	if mirrorItemProtocol != 3 {
 		t.Errorf("mirrorItemProtocol should be 3, got %d", mirrorItemProtocol)
 	}
-	if mirrorItemExecute != 4 {
-		t.Errorf("mirrorItemExecute should be 4, got %d", mirrorItemExecute)
-	}
-	if mirrorItemCount != 5 {
-		t.Errorf("mirrorItemCount should be 5, got %d", mirrorItemCount)
+	if mirrorItemCount != 4 {
+		t.Errorf("mirrorItemCount should be 4, got %d", mirrorItemCount)
 	}
 }
 

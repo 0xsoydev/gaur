@@ -1486,15 +1486,10 @@ func (m *model) renderMirrorOverlay(innerWidth, innerHeight int) string {
 
 		// Command preview with highlighting
 		content = append(content, m.renderMirrorCommandPreview(overlayWidth-6, dimPurple))
-		content = append(content, "")
-
-		// Execute button
-		executeStyle := dimStyle
-		if m.mirrorSelectedItem == mirrorItemExecute {
-			executeStyle = lipgloss.NewStyle().Bold(true).Background(activeColor).Foreground(lipgloss.Color("255"))
-		}
 
 		if m.mirrorUpdating {
+			content = append(content, "")
+
 			// Progress percentage
 			pct := 0
 			if m.mirrorProgressTotal > 0 {
@@ -1526,9 +1521,6 @@ func (m *model) renderMirrorOverlay(innerWidth, innerHeight int) string {
 			bar := lipgloss.NewStyle().Background(filledColor).Render(strings.Repeat(" ", filled)) +
 				lipgloss.NewStyle().Background(trackColor).Render(strings.Repeat(" ", empty))
 			content = append(content, lipgloss.PlaceHorizontal(overlayWidth-4, lipgloss.Center, bar))
-		} else {
-			content = append(content, lipgloss.PlaceHorizontal(overlayWidth-4, lipgloss.Center,
-				executeStyle.Padding(0, 2).Render("Update Mirrors")))
 		}
 
 		// Error message if any
@@ -1540,7 +1532,7 @@ func (m *model) renderMirrorOverlay(innerWidth, innerHeight int) string {
 
 		content = append(content, "")
 		hintStyle := lipgloss.NewStyle().Foreground(colorDimGray).Width(overlayWidth - 4).Align(lipgloss.Center)
-		content = append(content, hintStyle.Render("[j/k] navigate  [h/l] change  [enter] execute  [esc] close"))
+		content = append(content, hintStyle.Render("[j/k] navigate  [h/l] change  [enter] update  [esc] close"))
 	}
 
 	dialogContent := strings.Join(content, "\n")
