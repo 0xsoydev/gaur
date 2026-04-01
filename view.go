@@ -1620,7 +1620,7 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 			Foreground(lipgloss.Color("255")).
 			Padding(0, 1).
 			Bold(true)
-		mirrorButton = buttonStylePurple.Render("[m] mirrors")
+		mirrorButton = buttonStylePurple.Render("[m]irrors")
 	}
 
 	var content strings.Builder
