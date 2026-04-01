@@ -489,10 +489,24 @@ func (m *model) handleNavigation(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		jump = 10
 	}
 
-	if key == "up" || key == "k" || key == "pgup" {
-		m.selectedIndex -= jump
+	// For bottom-up menus (modeInstall, modeRemove, modeUpdateSelective), navigation is inverted:
+	// - Visual "up" (pressing up arrow) should increase index (move toward higher indices shown at top)
+	// - Visual "down" (pressing down arrow) should decrease index (move toward lower indices shown at bottom)
+	isBottomUpMenu := m.mode == modeInstall || m.mode == modeRemove || m.mode == modeUpdateSelective
+	if isBottomUpMenu {
+		// Invert navigation for bottom-up rendering
+		if key == "up" || key == "k" || key == "pgup" {
+			m.selectedIndex += jump
+		} else {
+			m.selectedIndex -= jump
+		}
 	} else {
-		m.selectedIndex += jump
+		// Standard top-down navigation
+		if key == "up" || key == "k" || key == "pgup" {
+			m.selectedIndex -= jump
+		} else {
+			m.selectedIndex += jump
+		}
 	}
 
 	// Clamp
