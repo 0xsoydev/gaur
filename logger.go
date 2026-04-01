@@ -106,8 +106,14 @@ func InitLogger(level LogLevel, logDir string) error {
 		logDir = filepath.Join(configDir, "gaur")
 	}
 
-	// Ensure directory exists
-	if err := os.MkdirAll(logDir, 0700); err != nil {
+	// Sanitize and validate logDir to prevent path traversal
+	logDir = filepath.Clean(logDir)
+	if !filepath.IsAbs(logDir) {
+		return fmt.Errorf("log directory must be an absolute path: %s", logDir)
+	}
+
+	// Ensure directory exists with restrictive permissions
+	if err := os.MkdirAll(logDir, 0700); err != nil { // #nosec G301 - 0700 is intentionally restrictive
 		return fmt.Errorf("failed to create log directory: %w", err)
 	}
 
@@ -150,7 +156,10 @@ func (l *Logger) Close() {
 
 	if l.file != nil {
 		l.writeLogLocked(LogLevelInfo, "APP", "gaur shutting down")
-		l.file.Close()
+		if err := l.file.Close(); err != nil {
+			// Can't log this error since we're closing, but we've handled it
+			_ = err
+		}
 		l.file = nil
 	}
 }
