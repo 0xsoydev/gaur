@@ -221,6 +221,9 @@ type mirrorProgressMsg struct {
 // executeMirrorUpdate runs reflector with the given configuration,
 // streaming stderr to report per-mirror progress back to the TUI.
 func executeMirrorUpdate(cfg MirrorConfig) tea.Cmd {
+	// Validate config indices before launching goroutine to prevent panics
+	ValidateMirrorConfig(&cfg)
+
 	ch := make(chan tea.Msg, 1)
 
 	go func() {
@@ -237,7 +240,7 @@ func executeMirrorUpdate(cfg MirrorConfig) tea.Cmd {
 		// reflector needs sudo to write to /etc/pacman.d/mirrorlist
 		fullArgs := append([]string{"reflector"}, args...)
 
-		cmd := exec.Command("sudo", fullArgs...)
+		cmd := exec.Command("sudo", fullArgs...) // #nosec G204
 		stderr, err := cmd.StderrPipe()
 		if err != nil {
 			LogError("MIRROR", "Failed to create stderr pipe: %v", err)
@@ -256,7 +259,15 @@ func executeMirrorUpdate(cfg MirrorConfig) tea.Cmd {
 		scanner := bufio.NewScanner(stderr)
 		for scanner.Scan() {
 			current++
-			ch <- mirrorProgressMsg{current: current, total: total, ch: ch}
+			progress := current
+			if progress > total {
+				progress = total
+			}
+			ch <- mirrorProgressMsg{current: progress, total: total, ch: ch}
+		}
+
+		if scanErr := scanner.Err(); scanErr != nil {
+			LogError("MIRROR", "Error reading reflector output: %v", scanErr)
 		}
 
 		err = cmd.Wait()
