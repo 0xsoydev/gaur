@@ -157,3 +157,86 @@ func TestUpdateWindowResize(t *testing.T) {
 		t.Errorf("width/height = %d/%d, want 80/24", m.width, m.height)
 	}
 }
+
+// TestAltModeSwitchingWithFocusedInput verifies that Alt+1/2/3/4 keys work
+// for mode switching even when the text input is focused.
+func TestAltModeSwitchingWithFocusedInput(t *testing.T) {
+	// Helper to create Alt+N key messages
+	altKey := func(n rune) tea.KeyMsg {
+		return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{n}, Alt: true}
+	}
+
+	t.Run("Alt+1 switches to Dashboard from focused Install", func(t *testing.T) {
+		m := initialModel(modeInstall, DefaultConfig())
+		m.textInput.Focus()
+		m.textInput.SetValue("some search")
+		m.loading = false
+
+		newModel, _ := m.Update(altKey('1'))
+		m = newModel.(*model)
+
+		if m.mode != modeDashboard {
+			t.Errorf("mode = %v, want modeDashboard after Alt+1", m.mode)
+		}
+	})
+
+	t.Run("Alt+2 switches to Install from focused Remove", func(t *testing.T) {
+		m := initialModel(modeRemove, DefaultConfig())
+		m.textInput.Focus()
+		m.textInput.SetValue("filter text")
+		m.loading = false
+
+		newModel, _ := m.Update(altKey('2'))
+		m = newModel.(*model)
+
+		if m.mode != modeInstall {
+			t.Errorf("mode = %v, want modeInstall after Alt+2", m.mode)
+		}
+	})
+
+	t.Run("Alt+3 switches to Update from focused Install", func(t *testing.T) {
+		m := initialModel(modeInstall, DefaultConfig())
+		m.textInput.Focus()
+		m.textInput.SetValue("searching")
+		m.loading = false
+
+		newModel, _ := m.Update(altKey('3'))
+		m = newModel.(*model)
+
+		if m.mode != modeUpdate {
+			t.Errorf("mode = %v, want modeUpdate after Alt+3", m.mode)
+		}
+	})
+
+	t.Run("Alt+4 switches to Remove from focused Install", func(t *testing.T) {
+		m := initialModel(modeInstall, DefaultConfig())
+		m.textInput.Focus()
+		m.textInput.SetValue("package name")
+		m.loading = false
+
+		newModel, _ := m.Update(altKey('4'))
+		m = newModel.(*model)
+
+		if m.mode != modeRemove {
+			t.Errorf("mode = %v, want modeRemove after Alt+4", m.mode)
+		}
+	})
+
+	t.Run("Regular mode keys dont work when input focused", func(t *testing.T) {
+		m := initialModel(modeInstall, DefaultConfig())
+		m.textInput.Focus()
+		m.textInput.SetValue("")
+		m.loading = false
+
+		// Pressing 'd' while focused should type 'd', not switch to dashboard
+		newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("d")})
+		m = newModel.(*model)
+
+		if m.mode != modeInstall {
+			t.Errorf("mode = %v, want modeInstall (regular keys shouldn't switch mode when focused)", m.mode)
+		}
+		if m.textInput.Value() != "d" {
+			t.Errorf("textInput value = %q, want 'd' (key should be typed into input)", m.textInput.Value())
+		}
+	})
+}

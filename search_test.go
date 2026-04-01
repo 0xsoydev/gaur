@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -111,9 +110,8 @@ func TestSearchStateIsolationOnModeSwitch(t *testing.T) {
 	}
 
 	// 1. Simulate switching to Remove mode via key press
-	msgRemove := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("u")} // Assuming 'u' is RemoveMode in default keys
-	// Wait, I should use the actual key binding
-	m.keys.RemoveMode = key.NewBinding(key.WithKeys("u"))
+	// Use 'r' which is the default RemoveMode key (not 'u' which is UpdateMode)
+	msgRemove := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("r")}
 
 	resModel, _ := m.Update(msgRemove)
 	m = resModel.(*model)
@@ -129,7 +127,6 @@ func TestSearchStateIsolationOnModeSwitch(t *testing.T) {
 	}
 
 	// 2. Switch back to Install mode
-	m.keys.InstallMode = key.NewBinding(key.WithKeys("i"))
 	msgInstall := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("i")}
 
 	resModel, _ = m.Update(msgInstall)
