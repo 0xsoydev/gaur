@@ -1661,10 +1661,10 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 		// Calculate available lines for the list
 		// panelHeight is TOTAL height of the panel including borders
 		// Inner height is panelHeight - 2
+		// mirrorLine takes 1 line (always present when updates available)
 		// Buttons take 1 line
-		// A blank gap is needed above the buttons to truncate the list by 1 line
 		// Header takes 2 lines ("The following... \n\n")
-		// availableLinesForList = (innerHeightOfPanel) - buttons - gap - header
+		// availableLinesForList = (innerHeightOfPanel) - mirrorLine - buttons - header
 		availableLinesForList := (panelHeight - 2) - 1 - 1 - 2
 		if availableLinesForList < 1 {
 			availableLinesForList = 1
@@ -1743,12 +1743,24 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 		buttonsContent = lipgloss.PlaceHorizontal(innerWidth-4, lipgloss.Right, buttons)
 	}
 
-	// Total available inner height is panelHeight - 2
+	// Total available inner height is panelHeight - 2 (borders)
 	innerHeightOfPanel := panelHeight - 2
 
-	// We use Height() on the list container to push buttons to the bottom
-	// -1 for buttons, -1 for truncation gap, -1 for mirror button at top
-	listHeight := innerHeightOfPanel - 1 - 1 - 1
+	// Calculate heights for each section:
+	// - mirrorLine: 1 line (when present)
+	// - listContent: variable, fills remaining space
+	// - buttonsContent: 1 line (when present)
+	mirrorLineHeight := 0
+	if mirrorButton != "" {
+		mirrorLineHeight = 1
+	}
+	buttonsHeight := 0
+	if buttonsContent != "" {
+		buttonsHeight = 1
+	}
+
+	// List gets remaining height after mirror line and buttons
+	listHeight := innerHeightOfPanel - mirrorLineHeight - buttonsHeight
 	if listHeight < 1 {
 		listHeight = 1
 	}
@@ -1759,10 +1771,14 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 		mirrorLine = lipgloss.PlaceHorizontal(innerWidth-4, lipgloss.Right, mirrorButton)
 	}
 
+	// Create fixed-height list container to push buttons to bottom
+	listContainer := lipgloss.NewStyle().
+		Height(listHeight).
+		Render(truncateHeight(listContent, listHeight))
+
 	innerPanelContent := lipgloss.JoinVertical(lipgloss.Left,
 		mirrorLine,
-		truncateHeight(listContent, listHeight),
-		"", // bottom truncation gap
+		listContainer,
 		buttonsContent,
 	)
 
