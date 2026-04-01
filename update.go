@@ -98,7 +98,50 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.handleNavigation(msg)
 		}
 
-		// 4. Input Focus Mode
+		// 4. Alt+N Mode Switching (work regardless of text input focus)
+		// Only Alt+1/2/3/4 are intercepted here; regular keys (d/i/u/r) are handled later
+		isAltKey := msg.Alt && len(msg.Runes) == 1
+		if isAltKey {
+			switch msg.Runes[0] {
+			case '1':
+				if key.Matches(msg, m.keys.DashboardMode) {
+					m.mode = modeDashboard
+					m.loading = true
+					m.resetState()
+					return m, getDashboardData(&m.config)
+				}
+			case '2':
+				if key.Matches(msg, m.keys.InstallMode) {
+					if m.mode != modeInstall {
+						m.mode = modeInstall
+						m.resetState()
+						m.textInput.Focus()
+					}
+					return m, nil
+				}
+			case '3':
+				if key.Matches(msg, m.keys.UpdateMode) {
+					m.mode = modeUpdate
+					m.resetState()
+					m.loading = true
+					m.pendingUpdates = nil
+					return m, syncRepositoriesInTerminal(m)
+				}
+			case '4':
+				if key.Matches(msg, m.keys.RemoveMode) {
+					if m.mode != modeRemove {
+						m.mode = modeRemove
+						m.resetState()
+						m.loading = true
+						m.statusMessage = "Refreshing installed packages..."
+						return m, getInstalledPackages()
+					}
+					return m, nil
+				}
+			}
+		}
+
+		// 5. Input Focus Mode
 		if m.textInput.Focused() {
 			if key.Matches(msg, m.keys.Cancel) {
 				if m.mode == modeUpdateSelective {
@@ -186,22 +229,28 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.loading = true
 			m.resetState()
 			return m, getDashboardData(&m.config)
-		case key.Matches(msg, m.keys.RemoveMode):
-			if m.mode != modeRemove {
-				m.mode = modeRemove
+		case key.Matches(msg, m.keys.InstallMode):
+			if m.mode != modeInstall {
+				m.mode = modeInstall
 				m.resetState()
-
-				m.loading = true
-				m.statusMessage = "Refreshing installed packages..."
-				return m, getInstalledPackages()
+				m.textInput.Focus()
 			}
+			return m, nil
 		case key.Matches(msg, m.keys.UpdateMode):
 			m.mode = modeUpdate
 			m.resetState()
 			m.loading = true
 			m.pendingUpdates = nil
 			return m, syncRepositoriesInTerminal(m)
-
+		case key.Matches(msg, m.keys.RemoveMode):
+			if m.mode != modeRemove {
+				m.mode = modeRemove
+				m.resetState()
+				m.loading = true
+				m.statusMessage = "Refreshing installed packages..."
+				return m, getInstalledPackages()
+			}
+			return m, nil
 		case key.Matches(msg, m.keys.Selective):
 			if m.mode == modeUpdate {
 				m.mode = modeUpdateSelective
@@ -228,12 +277,6 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.mode == modeUpdate && !m.loading && len(m.pendingUpdates) > 0 {
 				m.statusMessage = "Running system update..."
 				return m, executeUpdateInTerminal(m)
-			}
-		case key.Matches(msg, m.keys.InstallMode):
-			if m.mode != modeInstall {
-				m.mode = modeInstall
-				m.resetState()
-				m.textInput.Focus()
 			}
 		case key.Matches(msg, m.keys.Mark):
 			return m.handleMarking()
