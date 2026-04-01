@@ -398,6 +398,16 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case execCompleteMsg:
 		return m.handleExecComplete(msg)
 
+	case mirrorSudoReadyMsg:
+		if msg.err != nil {
+			m.mirrorUpdating = false
+			m.mirrorError = "sudo authentication failed"
+			LogError("MIRROR", "Sudo authentication failed: %v", msg.err)
+			return m, nil
+		}
+		LogInfo("MIRROR", "Sudo credentials acquired, executing mirror update")
+		return m, executeMirrorUpdate(m.mirrorConfig)
+
 	case mirrorProgressMsg:
 		m.mirrorProgressCurrent = msg.current
 		m.mirrorProgressTotal = msg.total
@@ -941,8 +951,8 @@ func (m *model) handleMirrorOverlayKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.mirrorProgressCurrent = 0
 		m.mirrorProgressTotal = m.mirrorConfig.Latest
 		m.mirrorError = ""
-		LogInfo("MIRROR", "Executing mirror update")
-		return m, executeMirrorUpdate(m.mirrorConfig)
+		LogInfo("MIRROR", "Acquiring sudo credentials for mirror update")
+		return m, acquireSudoForMirror()
 	}
 
 	return m, nil

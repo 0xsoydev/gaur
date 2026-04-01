@@ -119,6 +119,19 @@ type mirrorUpdateMsg struct {
 	err     error
 }
 
+// mirrorSudoReadyMsg is sent after sudo credentials are acquired interactively
+type mirrorSudoReadyMsg struct {
+	err error
+}
+
+// acquireSudoForMirror suspends the TUI and runs "sudo -v" to cache credentials,
+// so the subsequent background reflector process won't need to prompt for a password.
+func acquireSudoForMirror() tea.Cmd {
+	return runner.Interactive(func(err error) tea.Msg {
+		return mirrorSudoReadyMsg{err: err}
+	}, "sudo", "-v")
+}
+
 // BuildReflectorCommand constructs the reflector command from the config
 func BuildReflectorCommand(cfg MirrorConfig) []string {
 	args := []string{}
