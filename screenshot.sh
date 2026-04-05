@@ -47,12 +47,12 @@ for gaur_theme in "${!THEMES[@]}"; do
 		# If user types n/no, exit 1. If enter, exit 0.
 		foot -c "$TEMP_CONFIG" \
 			sh -c "
-                ./gaur --theme '$gaur_theme'; 
-                echo -ne '\n📸 Done? (Enter=Next, n=Retry): '; 
-                read -r ans; 
-                case \"\$ans\" in 
-                    n|N|no|No) exit 1 ;; 
-                    *) exit 0 ;; 
+                ./gaur --theme '$gaur_theme';
+                echo -ne '\n📸 Done? (Enter=Next, n=Retry): ';
+                read -r ans;
+                case \"\$ans\" in
+                    n|N|no|No) exit 1 ;;
+                    *) exit 0 ;;
                 esac"
 
 		# Check the exit code of the foot command above
