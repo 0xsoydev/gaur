@@ -201,6 +201,16 @@ func (l *Logger) writeLog(level LogLevel, category string, format string, args .
 	l.writeLogLocked(level, category, format, args...)
 }
 
+func center(s string, width int) string {
+	if len(s) >= width {
+		return s
+	}
+	padding := width - len(s)
+	left := padding / 2
+	right := padding - left
+	return strings.Repeat(" ", left) + s + strings.Repeat(" ", right)
+}
+
 // writeLogLocked writes a log entry (must hold lock)
 func (l *Logger) writeLogLocked(level LogLevel, category string, format string, args ...interface{}) {
 	if l.logger == nil {
@@ -212,7 +222,7 @@ func (l *Logger) writeLogLocked(level LogLevel, category string, format string, 
 	message := fmt.Sprintf(format, args...)
 
 	// Format: [TIMESTAMP] [LEVEL] [CATEGORY] message
-	logLine := fmt.Sprintf("[%s] [%-7s] [%-10s] %s", timestamp, levelStr, category, message)
+	logLine := fmt.Sprintf("[%s] [%s] [%s] %s", timestamp, center(levelStr, 7), center(category, 9), message)
 	l.logger.Println(logLine)
 }
 
