@@ -43,10 +43,9 @@ for gaur_theme in "${!THEMES[@]}"; do
 	echo "border-width=0" >>"$TEMP_CONFIG"
 
 	while true; do
-		# We run sh -c inside foot.
-		# If user types n/no, we exit 1. If enter, exit 0.
+		# Run sh -c inside foot without the --title flag
+		# If user types n/no, exit 1. If enter, exit 0.
 		foot -c "$TEMP_CONFIG" \
-			--title "Screenshot: $gaur_theme" \
 			sh -c "
                 ./gaur --theme '$gaur_theme'; 
                 echo -ne '\n📸 Done? (Enter=Next, n=Retry): '; 
