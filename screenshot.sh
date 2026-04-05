@@ -31,15 +31,7 @@ for gaur_theme in "${!THEMES[@]}"; do
 	# Load Theme Config
 	echo "include=$THEME_DIR/$foot_theme" >>"$TEMP_CONFIG"
 
-	# FIX - Force Dark Font for Light Themes
-	# We append a [colors] section at the very end to override everything else
-	if is_light_theme "$gaur_theme"; then
-		echo "" >>"$TEMP_CONFIG"
-		echo "[colors]" >>"$TEMP_CONFIG"
-		echo "foreground=1a1a1a" >>"$TEMP_CONFIG" # Dark Grey/Black
-	fi
-
-	# FIX - Force Window Size in Config (Prevents Segfault)
+	# Force Window Size in Config
 	echo "" >>"$TEMP_CONFIG"
 	echo "[main]" >>"$TEMP_CONFIG"
 	echo "initial-window-size-pixels=910x630" >>"$TEMP_CONFIG"
