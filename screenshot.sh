@@ -20,16 +20,6 @@ declare -A THEMES=(
 	["Tokyonight Storm"]="tokyonight-storm"
 )
 
-# List of themes that need Dark Text (The "Light Themes")
-LIGHT_THEMES=("Catppuccin Latte" "Gruvbox Light" "Solarized Light" "Tokyonight Day")
-
-# Helper function to check if a theme is in the light list
-is_light_theme() {
-	local e match="$1"
-	for e in "${LIGHT_THEMES[@]}"; do [[ "$e" == "$match" ]] && return 0; done
-	return 1
-}
-
 for gaur_theme in "${!THEMES[@]}"; do
 	foot_theme="${THEMES[$gaur_theme]}"
 
