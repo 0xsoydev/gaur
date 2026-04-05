@@ -36,6 +36,12 @@ for gaur_theme in "${!THEMES[@]}"; do
 	echo "[main]" >>"$TEMP_CONFIG"
 	echo "initial-window-size-pixels=910x630" >>"$TEMP_CONFIG"
 
+	# Disable Client-Side Decorations (Removes borders and titlebar)
+	echo "" >>"$TEMP_CONFIG"
+	echo "[csd]" >>"$TEMP_CONFIG"
+	echo "preferred=none" >>"$TEMP_CONFIG"
+	echo "border-width=0" >>"$TEMP_CONFIG"
+
 	while true; do
 		# We run sh -c inside foot.
 		# If user types n/no, we exit 1. If enter, exit 0.
