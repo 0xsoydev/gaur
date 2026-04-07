@@ -9,9 +9,9 @@ import (
 )
 
 func main() {
-	// Parse flags first to check for list-themes (which doesn't need deps)
 	themeFlag := flag.String("theme", "", "Color theme (use --list-themes to see options)")
 	listThemesFlag := flag.Bool("list-themes", false, "List available themes and exit")
+	exportThemesFlag := flag.Bool("export-themes", false, "Export default themes to config directory")
 	installFlag := flag.Bool("install", false, "Start in install mode (search and install packages)")
 	installFlagShort := flag.Bool("i", false, "Short flag for install mode")
 	removeFlag := flag.Bool("remove", false, "Start in remove mode (remove packages)")
@@ -22,28 +22,41 @@ func main() {
 	dashFlagShort := flag.Bool("d", false, "Short flag for dashboard mode")
 	flag.Parse()
 
+	themeLoader, err := InitThemeLoader()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error initializing theme loader: %v\n", err)
+		os.Exit(1)
+	}
+
+	if *exportThemesFlag {
+		destDir := themeLoader.GetUserThemesDir()
+		if err := themeLoader.ExportDefaults(destDir); err != nil {
+			fmt.Fprintf(os.Stderr, "Error exporting themes: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Default themes exported to: %s\n", destDir)
+		return
+	}
+
 	if *listThemesFlag {
 		fmt.Println("Available themes:")
-		for _, name := range listThemes() {
+		for _, name := range themeLoader.ListThemes() {
 			fmt.Printf("  - %s\n", name)
 		}
 		return
 	}
 
-	// Load configuration
 	cfg, err := LoadConfig()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: could not load config: %v\n", err)
 	}
 
-	// Initialize logger based on config
 	logLevel := LogLevelFromString(cfg.Logging.Level)
 	if err := InitLogger(logLevel, ""); err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: could not initialize logger: %v\n", err)
 	}
 	defer CloseLogger()
 
-	// Check dependencies
 	if err := checkDependencies(); err != nil {
 		LogError("STARTUP", "Dependency check failed: %v", err)
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -51,7 +64,6 @@ func main() {
 	}
 	LogDebug("STARTUP", "All dependencies satisfied")
 
-	// Determine initial mode: Flags take precedence, then config, then default
 	var initialMode viewMode
 	modeFromConfig := modeInstall
 	switch cfg.Startup.DefaultMode {
@@ -83,7 +95,6 @@ func main() {
 		LogInfo("STARTUP", "Starting in %s mode (from config)", modeString(initialMode))
 	}
 
-	// Theme resolution: Flag takes precedence, then config
 	activeTheme := cfg.UI.Theme
 	if *themeFlag != "" {
 		activeTheme = *themeFlag
@@ -91,19 +102,29 @@ func main() {
 	}
 
 	if activeTheme != "" {
-		if t, ok := getThemeByName(activeTheme); ok {
-			setTheme(t)
-			LogDebug("STARTUP", "Theme set to: %s", activeTheme)
+		if theme, ok := themeLoader.GetThemeByConfigName(activeTheme); ok {
+			setTheme(theme)
+			LogDebug("STARTUP", "Theme set to: %s", theme.Name)
 		} else if *themeFlag != "" {
 			fmt.Printf("Unknown theme: %s\nAvailable themes:\n", *themeFlag)
-			for _, name := range listThemes() {
+			for _, name := range themeLoader.ListThemes() {
 				fmt.Printf("  - %s\n", name)
 			}
 			os.Exit(1)
+		} else {
+			if theme, ok := themeLoader.GetThemeByConfigName("catppuccin-mocha"); ok {
+				setTheme(theme)
+				LogDebug("STARTUP", "Using fallback theme: catppuccin-mocha")
+			}
+		}
+	} else {
+		if theme, ok := themeLoader.GetThemeByConfigName("catppuccin-mocha"); ok {
+			setTheme(theme)
+			LogDebug("STARTUP", "Using default theme: catppuccin-mocha")
 		}
 	}
 
-	m := initialModel(initialMode, cfg)
+	m := initialModel(initialMode, cfg, themeLoader)
 	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseAllMotion())
 	LogInfo("STARTUP", "TUI program starting")
 	if _, err := p.Run(); err != nil {

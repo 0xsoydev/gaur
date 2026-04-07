@@ -11,6 +11,7 @@ import (
 type model struct {
 	config                Config
 	keys                  KeyMap
+	themeLoader           *ThemeLoader
 	textInput             textinput.Model
 	repoPackages          []Package       // All repo packages from local cache
 	aurPackages           []Package       // AUR packages from last search
@@ -79,7 +80,7 @@ type model struct {
 	mirrorProgressTotal   int // Total number of mirrors to process
 }
 
-func initialModel(initialMode viewMode, cfg Config) *model {
+func initialModel(initialMode viewMode, cfg Config, tl *ThemeLoader) *model {
 	ti := textinput.New()
 	ti.CharLimit = textInputCharLimit
 	ti.Width = textInputDefaultWidth
@@ -91,6 +92,7 @@ func initialModel(initialMode viewMode, cfg Config) *model {
 	m := &model{
 		config:         cfg,
 		keys:           NewKeyMap(cfg.Keys),
+		themeLoader:    tl,
 		textInput:      ti,
 		repoPackages:   []Package{},
 		installedSet:   make(map[string]bool),

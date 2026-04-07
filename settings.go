@@ -10,7 +10,6 @@ import (
 	"github.com/pelletier/go-toml/v2"
 )
 
-// initSettings populates the settings items based on the current config
 func (m *model) initSettings() {
 	m.settingsItems = []SettingItem{
 		{
@@ -21,7 +20,7 @@ func (m *model) initSettings() {
 		{
 			Label:     "Theme",
 			ConfigKey: "ui.theme",
-			Options:   listThemes(), // Use existing listThemes() from styles.go
+			Options:   m.themeLoader.ListThemes(),
 		},
 		{
 			Label:     "Default View",
@@ -40,7 +39,6 @@ func (m *model) initSettings() {
 		},
 	}
 
-	// Set active indices based on current config
 	for i, item := range m.settingsItems {
 		var currentVal string
 		switch item.ConfigKey {
@@ -57,7 +55,6 @@ func (m *model) initSettings() {
 		}
 
 		for idx, opt := range item.Options {
-			// Case-insensitive comparison for themes/modes
 			if strings.EqualFold(opt, currentVal) ||
 				(item.Label == "Theme" && strings.EqualFold(strings.ReplaceAll(opt, " ", "-"), currentVal)) {
 				m.settingsItems[i].ActiveIndex = idx
@@ -67,7 +64,6 @@ func (m *model) initSettings() {
 	}
 }
 
-// updateConfigFromSettings applies carousel changes to the internal config struct
 func (m *model) updateConfigFromSettings() {
 	item := m.settingsItems[m.settingsIndex]
 	val := item.Options[item.ActiveIndex]
@@ -77,9 +73,8 @@ func (m *model) updateConfigFromSettings() {
 		m.config.Commands.AurHelper = val
 	case "ui.theme":
 		m.config.UI.Theme = val
-		// Instant update: apply theme
-		if t, ok := getThemeByName(val); ok {
-			setTheme(t)
+		if theme, ok := m.themeLoader.GetThemeByConfigName(val); ok {
+			setTheme(theme)
 		}
 	case "startup.default_mode":
 		m.config.Startup.DefaultMode = val
@@ -87,15 +82,11 @@ func (m *model) updateConfigFromSettings() {
 		m.config.UI.BorderType = val
 	case "logging.level":
 		m.config.Logging.Level = val
-		// Instant update: apply log level
 		SetLogLevel(LogLevelFromString(val))
 		LogInfo("SETTINGS", "Log level changed to %s", val)
 	}
-
-	// We no longer save instantly to disk to allow real-time theme preview without I/O churn
 }
 
-// saveSettingsToDisk marshals current config to TOML and writes to XDG path
 func (m *model) saveSettingsToDisk() {
 	configDir, err := os.UserConfigDir()
 	if err != nil {
@@ -112,7 +103,6 @@ func (m *model) saveSettingsToDisk() {
 	_ = os.WriteFile(configPath, data, 0600)
 }
 
-// getBorderStyle returns the lipgloss.Border based on configuration
 func (m *model) getBorderStyle() lipgloss.Border {
 	switch m.config.UI.BorderType {
 	case "normal":
@@ -128,7 +118,6 @@ func (m *model) getBorderStyle() lipgloss.Border {
 	}
 }
 
-// renderSettings renders the btop-style settings overlay
 func (m *model) renderSettings(innerWidth, innerHeight int) string {
 	overlayWidth := 60
 	if overlayWidth > innerWidth-4 {
@@ -165,7 +154,6 @@ func (m *model) renderSettings(innerWidth, innerHeight int) string {
 
 		val := item.Options[item.ActiveIndex]
 
-		// Carousel rendering: < value >
 		leftArrow := "  "
 		rightArrow := "  "
 		if isFocused {
@@ -182,12 +170,10 @@ func (m *model) renderSettings(innerWidth, innerHeight int) string {
 
 		row := fmt.Sprintf("%s %s", label, carousel)
 
-		// Ensure the entire row has a consistent background when focused
 		var renderedRow string
 		if isFocused {
-			bgColor := lipgloss.Color("235")
+			bgColor := currentTheme.SelectionBG
 
-			// Pad the row manually before styling to ensure background covers full area
 			targetWidth := overlayWidth - 4
 			rowWidth := lipgloss.Width(row)
 			paddedRow := row
@@ -195,7 +181,6 @@ func (m *model) renderSettings(innerWidth, innerHeight int) string {
 				paddedRow += strings.Repeat(" ", targetWidth-rowWidth)
 			}
 
-			// Apply background maintenance to the entire padded row content
 			maintainedRow := maintainBackground(paddedRow, bgColor)
 
 			renderedRow = lipgloss.NewStyle().
@@ -217,7 +202,6 @@ func (m *model) renderSettings(innerWidth, innerHeight int) string {
 		renderKeyHint("close", m.keys.Cancel, helpStyle),
 		renderKeyHint("quit", m.keys.Quit, helpStyle))
 
-	// Apply layout style (centering) to the entire hints line
 	centeredHints := lipgloss.NewStyle().Width(overlayWidth - 4).Align(lipgloss.Center).Render(hints)
 	content.WriteString(centeredHints)
 
