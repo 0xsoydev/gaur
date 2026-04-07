@@ -637,7 +637,7 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 
 	boxTitleStyle := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("229"))
+		Foreground(currentTheme.TitleColor)
 
 	topBoxWidth := (safeWidth - 2) / 2
 	if topBoxWidth < 30 {
@@ -735,7 +735,7 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 		freeBytes = 0
 	}
 
-	otherColor := lipgloss.Color("135") // Purple for "Other" files
+	otherColor := currentTheme.SelectedColor
 
 	renderDiskLine := func(char, label, size string, bytes int64, color lipgloss.Color, currentBoxWidth int) string {
 		prefix := ""
@@ -772,11 +772,11 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 	}
 
 	storageLines := []string{
-		renderDiskLine("", "total", m.dashboard.DiskTotal, totalDiskBytes, lipgloss.Color("229"), topBoxWidth),
+		renderDiskLine("", "total", m.dashboard.DiskTotal, totalDiskBytes, currentTheme.TitleColor, topBoxWidth),
 		renderDiskLine("", "packages", m.dashboard.TotalSize, m.dashboard.TotalSizeBytes, cyanColor, topBoxWidth),
 		renderDiskLine("c", "ache", m.dashboard.CleanerSize, m.dashboard.CleanerSizeBytes, orangeColor, topBoxWidth),
 		renderDiskLine("", "other", formatBytes(otherUsedBytes), otherUsedBytes, otherColor, topBoxWidth),
-		renderDiskLine("", "free", formatBytes(freeBytes), freeBytes, lipgloss.Color("246"), topBoxWidth),
+		renderDiskLine("", "free", formatBytes(freeBytes), freeBytes, currentTheme.DimText, topBoxWidth),
 	}
 
 	borderColor := lipgloss.NewStyle().Foreground(activeColor)
@@ -828,7 +828,7 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 	dashboard.WriteString(topRow + "\n\n")
 
 	// Repo Distribution Bar
-	repoTitle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("229")).
+	repoTitle := lipgloss.NewStyle().Bold(true).Foreground(currentTheme.TitleColor).
 		Render("\ueb9c  Repository Distribution")
 	dashboard.WriteString(repoTitle + "\n")
 
@@ -861,7 +861,7 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 			{"AUR", aurCount, sourceColors["aur"]},
 		}
 		if otherCount > 0 {
-			allStats = append(allStats, repoStat{"Other", otherCount, lipgloss.Color("244")})
+			allStats = append(allStats, repoStat{"Other", otherCount, currentTheme.DimText})
 		}
 
 		// Calculate initial widths using floor
@@ -913,7 +913,7 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 				w = len(cStr)
 			}
 			w += 4
-			style := lipgloss.NewStyle().Background(color).Foreground(lipgloss.Color("16")).Bold(true).Width(w).Align(lipgloss.Center)
+			style := lipgloss.NewStyle().Background(color).Foreground(currentTheme.ScrollbarTrack).Bold(true).Width(w).Align(lipgloss.Center)
 			return lipgloss.JoinVertical(lipgloss.Center, style.Render(label), style.Render(cStr))
 		}
 
@@ -964,7 +964,7 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 
 		for i := 0; i < count; i++ {
 			pkg := m.dashboard.TopPackages[i]
-			rankStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+			rankStyle := lipgloss.NewStyle().Foreground(currentTheme.DimText)
 			nameStyle := lipgloss.NewStyle().Foreground(cyanColor)
 
 			pkgSizeBytes := parseSizeToBytes(pkg.Size)
@@ -999,7 +999,7 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 
 		for i := 0; i < count; i++ {
 			pkg := m.dashboard.TopCacheHogs[i]
-			rankStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+			rankStyle := lipgloss.NewStyle().Foreground(currentTheme.DimText)
 			nameStyle := lipgloss.NewStyle().Foreground(orangeColor)
 			sizeStyle := lipgloss.NewStyle().Foreground(yellowColor)
 
@@ -1019,7 +1019,7 @@ func (m *model) renderDashboard(helpText string, innerWidth, innerHeight int) st
 			nameW = 5
 		}
 
-		rankStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+		rankStyle := lipgloss.NewStyle().Foreground(currentTheme.DimText)
 		nameStyle := lipgloss.NewStyle().Foreground(greenColor)
 		timeStyle := lipgloss.NewStyle().Foreground(dimColor)
 

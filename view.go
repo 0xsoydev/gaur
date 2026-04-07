@@ -1124,15 +1124,15 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 	activeBorderColor := activeColor
 	switch m.confirmType {
 	case confirmInstall:
-		activeBorderColor = lipgloss.Color("39")
+		activeBorderColor = currentTheme.ConfirmInstall
 	case confirmRemove:
-		activeBorderColor = lipgloss.Color("208")
+		activeBorderColor = currentTheme.ConfirmRemove
 	case confirmCleanRemoved:
-		activeBorderColor = lipgloss.Color("42")
+		activeBorderColor = currentTheme.ConfirmClean
 	case confirmCleanNuke:
-		activeBorderColor = lipgloss.Color("196")
+		activeBorderColor = currentTheme.ConfirmNuke
 	case confirmCleanSelective:
-		activeBorderColor = lipgloss.Color("135")
+		activeBorderColor = currentTheme.ConfirmSelective
 	}
 
 	dialogBorderStyle := lipgloss.NewStyle().
@@ -1328,7 +1328,7 @@ func (m *model) renderErrorOverlay(innerWidth, innerHeight int) string {
 
 	dialogBorderStyle := lipgloss.NewStyle().
 		Border(m.getBorderStyle()).
-		BorderForeground(lipgloss.Color("196")).
+		BorderForeground(currentTheme.ErrorColor).
 		Align(lipgloss.Center)
 
 	// Build content pieces
@@ -1378,8 +1378,8 @@ func (m *model) renderMirrorOverlay(innerWidth, innerHeight int) string {
 		overlayWidth = innerWidth - 4
 	}
 
-	activeColor := lipgloss.Color("135") // Purple for mirror feature
-	dimPurple := lipgloss.Color("96")    // Dimmed purple for command highlighting
+	activeColor := currentTheme.DialogBorder
+	dimPurple := currentTheme.DimText
 	dimStyle := styleWithForeground(colorLightGray)
 	activeStyle := styleBoldWithForeground(activeColor)
 	labelStyle := lipgloss.NewStyle().Width(12).Foreground(lipgloss.Color("252")).Bold(true)

@@ -34,7 +34,7 @@ func (m *model) renderCacheMenu(helpText string, innerWidth, innerHeight int) st
 
 	titleStyle := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("229")).
+		Foreground(currentTheme.TitleColor).
 		MarginBottom(1).
 		Align(lipgloss.Center)
 
@@ -42,7 +42,7 @@ func (m *model) renderCacheMenu(helpText string, innerWidth, innerHeight int) st
 
 	normalItemStyle := lipgloss.NewStyle().
 		PaddingLeft(2).
-		Foreground(lipgloss.Color("250"))
+		Foreground(currentTheme.TextColor)
 
 	selectedItemStyle := lipgloss.NewStyle().
 		PaddingLeft(2).
@@ -97,7 +97,7 @@ func (m *model) renderCacheMenu(helpText string, innerWidth, innerHeight int) st
 		footerLine = renderCenteredFooter(helpText, innerWidth)
 	}
 
-	mainContent := lipgloss.Place(innerWidth, innerHeight-footerHeight, lipgloss.Center, lipgloss.Center, menuBox, lipgloss.WithWhitespaceChars(" "), lipgloss.WithWhitespaceForeground(lipgloss.Color("235")))
+	mainContent := lipgloss.Place(innerWidth, innerHeight-footerHeight, lipgloss.Center, lipgloss.Center, menuBox, lipgloss.WithWhitespaceChars(" "), lipgloss.WithWhitespaceForeground(currentTheme.ScrollbarTrack))
 
 	return SafeJoinVertical(innerWidth, innerHeight, "", []string{mainContent}, footerLine)
 }
@@ -195,11 +195,11 @@ func (m *model) renderSelectiveCacheView(helpText string, innerWidth, innerHeigh
 			}
 
 			if i == m.selectedIndex || m.markedPackages[pkg.Name] {
-				bgColor := lipgloss.Color("237") // Default marked grey
+				bgColor := currentTheme.SelectionBG
 				if i == m.selectedIndex {
-					bgColor = lipgloss.Color("135") // Selection purple
+					bgColor = currentTheme.SelectedColor
 				}
-				fgColor := lipgloss.Color("255")
+				fgColor := currentTheme.TextColor
 
 				maintainedName := maintainBackground(paddedName, bgColor)
 				lineContent := fmt.Sprintf("%s %s %s", prefix, maintainedName, sizeStr)
@@ -211,8 +211,8 @@ func (m *model) renderSelectiveCacheView(helpText string, innerWidth, innerHeigh
 					Width(itemWidth).
 					Render(lineContent)
 			} else {
-				namePart := lipgloss.NewStyle().Foreground(lipgloss.Color("250")).Render(paddedName)
-				sizePart := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render(sizeStr)
+				namePart := lipgloss.NewStyle().Foreground(currentTheme.TextColor).Render(paddedName)
+				sizePart := lipgloss.NewStyle().Foreground(currentTheme.DimText).Render(sizeStr)
 				line = fmt.Sprintf("%s %s %s", prefix, namePart, sizePart)
 				// Ensure unselected lines also fit the width
 				if lipgloss.Width(line) > itemWidth {
