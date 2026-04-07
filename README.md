@@ -54,9 +54,12 @@ Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea) • Powered 
 ### 🎨 Interface
 
 - **11 Built-in Themes** — Catppuccin, Dracula, Gruvbox, One Dark, Monokai Pro, Rose Pine, Solarized, Tokyonight, and more
+- **Custom TOML Themes** — Create your own themes in `$XDG_CONFIG_HOME/gaur/themes/`
+- **Theme Export** — Use `--export-themes` to customize default themes
 - **Mouse Support** — Full mouse wheel scrolling throughout the interface
 - **Mode-specific Theming** — Each mode (Install, Dash, Remove, Update) has its own color scheme
 - **In-App Settings Menu** — Press `,` to instantly change themes, borders, and helpers without restarting
+- **Live Theme Preview** — See theme changes instantly as you scroll through options
 - **Selection Panel** — Dedicated panel for managing marked packages
 - **Centered Dialogs** — All confirmation and error boxes are perfectly centered line-by-line
 - **Automatic Refresh** — The entire UI refreshes automatically after any system change to ensure data integrity
@@ -260,6 +263,79 @@ gaur ships with 11 color themes. Use the `--theme` flag or press `,` for in-app 
 gaur --theme dracula
 gaur --list-themes    # See all options
 ```
+
+#### Custom Themes
+
+gaur supports custom themes via TOML files. Theme files are stored in `$XDG_CONFIG_HOME/gaur/themes/` (typically `~/.config/gaur/themes/`).
+
+**Export default themes for customization:**
+
+```bash
+gaur --export-themes
+```
+
+This copies all embedded default themes to your themes directory, allowing you to customize them.
+
+**Create a custom theme:**
+
+1. Create a new TOML file: `~/.config/gaur/themes/my_theme.toml`
+2. Add your color definitions (see format below)
+3. Select it in settings or via `--theme my-theme`
+
+**Theme file format:**
+
+```toml
+# Base colors
+border = "#6c7086"
+selected = "#cba6f7"
+text = "#cdd6f4"
+subtle = "#6c7086"
+title = "#f9e2af"
+
+# UI elements
+scrollbar_track = "#181825"
+scrollbar_thumb = "#6c7086"
+selection_bg = "#313244"
+dim_text = "#6c7086"
+
+# Mode colors
+install = "#89b4fa"
+dashboard = "#f5c2e7"
+remove = "#f38ba8"
+update = "#a6e3a1"
+cache = "#cba6f7"
+
+# Source colors
+core = "#a6e3a1"
+extra = "#89b4fa"
+multilib = "#fab387"
+aur = "#cba6f7"
+
+# Status colors
+success = "#a6e3a1"
+warning = "#f9e2af"
+error = "#f38ba8"
+highlight = "#f9e2af"
+
+# Dashboard colors
+dashboard_label = "#cdd6f4"
+dashboard_value = "#89dceb"
+dashboard_warning = "#f38ba8"
+dashboard_desc = "#a6adc8"
+
+# Dialog colors
+dialog_border = "#cba6f7"
+confirm_install = "#89b4fa"
+confirm_remove = "#fab387"
+confirm_clean = "#a6e3a1"
+confirm_nuke = "#f38ba8"
+confirm_selective = "#cba6f7"
+```
+
+**Theme naming:**
+
+- Filename `my_theme.toml` becomes "My Theme" in the UI
+- Underscores and hyphens are converted to spaces and title-cased
 
 ## 🔧 How It Works
 
