@@ -45,6 +45,12 @@ func newTestThemeLoader() *ThemeLoader {
 		ConfirmClean:     lipgloss.Color("#a6e3a1"),
 		ConfirmNuke:      lipgloss.Color("#f38ba8"),
 		ConfirmSelective: lipgloss.Color("#cba6f7"),
+		ButtonBg:         lipgloss.Color("#45475a"),
+		ButtonFg:         lipgloss.Color("#cdd6f4"),
+		ButtonDangerBg:   lipgloss.Color("#f38ba8"),
+		ProgressTrack:    lipgloss.Color("#313244"),
+		AccentColor:      lipgloss.Color("#89b4fa"),
+		SpinnerColor:     lipgloss.Color("#f5c2e7"),
 	}
 
 	tl.themes["Catppuccin Mocha"] = defaultTheme

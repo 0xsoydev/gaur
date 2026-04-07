@@ -808,7 +808,7 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 			style := styleItalicDim()
 
 			if m.searchError {
-				style = style.Foreground(lipgloss.Color("#FF5555"))
+				style = style.Foreground(currentTheme.ErrorColor)
 			}
 
 			renderedStatus := style.Render(m.searchStatus)
@@ -1142,11 +1142,11 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 
 	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(activeBorderColor)
 	packageNameStyle := lipgloss.NewStyle().Foreground(activeBorderColor).Bold(true)
-	packageVersionStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("246"))
-	countStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Bold(true)
-	promptStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("252")).MarginTop(1)
+	packageVersionStyle := lipgloss.NewStyle().Foreground(currentTheme.DimText)
+	countStyle := lipgloss.NewStyle().Foreground(currentTheme.WarningColor).Bold(true)
+	promptStyle := lipgloss.NewStyle().Foreground(currentTheme.TextColor).MarginTop(1)
 	keyStyle := lipgloss.NewStyle().Foreground(activeBorderColor).Bold(true)
-	scrollHintStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
+	scrollHintStyle := lipgloss.NewStyle().Foreground(currentTheme.DimText)
 
 	var dialogContent []string
 	contentWidth := dialogWidth - 4
@@ -1159,7 +1159,7 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 	descStyle := lipgloss.NewStyle().Width(contentWidth).Align(lipgloss.Center)
 	if simpleConfirm {
 		if m.confirmType == confirmCleanNuke {
-			warningStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Bold(true).Width(contentWidth).Align(lipgloss.Center)
+			warningStyle := lipgloss.NewStyle().Foreground(currentTheme.ErrorColor).Bold(true).Width(contentWidth).Align(lipgloss.Center)
 			dialogContent = append(dialogContent, warningStyle.Render("WARNING: This will completely empty the package cache."))
 			dialogContent = append(dialogContent, "")
 		} else {
@@ -1172,7 +1172,7 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 		}
 
 		if m.confirmType != confirmCleanNuke {
-			labelStyle := lipgloss.NewStyle().Width(8).Foreground(lipgloss.Color("241"))
+			labelStyle := lipgloss.NewStyle().Width(8).Foreground(currentTheme.DimText)
 			dialogContent = append(dialogContent, packageNameStyle.Render("System Cache:"))
 			dialogContent = append(dialogContent, fmt.Sprintf("  %s %s", labelStyle.Render("Path:"), scrollHintStyle.Render(m.dashboard.PacmanCachePath)))
 			dialogContent = append(dialogContent, packageNameStyle.Render("User Cache:"))
@@ -1180,7 +1180,7 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 			dialogContent = append(dialogContent, "")
 		}
 
-		breakdownHeaderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Bold(true).Width(contentWidth).Align(lipgloss.Center)
+		breakdownHeaderStyle := lipgloss.NewStyle().Foreground(currentTheme.DimText).Bold(true).Width(contentWidth).Align(lipgloss.Center)
 		dialogContent = append(dialogContent, breakdownHeaderStyle.Render("Breakdown:"))
 
 		pacmanEstimate := m.dashboard.CacheFreedPacman[m.confirmType]
@@ -1196,7 +1196,7 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 			aurEstimate = "calculating..."
 		}
 
-		valStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
+		valStyle := lipgloss.NewStyle().Foreground(currentTheme.TextColor)
 		pacmanLabel := sourceStyle("core").Render("  pacman:")
 		helperLabel := m.config.Commands.AurHelper + ":"
 		if len(helperLabel) < 7 {
@@ -1213,7 +1213,7 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 		if estimate == "" {
 			estimate = "calculating..."
 		}
-		dialogContent = append(dialogContent, estStyle.Render(fmt.Sprintf("Estimated space to be freed: %s", lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("214")).Render(estimate))))
+		dialogContent = append(dialogContent, estStyle.Render(fmt.Sprintf("Estimated space to be freed: %s", lipgloss.NewStyle().Bold(true).Foreground(currentTheme.WarningColor).Render(estimate))))
 	} else {
 		// List-based Confirmations
 		listTitleStyle := lipgloss.NewStyle().Width(contentWidth).Align(lipgloss.Center)
@@ -1243,10 +1243,10 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 			if m.confirmType == confirmUpdate {
 				line = fmt.Sprintf("  • %s %s %s", sourceStyle(pkg.Source).Render(fmt.Sprintf("[%s]", pkg.Source)), packageNameStyle.Render(pkg.Name), packageVersionStyle.Render(pkg.Version))
 			} else if pkg.Version == "HEADER" {
-				line = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("229")).Render(pkg.Name)
+				line = lipgloss.NewStyle().Bold(true).Foreground(currentTheme.TitleColor).Render(pkg.Name)
 			} else if m.confirmType == confirmCleanRemoved || m.confirmType == confirmCleanSelective {
 				namePart := "  • " + packageNameStyle.Render(pkg.Name)
-				sizePart := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render(pkg.Size)
+				sizePart := lipgloss.NewStyle().Foreground(currentTheme.DimText).Render(pkg.Size)
 				spacing := (dialogWidth - 10) - lipgloss.Width(namePart) - lipgloss.Width(sizePart)
 				if spacing < 1 {
 					spacing = 1
@@ -1265,7 +1265,7 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 
 		if m.confirmType == confirmCleanRemoved {
 			dialogContent = append(dialogContent, "")
-			breakdownHeaderStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Bold(true).Width(contentWidth).Align(lipgloss.Center)
+			breakdownHeaderStyle := lipgloss.NewStyle().Foreground(currentTheme.DimText).Bold(true).Width(contentWidth).Align(lipgloss.Center)
 			dialogContent = append(dialogContent, breakdownHeaderStyle.Render("Breakdown:"))
 			pacmanEst := m.dashboard.CacheFreedPacman[m.confirmType]
 			aurEst := m.dashboard.CacheFreedAur[m.confirmType]
@@ -1280,8 +1280,8 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 			if len(helperLabel) < 7 {
 				helperLabel += strings.Repeat(" ", 7-len(helperLabel))
 			}
-			dialogContent = append(dialogContent, lipgloss.PlaceHorizontal(contentWidth, lipgloss.Center, fmt.Sprintf("%s %s", sourceStyle("core").Render("  pacman:"), lipgloss.NewStyle().Foreground(lipgloss.Color("252")).Render(pacmanEst))))
-			dialogContent = append(dialogContent, lipgloss.PlaceHorizontal(contentWidth, lipgloss.Center, fmt.Sprintf("%s %s", sourceStyle("aur").Render("  "+helperLabel), lipgloss.NewStyle().Foreground(lipgloss.Color("252")).Render(aurEst))))
+			dialogContent = append(dialogContent, lipgloss.PlaceHorizontal(contentWidth, lipgloss.Center, fmt.Sprintf("%s %s", sourceStyle("core").Render("  pacman:"), lipgloss.NewStyle().Foreground(currentTheme.TextColor).Render(pacmanEst))))
+			dialogContent = append(dialogContent, lipgloss.PlaceHorizontal(contentWidth, lipgloss.Center, fmt.Sprintf("%s %s", sourceStyle("aur").Render("  "+helperLabel), lipgloss.NewStyle().Foreground(currentTheme.TextColor).Render(aurEst))))
 		}
 
 		if m.confirmType == confirmCleanRemoved || m.confirmType == confirmCleanSelective {
@@ -1293,7 +1293,7 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 			if est == "" {
 				est = "calculating..."
 			}
-			dialogContent = append(dialogContent, lipgloss.PlaceHorizontal(contentWidth, lipgloss.Center, fmt.Sprintf("Estimated space to be freed: %s", lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("214")).Render(est))))
+			dialogContent = append(dialogContent, lipgloss.PlaceHorizontal(contentWidth, lipgloss.Center, fmt.Sprintf("Estimated space to be freed: %s", lipgloss.NewStyle().Bold(true).Foreground(currentTheme.WarningColor).Render(est))))
 		}
 	}
 
@@ -1382,7 +1382,7 @@ func (m *model) renderMirrorOverlay(innerWidth, innerHeight int) string {
 	dimPurple := currentTheme.DimText
 	dimStyle := styleWithForeground(colorLightGray)
 	activeStyle := styleBoldWithForeground(activeColor)
-	labelStyle := lipgloss.NewStyle().Width(12).Foreground(lipgloss.Color("252")).Bold(true)
+	labelStyle := lipgloss.NewStyle().Width(12).Foreground(currentTheme.TextColor).Bold(true)
 	descStyle := lipgloss.NewStyle().Foreground(colorDimGray).Italic(true)
 
 	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(activeColor).Width(overlayWidth - 4).Align(lipgloss.Center)
@@ -1516,7 +1516,7 @@ func (m *model) renderMirrorOverlay(innerWidth, innerHeight int) string {
 			}
 			empty := barWidth - filled
 
-			trackColor := lipgloss.Color("237")
+			trackColor := currentTheme.ProgressTrack
 			filledColor := activeColor
 			bar := lipgloss.NewStyle().Background(filledColor).Render(strings.Repeat(" ", filled)) +
 				lipgloss.NewStyle().Background(trackColor).Render(strings.Repeat(" ", empty))
@@ -1637,8 +1637,8 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 	var mirrorButton string
 	if !m.loading {
 		buttonStylePurple := lipgloss.NewStyle().
-			Background(lipgloss.Color("135")).
-			Foreground(lipgloss.Color("255")).
+			Background(currentTheme.SelectedColor).
+			Foreground(currentTheme.ButtonFg).
 			Padding(0, 1).
 			Bold(true)
 		mirrorButton = buttonStylePurple.Render("[m]irrors")
@@ -1654,7 +1654,7 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 		content.WriteString("\n  System is up to date!")
 		innerContentHeight = 2
 	} else {
-		countStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Bold(true)
+		countStyle := lipgloss.NewStyle().Foreground(currentTheme.WarningColor).Bold(true)
 		content.WriteString(fmt.Sprintf("  The following %s system updates are available:\n\n", countStyle.Render(fmt.Sprintf("%d", len(m.pendingUpdates)))))
 		innerContentHeight += 2
 
@@ -1699,7 +1699,7 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 				sourceBadge = fmt.Sprintf("[%s]", pkg.Source)
 			}
 
-			line := fmt.Sprintf("    • %s %s %s", sourceBadge, lipgloss.NewStyle().Foreground(lipgloss.Color("39")).Render(pkg.Name), lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render(pkg.Version))
+			line := fmt.Sprintf("    • %s %s %s", sourceBadge, lipgloss.NewStyle().Foreground(currentTheme.AccentColor).Render(pkg.Name), lipgloss.NewStyle().Foreground(currentTheme.DimText).Render(pkg.Version))
 			// Truncate to fit innerWidth-8 (accounting for scrollbar space)
 			if lipgloss.Width(line) > innerWidth-8 {
 				line = truncateWithAnsi(line, innerWidth-11) + "..."
@@ -1726,14 +1726,14 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 	var buttonsContent string
 	if !m.loading && len(m.pendingUpdates) > 0 {
 		buttonStyle := lipgloss.NewStyle().
-			Background(lipgloss.Color("238")).
-			Foreground(lipgloss.Color("255")).
+			Background(currentTheme.ButtonBg).
+			Foreground(currentTheme.ButtonFg).
 			Padding(0, 1).
 			Bold(true)
 
 		buttonStyleRed := lipgloss.NewStyle().
-			Background(lipgloss.Color("196")).
-			Foreground(lipgloss.Color("255")).
+			Background(currentTheme.ButtonDangerBg).
+			Foreground(currentTheme.ButtonFg).
 			Padding(0, 1).
 			Bold(true)
 

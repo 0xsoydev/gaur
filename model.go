@@ -87,7 +87,7 @@ func initialModel(initialMode viewMode, cfg Config, tl *ThemeLoader) *model {
 
 	s := spinner.New()
 	s.Spinner = spinner.Dot
-	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+	s.Style = lipgloss.NewStyle().Foreground(currentTheme.SpinnerColor)
 
 	m := &model{
 		config:         cfg,

@@ -45,3 +45,13 @@ confirm_remove = "#ff9e64"
 confirm_clean = "#9ece6a"
 confirm_nuke = "#f7768e"
 confirm_selective = "#bb9af7"
+
+# Button colors
+button_bg = "#283457"
+button_fg = "#c0caf5"
+button_danger_bg = "#f7768e"
+
+# Progress & accent
+progress_track = "#283457"
+accent = "#7aa2f7"
+spinner = "#bb9af7"

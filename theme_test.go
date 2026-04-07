@@ -173,6 +173,12 @@ confirm_remove = "#fab387"
 confirm_clean = "#a6e3a1"
 confirm_nuke = "#f38ba8"
 confirm_selective = "#cba6f7"
+button_bg = "#45475a"
+button_fg = "#cdd6f4"
+button_danger_bg = "#f38ba8"
+progress_track = "#313244"
+accent = "#89b4fa"
+spinner = "#f5c2e7"
 `
 	tl := &ThemeLoader{themes: make(map[string]Theme)}
 	theme, err := tl.parseTheme([]byte(validToml), "test.toml")
@@ -277,5 +283,51 @@ func TestGetFallbackDefaults(t *testing.T) {
 	}
 	if string(defaults.SelectedColor) == "" {
 		t.Error("getFallbackDefaults should return non-empty SelectedColor")
+	}
+	if string(defaults.ButtonBg) == "" {
+		t.Error("getFallbackDefaults should return non-empty ButtonBg")
+	}
+	if string(defaults.ButtonFg) == "" {
+		t.Error("getFallbackDefaults should return non-empty ButtonFg")
+	}
+	if string(defaults.ButtonDangerBg) == "" {
+		t.Error("getFallbackDefaults should return non-empty ButtonDangerBg")
+	}
+	if string(defaults.ProgressTrack) == "" {
+		t.Error("getFallbackDefaults should return non-empty ProgressTrack")
+	}
+	if string(defaults.AccentColor) == "" {
+		t.Error("getFallbackDefaults should return non-empty AccentColor")
+	}
+	if string(defaults.SpinnerColor) == "" {
+		t.Error("getFallbackDefaults should return non-empty SpinnerColor")
+	}
+}
+
+func TestNewThemeColors(t *testing.T) {
+	tl := newTestThemeLoader()
+	theme, ok := tl.GetTheme("Catppuccin Mocha")
+	if !ok {
+		t.Fatal("Expected to find Catppuccin Mocha theme")
+	}
+
+	// Verify new color fields are populated
+	if string(theme.ButtonBg) == "" || string(theme.ButtonBg) == "#ffffff" {
+		t.Error("ButtonBg should be populated from theme TOML")
+	}
+	if string(theme.ButtonFg) == "" || string(theme.ButtonFg) == "#ffffff" {
+		t.Error("ButtonFg should be populated from theme TOML")
+	}
+	if string(theme.ButtonDangerBg) == "" || string(theme.ButtonDangerBg) == "#ffffff" {
+		t.Error("ButtonDangerBg should be populated from theme TOML")
+	}
+	if string(theme.ProgressTrack) == "" || string(theme.ProgressTrack) == "#ffffff" {
+		t.Error("ProgressTrack should be populated from theme TOML")
+	}
+	if string(theme.AccentColor) == "" || string(theme.AccentColor) == "#ffffff" {
+		t.Error("AccentColor should be populated from theme TOML")
+	}
+	if string(theme.SpinnerColor) == "" || string(theme.SpinnerColor) == "#ffffff" {
+		t.Error("SpinnerColor should be populated from theme TOML")
 	}
 }

@@ -58,6 +58,13 @@ type Theme struct {
 	ConfirmClean     lipgloss.Color
 	ConfirmNuke      lipgloss.Color
 	ConfirmSelective lipgloss.Color
+
+	ButtonBg       lipgloss.Color
+	ButtonFg       lipgloss.Color
+	ButtonDangerBg lipgloss.Color
+	ProgressTrack  lipgloss.Color
+	AccentColor    lipgloss.Color
+	SpinnerColor   lipgloss.Color
 }
 
 type tomlTheme struct {
@@ -99,6 +106,13 @@ type tomlTheme struct {
 	ConfirmClean     string `toml:"confirm_clean"`
 	ConfirmNuke      string `toml:"confirm_nuke"`
 	ConfirmSelective string `toml:"confirm_selective"`
+
+	ButtonBg       string `toml:"button_bg"`
+	ButtonFg       string `toml:"button_fg"`
+	ButtonDangerBg string `toml:"button_danger_bg"`
+	ProgressTrack  string `toml:"progress_track"`
+	AccentColor    string `toml:"accent"`
+	SpinnerColor   string `toml:"spinner"`
 }
 
 type ThemeLoader struct {
@@ -249,6 +263,12 @@ func (tl *ThemeLoader) parseTheme(data []byte, filename string) (Theme, error) {
 		ConfirmClean:     lipgloss.Color(sanitizeColor(tt.ConfirmClean)),
 		ConfirmNuke:      lipgloss.Color(sanitizeColor(tt.ConfirmNuke)),
 		ConfirmSelective: lipgloss.Color(sanitizeColor(tt.ConfirmSelective)),
+		ButtonBg:         lipgloss.Color(sanitizeColor(tt.ButtonBg)),
+		ButtonFg:         lipgloss.Color(sanitizeColor(tt.ButtonFg)),
+		ButtonDangerBg:   lipgloss.Color(sanitizeColor(tt.ButtonDangerBg)),
+		ProgressTrack:    lipgloss.Color(sanitizeColor(tt.ProgressTrack)),
+		AccentColor:      lipgloss.Color(sanitizeColor(tt.AccentColor)),
+		SpinnerColor:     lipgloss.Color(sanitizeColor(tt.SpinnerColor)),
 	}
 
 	theme = applyDefaults(theme, filename)
@@ -291,6 +311,24 @@ func applyDefaults(theme Theme, filename string) Theme {
 	if string(theme.CacheColor) == "" || string(theme.CacheColor) == "#ffffff" {
 		theme.CacheColor = defaults.CacheColor
 	}
+	if string(theme.ButtonBg) == "" || string(theme.ButtonBg) == "#ffffff" {
+		theme.ButtonBg = defaults.ButtonBg
+	}
+	if string(theme.ButtonFg) == "" || string(theme.ButtonFg) == "#ffffff" {
+		theme.ButtonFg = defaults.ButtonFg
+	}
+	if string(theme.ButtonDangerBg) == "" || string(theme.ButtonDangerBg) == "#ffffff" {
+		theme.ButtonDangerBg = defaults.ButtonDangerBg
+	}
+	if string(theme.ProgressTrack) == "" || string(theme.ProgressTrack) == "#ffffff" {
+		theme.ProgressTrack = defaults.ProgressTrack
+	}
+	if string(theme.AccentColor) == "" || string(theme.AccentColor) == "#ffffff" {
+		theme.AccentColor = defaults.AccentColor
+	}
+	if string(theme.SpinnerColor) == "" || string(theme.SpinnerColor) == "#ffffff" {
+		theme.SpinnerColor = defaults.SpinnerColor
+	}
 
 	return theme
 }
@@ -329,6 +367,12 @@ func getFallbackDefaults(filename string) Theme {
 		ConfirmClean:     lipgloss.Color("#a6e3a1"),
 		ConfirmNuke:      lipgloss.Color("#f38ba8"),
 		ConfirmSelective: lipgloss.Color("#cba6f7"),
+		ButtonBg:         lipgloss.Color("#45475a"),
+		ButtonFg:         lipgloss.Color("#cdd6f4"),
+		ButtonDangerBg:   lipgloss.Color("#f38ba8"),
+		ProgressTrack:    lipgloss.Color("#313244"),
+		AccentColor:      lipgloss.Color("#89b4fa"),
+		SpinnerColor:     lipgloss.Color("#f5c2e7"),
 	}
 }
 
