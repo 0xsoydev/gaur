@@ -170,7 +170,7 @@ func TestSearchAURNoResultsExit1(t *testing.T) {
 }
 
 func TestUpdateKeyboardNavigation(t *testing.T) {
-	m := initialModel(modeInstall, DefaultConfig())
+	m := testModel(t, modeInstall, DefaultConfig())
 	m.filtered = make([]Package, 20)
 	for i := range m.filtered {
 		m.filtered[i] = Package{Name: fmt.Sprintf("pkg%d", i)}
@@ -250,7 +250,7 @@ func TestGetDashboardDataWithMock(t *testing.T) {
 }
 
 func TestModeSwitchingShortcuts(t *testing.T) {
-	m := initialModel(modeInstall, DefaultConfig())
+	m := testModel(t, modeInstall, DefaultConfig())
 	m.loading = false
 
 	// 'r' -> Remove
@@ -283,7 +283,7 @@ func TestModeSwitchingShortcuts(t *testing.T) {
 }
 
 func TestMarkingPackages(t *testing.T) {
-	m := initialModel(modeInstall, DefaultConfig())
+	m := testModel(t, modeInstall, DefaultConfig())
 	m.filtered = []Package{{Name: "pkg1"}, {Name: "pkg2"}}
 	m.loading = false
 	m.selectedIndex = 0
@@ -313,7 +313,7 @@ func TestMarkingPackages(t *testing.T) {
 }
 
 func TestConfirmationFlow(t *testing.T) {
-	m := initialModel(modeInstall, DefaultConfig())
+	m := testModel(t, modeInstall, DefaultConfig())
 	m.filtered = []Package{{Name: "pkg1"}}
 	m.loading = false
 	m.selectedIndex = 0

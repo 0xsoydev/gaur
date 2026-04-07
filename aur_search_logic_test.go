@@ -8,7 +8,7 @@ import (
 
 func TestAurSearchTriggeringLogic(t *testing.T) {
 	config := DefaultConfig()
-	m := initialModel(modeInstall, config)
+	m := testModel(t, modeInstall, config)
 	m.width = 100
 	m.height = 40
 	m.repoPackages = []Package{
@@ -110,7 +110,7 @@ func TestAurSearchTriggeringLogic(t *testing.T) {
 }
 
 func TestAurSearchResponseHandling(t *testing.T) {
-	m := initialModel(modeInstall, DefaultConfig())
+	m := testModel(t, modeInstall, DefaultConfig())
 	m.textInput.SetValue("a:test")
 	m.searchingAUR = true
 
@@ -146,7 +146,7 @@ func TestAurSearchResponseHandling(t *testing.T) {
 }
 
 func TestAurSearchRaceCondition(t *testing.T) {
-	m := initialModel(modeInstall, DefaultConfig())
+	m := testModel(t, modeInstall, DefaultConfig())
 	
 	// User types "hel", search 1 triggers
 	m.textInput.SetValue("hel")

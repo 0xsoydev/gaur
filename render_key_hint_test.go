@@ -91,7 +91,7 @@ func TestConfigKeyReflectionInView(t *testing.T) {
 	cfg.Keys.DashboardMode = []string{"v"} // 'v' is in 'dash'
 	cfg.Keys.Quit = []string{"ctrl+q"}
 
-	m := initialModel(modeInstall, cfg)
+	m := testModel(t, modeInstall, cfg)
 	view := stripAnsi(m.renderHelpText(lipgloss.Color("7")))
 
 	if !strings.Contains(view, "[x]:install") {
@@ -106,7 +106,7 @@ func TestConfigKeyReflectionInView(t *testing.T) {
 
 	// Test a key that IS in the name
 	cfg.Keys.RemoveMode = []string{"r"} // 'r' is in 'remove'
-	m = initialModel(modeInstall, cfg)
+	m = testModel(t, modeInstall, cfg)
 	view = stripAnsi(m.renderHelpText(lipgloss.Color("7")))
 	if !strings.Contains(view, "[r]emove") {
 		t.Errorf("Expected [r]emove in help text, got %q", view)
@@ -123,7 +123,7 @@ func TestConfigKeyReflectionInConfirmation(t *testing.T) {
 	cfg.Keys.Confirm = "y" // 'y' in 'yes'
 	cfg.Keys.Cancel = "x"  // 'x' not in 'no'
 
-	m := initialModel(modeInstall, cfg)
+	m := testModel(t, modeInstall, cfg)
 	m.showConfirmation = true
 	m.confirmType = confirmInstall
 
@@ -143,7 +143,7 @@ func TestConfigKeyReflectionInSettings(t *testing.T) {
 	cfg.Keys.Cancel = "c"         // 'c' in 'close'
 	cfg.Keys.Quit = []string{"q"} // 'q' in 'quit'
 
-	m := initialModel(modeInstall, cfg)
+	m := testModel(t, modeInstall, cfg)
 	m.mode = modeSettings
 
 	view := stripAnsi(m.renderSettings(80, 24))

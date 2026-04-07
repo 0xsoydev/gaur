@@ -19,7 +19,7 @@ func TestInstallRepoFilters(t *testing.T) {
 		{Source: "aur", Name: "yay-git", Version: "12.2.0"},
 	}
 
-	m := initialModel(modeInstall, DefaultConfig())
+	m := testModel(t, modeInstall, DefaultConfig())
 	m.repoPackages = repos
 	m.aurPackages = aur
 	m.textInput = textinput.New()

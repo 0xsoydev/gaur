@@ -12,7 +12,7 @@ func mouseWheelDown(x, y int) tea.MouseMsg {
 }
 
 func TestMouseScrollStandardMode(t *testing.T) {
-	m := initialModel(modeInstall, DefaultConfig())
+	m := testModel(t, modeInstall, DefaultConfig())
 	m.width = 80
 	m.height = 24
 	m.loading = false
@@ -44,7 +44,7 @@ func TestMouseScrollStandardMode(t *testing.T) {
 }
 
 func TestMouseScrollSelectiveUpdateMode(t *testing.T) {
-	m := initialModel(modeUpdateSelective, DefaultConfig())
+	m := testModel(t, modeUpdateSelective, DefaultConfig())
 	m.width = 80
 	m.height = 24
 	m.loading = false
@@ -73,7 +73,7 @@ func TestMouseScrollSelectiveUpdateMode(t *testing.T) {
 }
 
 func TestMouseScrollSimpleUpdateMode(t *testing.T) {
-	m := initialModel(modeUpdate, DefaultConfig())
+	m := testModel(t, modeUpdate, DefaultConfig())
 	m.width = 80
 	m.height = 24
 	m.loading = false
@@ -90,7 +90,7 @@ func TestMouseScrollSimpleUpdateMode(t *testing.T) {
 }
 
 func TestMouseScrollConfirmation(t *testing.T) {
-	m := initialModel(modeInstall, DefaultConfig())
+	m := testModel(t, modeInstall, DefaultConfig())
 	m.showConfirmation = true
 	m.confirmScrollOffset = 0
 	m.maxConfirmScroll = 5

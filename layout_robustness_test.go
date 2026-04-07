@@ -44,7 +44,7 @@ func TestLayoutRobustness(t *testing.T) {
 	for _, size := range terminalSizes {
 		for _, mode := range modes {
 			t.Run(fmt.Sprintf("%s_%dx%d", modeNames[mode], size.w, size.h), func(t *testing.T) {
-				m := initialModel(mode, config)
+				m := testModel(t, mode, config)
 				m.width = size.w
 				m.height = size.h
 

@@ -9,7 +9,7 @@ import (
 
 func TestUIStateIsolationOnModeSwitch(t *testing.T) {
 	// Start in Dashboard mode
-	m := initialModel(modeDashboard, DefaultConfig())
+	m := testModel(t, modeDashboard, DefaultConfig())
 
 	// Set up keys for switching
 	m.keys.InstallMode = key.NewBinding(key.WithKeys("i"))

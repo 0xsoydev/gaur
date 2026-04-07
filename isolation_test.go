@@ -9,7 +9,7 @@ import (
 
 func TestMarkedPackagesIsolationOnModeSwitch(t *testing.T) {
 	// Start in Install mode
-	m := initialModel(modeInstall, DefaultConfig())
+	m := testModel(t, modeInstall, DefaultConfig())
 	m.packages = []Package{{Source: "extra", Name: "vim", Version: "1.0"}}
 	m.filtered = m.packages
 	m.selectedIndex = 0
@@ -69,7 +69,7 @@ func TestMarkedPackagesIsolationOnModeSwitch(t *testing.T) {
 
 func TestMarkedPackagesPersistenceDuringFiltering(t *testing.T) {
 	// Marks should persist during search/filtering in the SAME mode
-	m := initialModel(modeInstall, DefaultConfig())
+	m := testModel(t, modeInstall, DefaultConfig())
 	m.packages = []Package{
 		{Source: "extra", Name: "vim", Version: "1.0"},
 		{Source: "extra", Name: "neovim", Version: "0.8"},
@@ -93,7 +93,7 @@ func TestMarkedPackagesPersistenceDuringFiltering(t *testing.T) {
 }
 
 func TestMarkedPackagesClearedOnCancel(t *testing.T) {
-	m := initialModel(modeInstall, DefaultConfig())
+	m := testModel(t, modeInstall, DefaultConfig())
 	m.markedPackages["vim"] = true
 
 	m.keys.Cancel = key.NewBinding(key.WithKeys("esc"))

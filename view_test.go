@@ -6,7 +6,7 @@ import (
 )
 
 func TestViewNoCrash(t *testing.T) {
-	m := initialModel(modeInstall, DefaultConfig())
+	m := testModel(t, modeInstall, DefaultConfig())
 	m.width = 100
 	m.height = 40
 	m.loading = false
@@ -48,7 +48,7 @@ func TestViewNoCrash(t *testing.T) {
 }
 
 func TestRepoSummary(t *testing.T) {
-	m := initialModel(modeInstall, DefaultConfig())
+	m := testModel(t, modeInstall, DefaultConfig())
 	pkgList := []Package{
 		{Source: "core", Name: "linux"},
 		{Source: "extra", Name: "vim"},

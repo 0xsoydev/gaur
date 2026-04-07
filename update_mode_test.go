@@ -13,7 +13,7 @@ import (
 // and pressing "down" should DECREASE the index (moving toward items shown at the bottom).
 func TestBottomUpNavigation(t *testing.T) {
 	t.Run("modeInstall", func(t *testing.T) {
-		m := initialModel(modeInstall, DefaultConfig())
+		m := testModel(t, modeInstall, DefaultConfig())
 		m.filtered = []Package{{Name: "pkg1"}, {Name: "pkg2"}, {Name: "pkg3"}}
 		m.loading = false
 		m.selectedIndex = 1 // Start in the middle so we can go both directions
@@ -48,7 +48,7 @@ func TestBottomUpNavigation(t *testing.T) {
 	})
 
 	t.Run("modeRemove", func(t *testing.T) {
-		m := initialModel(modeRemove, DefaultConfig())
+		m := testModel(t, modeRemove, DefaultConfig())
 		m.filteredInstalled = []Package{{Name: "pkg1"}, {Name: "pkg2"}, {Name: "pkg3"}}
 		m.loading = false
 		m.selectedIndex = 1
@@ -71,7 +71,7 @@ func TestBottomUpNavigation(t *testing.T) {
 
 // TestBottomUpNavigationBoundaries ensures navigation correctly clamps at boundaries.
 func TestBottomUpNavigationBoundaries(t *testing.T) {
-	m := initialModel(modeInstall, DefaultConfig())
+	m := testModel(t, modeInstall, DefaultConfig())
 	m.filtered = []Package{{Name: "pkg1"}, {Name: "pkg2"}, {Name: "pkg3"}}
 	m.loading = false
 
@@ -94,7 +94,7 @@ func TestBottomUpNavigationBoundaries(t *testing.T) {
 
 // TestBottomUpPageNavigation tests PgUp/PgDown behavior in bottom-up menus.
 func TestBottomUpPageNavigation(t *testing.T) {
-	m := initialModel(modeInstall, DefaultConfig())
+	m := testModel(t, modeInstall, DefaultConfig())
 	// Create a list with 15 packages to test page navigation
 	m.filtered = make([]Package, 15)
 	for i := range m.filtered {
@@ -119,7 +119,7 @@ func TestBottomUpPageNavigation(t *testing.T) {
 }
 
 func TestUpdateModeSwitching(t *testing.T) {
-	m := initialModel(modeInstall, DefaultConfig())
+	m := testModel(t, modeInstall, DefaultConfig())
 	m.loading = false
 	m.installed = []Package{{Name: "already-loaded"}}
 
@@ -150,7 +150,7 @@ func TestUpdateModeSwitching(t *testing.T) {
 }
 
 func TestUpdateWindowResize(t *testing.T) {
-	m := initialModel(modeInstall, DefaultConfig())
+	m := testModel(t, modeInstall, DefaultConfig())
 	newModel, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
 	m = newModel.(*model)
 	if m.width != 80 || m.height != 24 {
@@ -167,7 +167,7 @@ func TestAltModeSwitchingWithFocusedInput(t *testing.T) {
 	}
 
 	t.Run("Alt+1 switches to Dashboard from focused Install", func(t *testing.T) {
-		m := initialModel(modeInstall, DefaultConfig())
+		m := testModel(t, modeInstall, DefaultConfig())
 		m.textInput.Focus()
 		m.textInput.SetValue("some search")
 		m.loading = false
@@ -181,7 +181,7 @@ func TestAltModeSwitchingWithFocusedInput(t *testing.T) {
 	})
 
 	t.Run("Alt+2 switches to Install from focused Remove", func(t *testing.T) {
-		m := initialModel(modeRemove, DefaultConfig())
+		m := testModel(t, modeRemove, DefaultConfig())
 		m.textInput.Focus()
 		m.textInput.SetValue("filter text")
 		m.loading = false
@@ -195,7 +195,7 @@ func TestAltModeSwitchingWithFocusedInput(t *testing.T) {
 	})
 
 	t.Run("Alt+3 switches to Update from focused Install", func(t *testing.T) {
-		m := initialModel(modeInstall, DefaultConfig())
+		m := testModel(t, modeInstall, DefaultConfig())
 		m.textInput.Focus()
 		m.textInput.SetValue("searching")
 		m.loading = false
@@ -209,7 +209,7 @@ func TestAltModeSwitchingWithFocusedInput(t *testing.T) {
 	})
 
 	t.Run("Alt+4 switches to Remove from focused Install", func(t *testing.T) {
-		m := initialModel(modeInstall, DefaultConfig())
+		m := testModel(t, modeInstall, DefaultConfig())
 		m.textInput.Focus()
 		m.textInput.SetValue("package name")
 		m.loading = false
@@ -223,7 +223,7 @@ func TestAltModeSwitchingWithFocusedInput(t *testing.T) {
 	})
 
 	t.Run("Regular mode keys dont work when input focused", func(t *testing.T) {
-		m := initialModel(modeInstall, DefaultConfig())
+		m := testModel(t, modeInstall, DefaultConfig())
 		m.textInput.Focus()
 		m.textInput.SetValue("")
 		m.loading = false

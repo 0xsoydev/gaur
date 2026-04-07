@@ -13,7 +13,7 @@ func TestSelectiveUpdateFlow(t *testing.T) {
 		{Source: "extra", Name: "vlc", Version: "3.0.18"},
 		{Source: "aur", Name: "yay", Version: "12.5.7"},
 	}
-	m := initialModel(modeUpdate, DefaultConfig())
+	m := testModel(t, modeUpdate, DefaultConfig())
 	m.loading = false
 	m.pendingUpdates = pkgs
 	m.updatableAll = pkgs
@@ -82,7 +82,7 @@ func TestSelectiveUpdateFlow(t *testing.T) {
 }
 
 func TestSelectiveUpdateMouseScrollWithDetails(t *testing.T) {
-	m := initialModel(modeUpdateSelective, DefaultConfig())
+	m := testModel(t, modeUpdateSelective, DefaultConfig())
 	m.width = 80
 	m.height = 24
 	m.loading = false
@@ -116,7 +116,7 @@ func TestSelectiveUpdateMouseScrollWithDetails(t *testing.T) {
 }
 
 func TestSelectiveUpdateMouseScrollWithoutDetails(t *testing.T) {
-	m := initialModel(modeUpdateSelective, DefaultConfig())
+	m := testModel(t, modeUpdateSelective, DefaultConfig())
 	m.width = 80
 	m.height = 24
 	m.loading = false

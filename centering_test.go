@@ -12,7 +12,7 @@ import (
 func TestErrorOverlayCentering(t *testing.T) {
 	lipgloss.SetColorProfile(termenv.TrueColor)
 	
-	m := initialModel(modeInstall, DefaultConfig())
+	m := testModel(t, modeInstall, DefaultConfig())
 	m.errorTitle = "Test Error"
 	m.errorMessage = "This is a multi-line\nerror message that should\nbe perfectly centered."
 	
@@ -50,7 +50,7 @@ func TestErrorOverlayCentering(t *testing.T) {
 func TestConfirmationCentering(t *testing.T) {
 	lipgloss.SetColorProfile(termenv.TrueColor)
 	
-	m := initialModel(modeInstall, DefaultConfig())
+	m := testModel(t, modeInstall, DefaultConfig())
 	m.confirmType = confirmCleanNuke
 	// We don't hardcode paths here because they are now dynamic
 	m.dashboard.PacmanCachePath = "/var/cache/pacman/pkg"
@@ -87,7 +87,7 @@ func TestConfirmationCentering(t *testing.T) {
 func TestSearchStatusAlignment(t *testing.T) {
 	lipgloss.SetColorProfile(termenv.TrueColor)
 	
-	m := initialModel(modeInstall, DefaultConfig())
+	m := testModel(t, modeInstall, DefaultConfig())
 	m.searchStatus = "Searching..."
 	m.searchingAUR = true
 	m.width = 100
@@ -146,7 +146,7 @@ func TestSearchStatusAlignment(t *testing.T) {
 func TestFooterCentering(t *testing.T) {
 	lipgloss.SetColorProfile(termenv.TrueColor)
 	
-	m := initialModel(modeInstall, DefaultConfig())
+	m := testModel(t, modeInstall, DefaultConfig())
 	m.width = 100
 	m.height = 40
 	m.loading = false

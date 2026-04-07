@@ -8,7 +8,7 @@ import (
 
 func TestStateResetOnModeSwitch(t *testing.T) {
 	cfg := DefaultConfig()
-	m := initialModel(modeInstall, cfg)
+	m := testModel(t, modeInstall, cfg)
 
 	// 1. Simulate user state in modeInstall
 	m.textInput.SetValue("vim")
@@ -35,7 +35,7 @@ func TestStateResetOnModeSwitch(t *testing.T) {
 
 func TestStateResetTransitionToRemove(t *testing.T) {
 	cfg := DefaultConfig()
-	m := initialModel(modeInstall, cfg)
+	m := testModel(t, modeInstall, cfg)
 	m.textInput.SetValue("fzf")
 	m.packageDetails = "fzf details"
 
@@ -57,7 +57,7 @@ func TestStateResetTransitionToRemove(t *testing.T) {
 
 func TestStateResetOnSelectiveExit(t *testing.T) {
 	cfg := DefaultConfig()
-	m := initialModel(modeUpdate, cfg)
+	m := testModel(t, modeUpdate, cfg)
 	m.mode = modeUpdateSelective
 	m.textInput.Focus()
 	m.textInput.SetValue("lib")

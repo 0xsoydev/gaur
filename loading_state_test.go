@@ -80,7 +80,7 @@ func TestLoadingStateTransitions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := initialModel(tt.initialMode, cfg)
+			m := testModel(t, tt.initialMode, cfg)
 			m.loading = true // Simulate being in loading state
 
 			newModel, _ := m.Update(tt.triggerMsg)
@@ -95,7 +95,7 @@ func TestLoadingStateTransitions(t *testing.T) {
 
 func TestModeSwitchesSetLoading(t *testing.T) {
 	cfg := DefaultConfig()
-	m := initialModel(modeInstall, cfg)
+	m := testModel(t, modeInstall, cfg)
 	m.loading = false
 	m.pendingUpdates = []Package{{Name: "old-pkg"}}
 
@@ -129,7 +129,7 @@ func TestModeSwitchesSetLoading(t *testing.T) {
 
 func TestSyncTransitionsLoading(t *testing.T) {
 	cfg := DefaultConfig()
-	m := initialModel(modeUpdate, cfg)
+	m := testModel(t, modeUpdate, cfg)
 
 	// 1. Receive Sync Success
 	// case syncRepositoriesMsg: if msg.err == nil { m.loading = true; return m, checkUpdates() }

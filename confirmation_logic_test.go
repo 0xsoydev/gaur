@@ -71,7 +71,7 @@ func TestAllConfirmationMenus(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := initialModel(modeInstall, cfg)
+			m := testModel(t, modeInstall, cfg)
 			m.confirmType = tt.confirmType
 			m.showConfirmation = true
 			if tt.setup != nil {

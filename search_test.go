@@ -11,7 +11,7 @@ import (
 
 func TestSearchProgressIndicator(t *testing.T) {
 	// Initialize model in install mode
-	m := initialModel(modeInstall, DefaultConfig())
+	m := testModel(t, modeInstall, DefaultConfig())
 
 	// Initially no search
 	if m.searchingAUR {
@@ -101,7 +101,7 @@ func (e *mockError) Error() string {
 }
 
 func TestSearchStateIsolationOnModeSwitch(t *testing.T) {
-	m := initialModel(modeInstall, DefaultConfig())
+	m := testModel(t, modeInstall, DefaultConfig())
 	m.textInput.SetValue("vim")
 	m.performFiltering()
 
@@ -141,7 +141,7 @@ func TestSearchStateIsolationOnModeSwitch(t *testing.T) {
 }
 
 func TestSpinnerIntegration(t *testing.T) {
-	m := initialModel(modeInstall, DefaultConfig())
+	m := testModel(t, modeInstall, DefaultConfig())
 	m.searchingAUR = true
 	m.searchStatus = "Searching..."
 

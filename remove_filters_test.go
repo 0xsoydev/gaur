@@ -13,7 +13,7 @@ func TestRemoveFilters(t *testing.T) {
 		{Source: "aur", Name: "yay-git", Explicit: false, Orphan: true},
 	}
 
-	m := initialModel(modeRemove, DefaultConfig())
+	m := testModel(t, modeRemove, DefaultConfig())
 	m.installed = installed
 
 	tests := []struct {

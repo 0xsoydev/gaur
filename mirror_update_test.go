@@ -9,8 +9,8 @@ import (
 )
 
 // newTestModelMirror creates a model in modeUpdate with mirror overlay open
-func newTestModelMirror() *model {
-	m := newTestModelUpdate(testPackages())
+func newTestModelMirror(tb testing.TB) *model {
+	m := newTestModelUpdate(tb, testPackages())
 	m.showMirrorOverlay = true
 	m.mirrorConfig = DefaultMirrorConfig()
 	m.mirrorSelectedItem = mirrorItemSortBy
@@ -58,7 +58,7 @@ func TestMirrorOverlayEnterTriggersFromAnyItem(t *testing.T) {
 	for _, item := range items {
 		t.Run(fmt.Sprintf("item_%d", item), func(t *testing.T) {
 			interactiveCalled = false
-			m := newTestModelMirror()
+			m := newTestModelMirror(t)
 			m.mirrorSelectedItem = item
 
 			result, cmd := m.Update(keyMsg("enter"))
@@ -90,7 +90,7 @@ func TestMirrorOverlayEnterBlockedWhenReflectorMissing(t *testing.T) {
 		},
 	}
 
-	m := newTestModelMirror()
+	m := newTestModelMirror(t)
 	m.mirrorSelectedItem = mirrorItemSortBy
 
 	result, cmd := m.Update(keyMsg("enter"))
@@ -108,7 +108,7 @@ func TestMirrorOverlayEnterBlockedWhenReflectorMissing(t *testing.T) {
 }
 
 func TestMirrorOverlayBlocksInputWhileUpdating(t *testing.T) {
-	m := newTestModelMirror()
+	m := newTestModelMirror(t)
 	m.mirrorUpdating = true
 
 	// Try pressing various keys
@@ -126,7 +126,7 @@ func TestMirrorOverlayBlocksInputWhileUpdating(t *testing.T) {
 }
 
 func TestMirrorOverlayNavigationBounds(t *testing.T) {
-	m := newTestModelMirror()
+	m := newTestModelMirror(t)
 	m.mirrorSelectedItem = mirrorItemSortBy // 0
 
 	// Try going up past the top
@@ -154,7 +154,7 @@ func TestMirrorOverlayNavigationBounds(t *testing.T) {
 }
 
 func TestMirrorOverlayEscCloses(t *testing.T) {
-	m := newTestModelMirror()
+	m := newTestModelMirror(t)
 
 	result, cmd := m.Update(keyMsg("esc"))
 	resultModel := result.(*model)
@@ -186,7 +186,7 @@ func TestMirrorOverlayEnterSetsProgressState(t *testing.T) {
 		},
 	}
 
-	m := newTestModelMirror()
+	m := newTestModelMirror(t)
 	m.mirrorConfig.Latest = 15
 	m.mirrorError = "old error"
 
@@ -207,7 +207,7 @@ func TestMirrorOverlayEnterSetsProgressState(t *testing.T) {
 // --- mirrorSudoReadyMsg handling tests ---
 
 func TestMirrorSudoReadySuccess(t *testing.T) {
-	m := newTestModelMirror()
+	m := newTestModelMirror(t)
 	m.mirrorUpdating = true
 	m.mirrorConfig = DefaultMirrorConfig()
 
@@ -223,7 +223,7 @@ func TestMirrorSudoReadySuccess(t *testing.T) {
 }
 
 func TestMirrorSudoReadyFailure(t *testing.T) {
-	m := newTestModelMirror()
+	m := newTestModelMirror(t)
 	m.mirrorUpdating = true
 
 	result, cmd := m.Update(mirrorSudoReadyMsg{err: fmt.Errorf("sudo: 3 incorrect password attempts")})
@@ -243,7 +243,7 @@ func TestMirrorSudoReadyFailure(t *testing.T) {
 // --- mirrorProgressMsg handling tests ---
 
 func TestMirrorProgressMsgUpdatesModel(t *testing.T) {
-	m := newTestModelMirror()
+	m := newTestModelMirror(t)
 	m.mirrorUpdating = true
 
 	ch := make(chan tea.Msg, 1)
@@ -265,7 +265,7 @@ func TestMirrorProgressMsgUpdatesModel(t *testing.T) {
 // --- mirrorUpdateMsg handling tests ---
 
 func TestMirrorUpdateMsgSuccess(t *testing.T) {
-	m := newTestModelMirror()
+	m := newTestModelMirror(t)
 	m.mirrorUpdating = true
 
 	result, cmd := m.Update(mirrorUpdateMsg{success: true})
@@ -292,7 +292,7 @@ func TestMirrorUpdateMsgSuccess(t *testing.T) {
 }
 
 func TestMirrorUpdateMsgFailure(t *testing.T) {
-	m := newTestModelMirror()
+	m := newTestModelMirror(t)
 	m.mirrorUpdating = true
 
 	result, _ := m.Update(mirrorUpdateMsg{success: false, err: fmt.Errorf("reflector failed: exit status 1")})
@@ -419,7 +419,7 @@ func TestProgressCurrentCappedToTotal(t *testing.T) {
 	// This tests the view's progress percentage capping logic
 	// When mirrorProgressCurrent exceeds mirrorProgressTotal (extra stderr lines),
 	// the percentage should not exceed 100%
-	m := newTestModelMirror()
+	m := newTestModelMirror(t)
 	m.mirrorUpdating = true
 	m.mirrorProgressCurrent = 25
 	m.mirrorProgressTotal = 20
@@ -457,7 +457,7 @@ func TestExecuteMirrorUpdateValidatesConfig(t *testing.T) {
 // --- adjustMirrorOption wraparound tests ---
 
 func TestAdjustMirrorOptionWraparound(t *testing.T) {
-	m := newTestModelMirror()
+	m := newTestModelMirror(t)
 
 	// Sort: wrap forward past last
 	m.mirrorSelectedItem = mirrorItemSortBy
@@ -509,7 +509,7 @@ func TestAdjustMirrorOptionWraparound(t *testing.T) {
 // --- Mirror overlay open/close via M key ---
 
 func TestMirrorOverlayOpenClose(t *testing.T) {
-	m := newTestModelUpdate(testPackages())
+	m := newTestModelUpdate(t, testPackages())
 	m.textInput.Blur()
 
 	// Press 'm' to open mirror overlay
@@ -530,7 +530,7 @@ func TestMirrorOverlayOpenClose(t *testing.T) {
 }
 
 func TestMirrorOverlayBlockedWhileLoading(t *testing.T) {
-	m := newTestModelUpdate(testPackages())
+	m := newTestModelUpdate(t, testPackages())
 	m.loading = true
 
 	result, _ := m.Update(keyMsg("m"))

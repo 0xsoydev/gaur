@@ -136,7 +136,7 @@ func TestGlobalLayoutIntegrity(t *testing.T) {
 
 	for _, s := range scenarios {
 		t.Run(s.name, func(t *testing.T) {
-			m := initialModel(s.mode, DefaultConfig())
+			m := testModel(t, s.mode, DefaultConfig())
 
 			// Initialize window size properly
 			m.Update(tea.WindowSizeMsg{Width: s.width, Height: s.height})
@@ -181,7 +181,7 @@ func TestGlobalLayoutIntegrity(t *testing.T) {
 
 func TestSplitRatioIntegrity(t *testing.T) {
 	// Tests that the split between Dash and List panels is sane
-	m := initialModel(modeInstall, DefaultConfig())
+	m := testModel(t, modeInstall, DefaultConfig())
 	m.width = 80
 	m.height = 24
 	m.loading = false

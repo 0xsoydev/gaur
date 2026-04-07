@@ -9,18 +9,19 @@ import (
 )
 
 func TestHighlightMatches(t *testing.T) {
-	// matchHighlightStyle is defined in styles.go
 	lipgloss.SetColorProfile(termenv.TrueColor)
-	setTheme(themeCatppuccinMocha)
+	tl := newTestThemeLoader()
+	theme, _ := tl.GetTheme("Catppuccin Mocha")
+	setTheme(theme)
 	s := "aur/vim"
-	matchedIndices := []int{4, 5, 6} // "vim"
-	
+	matchedIndices := []int{4, 5, 6}
+
 	result := highlightMatches(s, matchedIndices)
-	
+
 	if !strings.Contains(result, "v") || !strings.Contains(result, "i") || !strings.Contains(result, "m") {
 		t.Errorf("highlightMatches failed to include matched characters: %q", result)
 	}
-	
+
 	// Check if the number of highlighted characters matches our expectation
 	// This is tricky because of ANSI codes, but we can check for their presence
 	if !strings.Contains(result, "\x1b[") {
@@ -30,16 +31,18 @@ func TestHighlightMatches(t *testing.T) {
 
 func TestHighlightMatchesWithSourceColor(t *testing.T) {
 	lipgloss.SetColorProfile(termenv.TrueColor)
-	setTheme(themeCatppuccinMocha)
+	tl := newTestThemeLoader()
+	theme, _ := tl.GetTheme("Catppuccin Mocha")
+	setTheme(theme)
 	pkg := Package{Source: "aur", Name: "vim"}
-	matchedIndices := []int{4, 5, 6} // "vim"
-	
+	matchedIndices := []int{4, 5, 6}
+
 	result := highlightMatchesWithSourceColor(pkg, matchedIndices)
-	
+
 	if lipgloss.Width(result) != len("aur/vim") {
 		t.Errorf("highlightMatchesWithSourceColor width = %d, want %d", lipgloss.Width(result), len("aur/vim"))
 	}
-	
+
 	// Check without matches
 	resultNoMatch := highlightMatchesWithSourceColor(pkg, nil)
 	if lipgloss.Width(resultNoMatch) != len("aur/vim") {
@@ -158,14 +161,14 @@ func TestOverlayCompositingLogic(t *testing.T) {
 func TestMaintainBackground(t *testing.T) {
 	bgColor := lipgloss.Color("235")
 	input := "\x1b[31mRed\x1b[0m Text"
-	
+
 	result := maintainBackground(input, bgColor)
-	
+
 	// Result should contain the background color sequence after the reset
 	if !strings.Contains(result, "\x1b[0m") {
 		t.Error("maintainBackground stripped the reset code")
 	}
-	
+
 	// Ensure it still has the original color code too
 	if !strings.Contains(result, "\x1b[31m") {
 		t.Error("maintainBackground stripped original foreground code")

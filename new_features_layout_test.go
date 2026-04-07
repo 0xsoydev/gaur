@@ -7,7 +7,7 @@ import (
 
 func TestSeparatorLineStretching(t *testing.T) {
 	config := DefaultConfig()
-	m := initialModel(modeInstall, config)
+	m := testModel(t, modeInstall, config)
 	m.width = 100
 	m.height = 40
 
@@ -47,7 +47,7 @@ func TestSeparatorLineStretching(t *testing.T) {
 
 func TestRepoFilterHintsLayout(t *testing.T) {
 	config := DefaultConfig()
-	m := initialModel(modeInstall, config)
+	m := testModel(t, modeInstall, config)
 	m.width = 100
 	m.height = 40
 	m.loading = false

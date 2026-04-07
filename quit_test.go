@@ -8,7 +8,7 @@ import (
 
 func TestQuitKeyWithFocus(t *testing.T) {
 	// Initialize model in Install mode where search is available
-	m := initialModel(modeInstall, DefaultConfig())
+	m := testModel(t, modeInstall, DefaultConfig())
 	m.loading = false
 
 	// 1. Test 'q' without focus (should quit)
@@ -24,7 +24,7 @@ func TestQuitKeyWithFocus(t *testing.T) {
 	}
 
 	// 2. Test 'q' with focus (should NOT quit)
-	m = initialModel(modeInstall, DefaultConfig())
+	m = testModel(t, modeInstall, DefaultConfig())
 	m.loading = false
 	m.textInput.Focus()
 
@@ -47,7 +47,7 @@ func TestQuitKeyWithFocus(t *testing.T) {
 }
 
 func TestCtrlCAlwaysQuits(t *testing.T) {
-	m := initialModel(modeInstall, DefaultConfig())
+	m := testModel(t, modeInstall, DefaultConfig())
 	m.loading = false
 	m.textInput.Focus()
 

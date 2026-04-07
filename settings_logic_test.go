@@ -9,7 +9,7 @@ import (
 
 func TestSettingsNavigation(t *testing.T) {
 	cfg := DefaultConfig()
-	m := initialModel(modeInstall, cfg)
+	m := testModel(t, modeInstall, cfg)
 	
 	// Open settings
 	m.mode = modeSettings
@@ -52,7 +52,7 @@ func TestSettingsNavigation(t *testing.T) {
 
 func TestSettingsBounds(t *testing.T) {
 	cfg := DefaultConfig()
-	m := initialModel(modeInstall, cfg)
+	m := testModel(t, modeInstall, cfg)
 	m.mode = modeSettings
 	m.settingsIndex = 0
 	
@@ -77,7 +77,7 @@ func TestSettingsBounds(t *testing.T) {
 
 func TestSettingsCloseEsc(t *testing.T) {
 	cfg := DefaultConfig()
-	m := initialModel(modeInstall, cfg)
+	m := testModel(t, modeInstall, cfg)
 	m.mode = modeSettings
 	m.previousMode = modeInstall
 	

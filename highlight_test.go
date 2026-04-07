@@ -5,7 +5,7 @@ import (
 )
 
 func TestHighlightingLogic(t *testing.T) {
-	m := initialModel(modeInstall, DefaultConfig())
+	m := testModel(t, modeInstall, DefaultConfig())
 	m.width = 100
 	m.height = 40
 	m.loading = false
@@ -69,7 +69,7 @@ func TestMatchIndicesConsolidation(t *testing.T) {
 	// by checking if the render logic correctly picks up indices from m.matchIndices
 	// even in Remove mode.
 	
-	m := initialModel(modeRemove, DefaultConfig())
+	m := testModel(t, modeRemove, DefaultConfig())
 	m.width = 100
 	m.height = 40
 	

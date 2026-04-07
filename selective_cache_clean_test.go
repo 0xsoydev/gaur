@@ -8,7 +8,7 @@ import (
 
 func TestSelectiveCacheCleanFlow(t *testing.T) {
 	// 1. Initial setup
-	m := initialModel(modeDashboard, DefaultConfig())
+	m := testModel(t, modeDashboard, DefaultConfig())
 	m.loading = false
 	m.dashboard.AllCacheHogs = []PackageSize{
 		{Name: "pkg1", Size: "100.00 MiB", SizeBytes: 100 * 1024 * 1024},
