@@ -1,0 +1,47 @@
+# One Dark theme
+
+# Base colors
+border = "#5c6370"
+selected = "#c678dd"
+text = "#abb2bf"
+subtle = "#5c6370"
+title = "#e5c07b"
+
+# UI elements
+scrollbar_track = "#21252b"
+scrollbar_thumb = "#5c6370"
+selection_bg = "#3e4451"
+dim_text = "#5c6370"
+
+# Mode colors
+install = "#61afef"
+dashboard = "#c678dd"
+remove = "#e06c75"
+update = "#98c379"
+cache = "#c678dd"
+
+# Source colors
+core = "#98c379"
+extra = "#61afef"
+multilib = "#d19a66"
+aur = "#c678dd"
+
+# Status colors
+success = "#98c379"
+warning = "#e5c07b"
+error = "#e06c75"
+highlight = "#e5c07b"
+
+# Dashboard colors
+dashboard_label = "#abb2bf"
+dashboard_value = "#56b6c2"
+dashboard_warning = "#e06c75"
+dashboard_desc = "#5c6370"
+
+# Dialog colors
+dialog_border = "#c678dd"
+confirm_install = "#61afef"
+confirm_remove = "#d19a66"
+confirm_clean = "#98c379"
+confirm_nuke = "#e06c75"
+confirm_selective = "#c678dd"

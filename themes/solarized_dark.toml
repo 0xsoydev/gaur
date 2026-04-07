@@ -1,0 +1,47 @@
+# Solarized Dark theme
+
+# Base colors
+border = "#586e75"
+selected = "#6c71c4"
+text = "#839496"
+subtle = "#586e75"
+title = "#b58900"
+
+# UI elements
+scrollbar_track = "#002b36"
+scrollbar_thumb = "#586e75"
+selection_bg = "#073642"
+dim_text = "#586e75"
+
+# Mode colors
+install = "#268bd2"
+dashboard = "#d33682"
+remove = "#dc322f"
+update = "#859900"
+cache = "#6c71c4"
+
+# Source colors
+core = "#859900"
+extra = "#268bd2"
+multilib = "#cb4b16"
+aur = "#6c71c4"
+
+# Status colors
+success = "#859900"
+warning = "#b58900"
+error = "#dc322f"
+highlight = "#b58900"
+
+# Dashboard colors
+dashboard_label = "#839496"
+dashboard_value = "#2aa198"
+dashboard_warning = "#dc322f"
+dashboard_desc = "#657b83"
+
+# Dialog colors
+dialog_border = "#6c71c4"
+confirm_install = "#268bd2"
+confirm_remove = "#cb4b16"
+confirm_clean = "#859900"
+confirm_nuke = "#dc322f"
+confirm_selective = "#6c71c4"

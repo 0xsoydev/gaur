@@ -1,0 +1,47 @@
+# Gruvbox Dark theme
+
+# Base colors
+border = "#665c54"
+selected = "#d3869b"
+text = "#ebdbb2"
+subtle = "#665c54"
+title = "#fabd2f"
+
+# UI elements
+scrollbar_track = "#282828"
+scrollbar_thumb = "#665c54"
+selection_bg = "#3c3836"
+dim_text = "#665c54"
+
+# Mode colors
+install = "#83a598"
+dashboard = "#d3869b"
+remove = "#fb4934"
+update = "#b8bb26"
+cache = "#d3869b"
+
+# Source colors
+core = "#b8bb26"
+extra = "#83a598"
+multilib = "#fe8019"
+aur = "#d3869b"
+
+# Status colors
+success = "#b8bb26"
+warning = "#fabd2f"
+error = "#fb4934"
+highlight = "#fabd2f"
+
+# Dashboard colors
+dashboard_label = "#ebdbb2"
+dashboard_value = "#8ec07c"
+dashboard_warning = "#fb4934"
+dashboard_desc = "#a89984"
+
+# Dialog colors
+dialog_border = "#d3869b"
+confirm_install = "#83a598"
+confirm_remove = "#fe8019"
+confirm_clean = "#b8bb26"
+confirm_nuke = "#fb4934"
+confirm_selective = "#d3869b"

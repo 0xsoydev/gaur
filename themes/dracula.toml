@@ -1,0 +1,47 @@
+# Dracula theme
+
+# Base colors
+border = "#6272a4"
+selected = "#bd93f9"
+text = "#f8f8f2"
+subtle = "#6272a4"
+title = "#f1fa8c"
+
+# UI elements
+scrollbar_track = "#282a36"
+scrollbar_thumb = "#6272a4"
+selection_bg = "#44475a"
+dim_text = "#6272a4"
+
+# Mode colors
+install = "#8be9fd"
+dashboard = "#ff79c6"
+remove = "#ff5555"
+update = "#50fa7b"
+cache = "#bd93f9"
+
+# Source colors
+core = "#50fa7b"
+extra = "#8be9fd"
+multilib = "#ffb86c"
+aur = "#bd93f9"
+
+# Status colors
+success = "#50fa7b"
+warning = "#f1fa8c"
+error = "#ff5555"
+highlight = "#f1fa8c"
+
+# Dashboard colors
+dashboard_label = "#f8f8f2"
+dashboard_value = "#8be9fd"
+dashboard_warning = "#ff5555"
+dashboard_desc = "#6272a4"
+
+# Dialog colors
+dialog_border = "#bd93f9"
+confirm_install = "#8be9fd"
+confirm_remove = "#ffb86c"
+confirm_clean = "#50fa7b"
+confirm_nuke = "#ff5555"
+confirm_selective = "#bd93f9"

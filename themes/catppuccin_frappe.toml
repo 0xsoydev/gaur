@@ -1,0 +1,47 @@
+# Catppuccin Frappe theme
+
+# Base colors
+border = "#737994"
+selected = "#ca9ee6"
+text = "#c6d0f5"
+subtle = "#737994"
+title = "#e5c890"
+
+# UI elements
+scrollbar_track = "#292c3c"
+scrollbar_thumb = "#737994"
+selection_bg = "#414559"
+dim_text = "#737994"
+
+# Mode colors
+install = "#8caaee"
+dashboard = "#f4b8e4"
+remove = "#e78284"
+update = "#a6d189"
+cache = "#ca9ee6"
+
+# Source colors
+core = "#a6d189"
+extra = "#8caaee"
+multilib = "#ef9f76"
+aur = "#ca9ee6"
+
+# Status colors
+success = "#a6d189"
+warning = "#e5c890"
+error = "#e78284"
+highlight = "#e5c890"
+
+# Dashboard colors
+dashboard_label = "#c6d0f5"
+dashboard_value = "#99d1db"
+dashboard_warning = "#e78284"
+dashboard_desc = "#a5adce"
+
+# Dialog colors
+dialog_border = "#ca9ee6"
+confirm_install = "#8caaee"
+confirm_remove = "#ef9f76"
+confirm_clean = "#a6d189"
+confirm_nuke = "#e78284"
+confirm_selective = "#ca9ee6"

@@ -1,0 +1,47 @@
+# Catppuccin Macchiato theme
+
+# Base colors
+border = "#6e738d"
+selected = "#c6a0f6"
+text = "#cad3f5"
+subtle = "#6e738d"
+title = "#eed49f"
+
+# UI elements
+scrollbar_track = "#1e2030"
+scrollbar_thumb = "#6e738d"
+selection_bg = "#363a4f"
+dim_text = "#6e738d"
+
+# Mode colors
+install = "#8aadf4"
+dashboard = "#f5bde6"
+remove = "#ed8796"
+update = "#a6da95"
+cache = "#c6a0f6"
+
+# Source colors
+core = "#a6da95"
+extra = "#8aadf4"
+multilib = "#f5a97f"
+aur = "#c6a0f6"
+
+# Status colors
+success = "#a6da95"
+warning = "#eed49f"
+error = "#ed8796"
+highlight = "#eed49f"
+
+# Dashboard colors
+dashboard_label = "#cad3f5"
+dashboard_value = "#91d7e3"
+dashboard_warning = "#ed8796"
+dashboard_desc = "#a5adcb"
+
+# Dialog colors
+dialog_border = "#c6a0f6"
+confirm_install = "#8aadf4"
+confirm_remove = "#f5a97f"
+confirm_clean = "#a6da95"
+confirm_nuke = "#ed8796"
+confirm_selective = "#c6a0f6"

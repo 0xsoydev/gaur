@@ -1,0 +1,47 @@
+# Catppuccin Mocha theme (default)
+
+# Base colors
+border = "#6c7086"
+selected = "#cba6f7"
+text = "#cdd6f4"
+subtle = "#6c7086"
+title = "#f9e2af"
+
+# UI elements
+scrollbar_track = "#181825"
+scrollbar_thumb = "#6c7086"
+selection_bg = "#313244"
+dim_text = "#6c7086"
+
+# Mode colors
+install = "#89b4fa"
+dashboard = "#f5c2e7"
+remove = "#f38ba8"
+update = "#a6e3a1"
+cache = "#cba6f7"
+
+# Source colors
+core = "#a6e3a1"
+extra = "#89b4fa"
+multilib = "#fab387"
+aur = "#cba6f7"
+
+# Status colors
+success = "#a6e3a1"
+warning = "#f9e2af"
+error = "#f38ba8"
+highlight = "#f9e2af"
+
+# Dashboard colors
+dashboard_label = "#cdd6f4"
+dashboard_value = "#89dceb"
+dashboard_warning = "#f38ba8"
+dashboard_desc = "#a6adc8"
+
+# Dialog colors
+dialog_border = "#cba6f7"
+confirm_install = "#89b4fa"
+confirm_remove = "#fab387"
+confirm_clean = "#a6e3a1"
+confirm_nuke = "#f38ba8"
+confirm_selective = "#cba6f7"

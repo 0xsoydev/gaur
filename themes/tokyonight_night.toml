@@ -1,0 +1,47 @@
+# Tokyonight Night theme
+
+# Base colors
+border = "#565f89"
+selected = "#bb9af7"
+text = "#c0caf5"
+subtle = "#565f89"
+title = "#e0af68"
+
+# UI elements
+scrollbar_track = "#16161e"
+scrollbar_thumb = "#565f89"
+selection_bg = "#283457"
+dim_text = "#565f89"
+
+# Mode colors
+install = "#7aa2f7"
+dashboard = "#bb9af7"
+remove = "#f7768e"
+update = "#9ece6a"
+cache = "#bb9af7"
+
+# Source colors
+core = "#9ece6a"
+extra = "#7aa2f7"
+multilib = "#ff9e64"
+aur = "#bb9af7"
+
+# Status colors
+success = "#9ece6a"
+warning = "#e0af68"
+error = "#f7768e"
+highlight = "#e0af68"
+
+# Dashboard colors
+dashboard_label = "#c0caf5"
+dashboard_value = "#7dcfff"
+dashboard_warning = "#f7768e"
+dashboard_desc = "#a9b1d6"
+
+# Dialog colors
+dialog_border = "#bb9af7"
+confirm_install = "#7aa2f7"
+confirm_remove = "#ff9e64"
+confirm_clean = "#9ece6a"
+confirm_nuke = "#f7768e"
+confirm_selective = "#bb9af7"

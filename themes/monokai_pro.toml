@@ -1,0 +1,47 @@
+# Monokai Pro theme
+
+# Base colors
+border = "#727072"
+selected = "#ab9df2"
+text = "#fcfcfa"
+subtle = "#727072"
+title = "#ffd866"
+
+# UI elements
+scrollbar_track = "#2d2a2e"
+scrollbar_thumb = "#727072"
+selection_bg = "#403e41"
+dim_text = "#727072"
+
+# Mode colors
+install = "#78dce8"
+dashboard = "#ff6188"
+remove = "#ff6188"
+update = "#a9dc76"
+cache = "#ab9df2"
+
+# Source colors
+core = "#a9dc76"
+extra = "#78dce8"
+multilib = "#fc9867"
+aur = "#ab9df2"
+
+# Status colors
+success = "#a9dc76"
+warning = "#ffd866"
+error = "#ff6188"
+highlight = "#ffd866"
+
+# Dashboard colors
+dashboard_label = "#fcfcfa"
+dashboard_value = "#78dce8"
+dashboard_warning = "#ff6188"
+dashboard_desc = "#727072"
+
+# Dialog colors
+dialog_border = "#ab9df2"
+confirm_install = "#78dce8"
+confirm_remove = "#fc9867"
+confirm_clean = "#a9dc76"
+confirm_nuke = "#ff6188"
+confirm_selective = "#ab9df2"

@@ -1,0 +1,47 @@
+# Rose Pine theme
+
+# Base colors
+border = "#6e6a86"
+selected = "#c4a7e7"
+text = "#e0def4"
+subtle = "#6e6a86"
+title = "#f6c177"
+
+# UI elements
+scrollbar_track = "#191724"
+scrollbar_thumb = "#6e6a86"
+selection_bg = "#2a2837"
+dim_text = "#6e6a86"
+
+# Mode colors
+install = "#31748f"
+dashboard = "#ebbcba"
+remove = "#eb6f92"
+update = "#9ccfd8"
+cache = "#c4a7e7"
+
+# Source colors
+core = "#9ccfd8"
+extra = "#31748f"
+multilib = "#f6c177"
+aur = "#c4a7e7"
+
+# Status colors
+success = "#9ccfd8"
+warning = "#f6c177"
+error = "#eb6f92"
+highlight = "#f6c177"
+
+# Dashboard colors
+dashboard_label = "#e0def4"
+dashboard_value = "#31748f"
+dashboard_warning = "#eb6f92"
+dashboard_desc = "#908caa"
+
+# Dialog colors
+dialog_border = "#c4a7e7"
+confirm_install = "#31748f"
+confirm_remove = "#f6c177"
+confirm_clean = "#9ccfd8"
+confirm_nuke = "#eb6f92"
+confirm_selective = "#c4a7e7"
