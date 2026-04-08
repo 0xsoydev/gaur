@@ -56,8 +56,16 @@ const { Content } = await entry.render();
 		@apply bg-surface0 text-pink px-1.5 py-0.5 rounded-sm font-bold text-sm;
 	}
 	
-	.content pre { 
-		@apply bg-mantle border border-muted/10 p-6 rounded-gaur mb-8 overflow-x-auto shadow-inner;
+	.content pre {
+		@apply bg-mantle border border-muted/10 p-6 rounded-gaur mb-8 overflow-x-auto shadow-inner relative;
+	}
+
+	.content pre .code-copy-btn {
+		@apply absolute top-2 right-2 px-2 py-1 text-[10px] font-bold border border-mauve/40 text-mauve/60 hover:text-mauve hover:border-mauve hover:bg-mauve/10 transition-all rounded-gaur uppercase tracking-widest opacity-0;
+	}
+
+	.content pre:hover .code-copy-btn {
+		@apply opacity-100;
 	}
 	
 	.content pre code { 
@@ -73,3 +81,28 @@ const { Content } = await entry.render();
 	
 	.content a { @apply text-primary hover:underline underline-offset-4 decoration-primary/30 transition-all; }
 </style>
+
+<script>
+	document.querySelectorAll('.content pre code').forEach((codeEl) => {
+		const pre = codeEl.parentElement;
+		if (!pre || pre.querySelector('.code-copy-btn')) return;
+
+		const btn = document.createElement('button');
+		btn.className = 'code-copy-btn';
+		btn.textContent = 'COPY';
+		btn.addEventListener('click', () => {
+			const text = codeEl.textContent || '';
+			navigator.clipboard.writeText(text);
+			btn.textContent = 'DONE';
+			btn.classList.replace('text-mauve/60', 'text-green');
+			btn.classList.replace('border-mauve/40', 'border-green');
+			setTimeout(() => {
+				btn.textContent = 'COPY';
+				btn.classList.replace('text-green', 'text-mauve/60');
+				btn.classList.replace('border-green', 'border-mauve/40');
+			}, 2000);
+		});
+		pre.style.position = 'relative';
+		pre.appendChild(btn);
+	});
+</script>
