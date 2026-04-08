@@ -69,22 +69,22 @@ import TerminalHero from '../components/TerminalHero.astro';
 			<div class="w-full pb-8 text-center flex-shrink-0">
 				<div class="opacity-20 mb-6 flex justify-center">
 					<pre class="text-[10px] md:text-xs leading-none text-left">
-   ::::::::      :::     :::    ::: :::::::::  
-  :+:    :+:   :+: :+:   :+:    :+: :+:    :+: 
- +:+         +:+   +:+  +:+    +:+ +:+    +:+  
- :#:        +#++:++#++: +#+    +:+ +#++:++#:    
- +#+   ++++ +#+     +#+ +#+    +#+ +#+    +#+    
-#+#    #+# #+#     #+# #+#    #+# #+#    #+#     
-########  ###     ###  ########  ###    ###      
+   ::::::::      :::     :::    ::: :::::::::
+  :+:    :+:   :+: :+:   :+:    :+: :+:    :+:
+ +:+         +:+   +:+  +:+    +:+ +:+    +:+
+ :#:        +#++:++#++: +#+    +:+ +#++:++#:
+ +#+   ++++ +#+     +#+ +#+    +#+ +#+    +#+
+#+#    #+# #+#     #+# #+#    #+# #+#    #+#
+########  ###     ###  ########  ###    ###
 </pre>
 				</div>
-				
+
 				<div class="text-muted/40 text-[10px] font-mono tracking-tight">
 					<p>© {new Date().getFullYear()} gaur. open source under gplv3.</p>
 					<p class="mt-1">crafted with astro + tailwind. made for arch users, by arch users.</p>
 				</div>
 			</div>
-			
+
 			<!-- Threshold Indicator -->
 			<div class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 transition-opacity duration-500 threshold-indicator"></div>
 		</section>
@@ -107,11 +107,11 @@ import TerminalHero from '../components/TerminalHero.astro';
 				const sectionTop = section.offsetTop;
 				const sectionHeight = section.clientHeight;
 				const relativeScroll = container.scrollTop - sectionTop;
-				
+
 				// Threshold glow: starts appearing after 70% of the section is scrolled
 				const threshold = sectionHeight * 0.7;
 				const indicator = section.querySelector('.threshold-indicator');
-				
+
 				if (indicator && i < sections.length - 1) {
 					if (relativeScroll > threshold) {
 						const opacity = (relativeScroll - threshold) / (sectionHeight - threshold);

@@ -51,11 +51,61 @@ docsEntries.sort((a, b) => {
 			<div class="mt-20 p-8 rounded-gaur border border-highlight/20 bg-highlight/5">
 				<h3 class="text-xl font-bold text-highlight mb-4">quick start</h3>
 				<p class="text-text/80 mb-6">grab gaur from the aur and you're ready to go. one command, zero fuss.</p>
-				<code class="block bg-mantle p-4 rounded-sm border border-muted/10 text-pink font-bold">
-					paru -S gaur-bin
-				</code>
+				<div class="flex flex-wrap gap-4 mb-2">
+					<button class="docs-qs-tab active text-[10px] font-bold text-mauve tracking-widest uppercase transition-all hover:text-mauve" data-cmd="paru -S gaur-bin">
+						[ paru ]
+					</button>
+					<button class="docs-qs-tab text-[10px] font-bold text-subtext0 tracking-widest uppercase transition-all hover:text-mauve" data-cmd="yay -S gaur-bin">
+						[ yay ]
+					</button>
+					<button class="docs-qs-tab text-[10px] font-bold text-subtext0 tracking-widest uppercase transition-all hover:text-mauve" data-cmd="go install github.com/prbhtkumr/gaur@latest">
+						[ go ]
+					</button>
+				</div>
+				<div class="bg-crust border border-surface0 rounded-gaur p-3 md:p-4 flex flex-col md:flex-row items-center justify-between group shadow-xl gap-4">
+					<div class="flex items-center gap-3 w-full md:w-auto">
+						<span class="text-green font-bold">$</span>
+						<code id="docs-qs-cmd" class="text-green/90 text-[11px] break-all">paru -S gaur-bin</code>
+					</div>
+					<button id="docs-qs-copy" class="w-full md:w-auto px-6 py-2 md:py-1 text-[10px] font-bold border border-mauve text-mauve hover:bg-mauve/10 transition-all rounded-gaur uppercase tracking-widest">
+						COPY
+					</button>
+				</div>
 			</div>
 			</div>
 		</article>
 	</div>
 </Layout>
+
+<script>
+	document.querySelectorAll('.docs-qs-tab').forEach(btn => {
+		btn.addEventListener('click', (e) => {
+			const t = e.currentTarget as HTMLButtonElement;
+			document.querySelectorAll('.docs-qs-tab').forEach(b => {
+				b.classList.remove('active', 'text-mauve');
+				b.classList.add('text-subtext0');
+			});
+			t.classList.add('active', 'text-mauve');
+			t.classList.remove('text-subtext0');
+			const cmdEl = document.getElementById('docs-qs-cmd');
+			if (cmdEl && t.dataset.cmd) cmdEl.textContent = t.dataset.cmd;
+		});
+	});
+
+	const copyBtn = document.getElementById('docs-qs-copy');
+	copyBtn?.addEventListener('click', () => {
+		const cmd = document.getElementById('docs-qs-cmd')?.textContent;
+		if (cmd) {
+			navigator.clipboard.writeText(cmd);
+			const ot = copyBtn.textContent;
+			copyBtn.textContent = 'DONE';
+			copyBtn.classList.replace('text-mauve', 'text-green');
+			copyBtn.classList.replace('border-mauve', 'border-green');
+			setTimeout(() => {
+				copyBtn.textContent = ot;
+				copyBtn.classList.replace('text-green', 'text-mauve');
+				copyBtn.classList.replace('border-green', 'border-mauve');
+			}, 2000);
+		}
+	});
+</script>
