@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -204,8 +205,20 @@ func (tl *ThemeLoader) loadUserThemes() {
 			continue
 		}
 
-		filePath := filepath.Join(tl.userThemesDir, entry.Name())
-		data, err := os.ReadFile(filePath)
+		root, err := os.OpenRoot(tl.userThemesDir)
+		if err != nil {
+			LogWarn("THEME", "Could not open user themes directory: %v", err)
+			continue
+		}
+		data, err := func() ([]byte, error) {
+			defer root.Close()
+			f, err := root.Open(entry.Name())
+			if err != nil {
+				return nil, err
+			}
+			defer f.Close()
+			return io.ReadAll(f)
+		}()
 		if err != nil {
 			LogWarn("THEME", "Could not read user theme %s: %v", entry.Name(), err)
 			continue
@@ -417,7 +430,7 @@ func (tl *ThemeLoader) ListThemes() []string {
 }
 
 func (tl *ThemeLoader) ExportDefaults(destDir string) error {
-	if err := os.MkdirAll(destDir, 0755); err != nil {
+	if err := os.MkdirAll(destDir, 0750); err != nil {
 		return fmt.Errorf("could not create themes directory: %w", err)
 	}
 
@@ -437,7 +450,7 @@ func (tl *ThemeLoader) ExportDefaults(destDir string) error {
 		}
 
 		destPath := filepath.Join(destDir, entry.Name())
-		if err := os.WriteFile(destPath, data, 0644); err != nil {
+		if err := os.WriteFile(destPath, data, 0600); err != nil {
 			return fmt.Errorf("could not write theme %s: %w", entry.Name(), err)
 		}
 	}
