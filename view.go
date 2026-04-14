@@ -1141,7 +1141,7 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 		Align(lipgloss.Left)
 
 	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(activeBorderColor)
-	packageNameStyle := lipgloss.NewStyle().Foreground(activeBorderColor).Bold(true)
+	packageNameStyle := lipgloss.NewStyle().Foreground(currentTheme.TextColor).Bold(true)
 	packageVersionStyle := lipgloss.NewStyle().Foreground(currentTheme.DimText)
 	countStyle := lipgloss.NewStyle().Foreground(currentTheme.WarningColor).Bold(true)
 	promptStyle := lipgloss.NewStyle().Foreground(currentTheme.TextColor).MarginTop(1)
@@ -1699,7 +1699,7 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 				sourceBadge = fmt.Sprintf("[%s]", pkg.Source)
 			}
 
-			line := fmt.Sprintf("    • %s %s %s", sourceBadge, lipgloss.NewStyle().Foreground(currentTheme.AccentColor).Render(pkg.Name), lipgloss.NewStyle().Foreground(currentTheme.DimText).Render(pkg.Version))
+			line := fmt.Sprintf("    • %s %s %s", sourceBadge, lipgloss.NewStyle().Foreground(currentTheme.TextColor).Render(pkg.Name), lipgloss.NewStyle().Foreground(currentTheme.DimText).Render(pkg.Version))
 			// Truncate to fit innerWidth-8 (accounting for scrollbar space)
 			if lipgloss.Width(line) > innerWidth-8 {
 				line = truncateWithAnsi(line, innerWidth-11) + "..."
