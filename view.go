@@ -1237,11 +1237,25 @@ func (m *model) renderConfirmationDialog(innerWidth, innerHeight int, activeColo
 			m.maxConfirmScroll = 0
 		}
 
+		// Calculate max repo width for update alignment
+		maxRepoWidth := 0
+		if m.confirmType == confirmUpdate {
+			for _, pkg := range packages {
+				w := len(pkg.Source) + 2 // [source]
+				if w > maxRepoWidth {
+					maxRepoWidth = w
+				}
+			}
+		}
+
 		for i := startIdx; i < endIdx; i++ {
 			pkg := packages[i]
 			var line string
 			if m.confirmType == confirmUpdate {
-				line = fmt.Sprintf("  • %s %s %s", sourceStyle(pkg.Source).Render(fmt.Sprintf("[%s]", pkg.Source)), packageNameStyle.Render(pkg.Name), packageVersionStyle.Render(pkg.Version))
+				sourceName := fmt.Sprintf("[%s]", pkg.Source)
+				sourceBadge := sourceStyle(pkg.Source).Render(sourceName)
+				paddedSourceBadge := sourceBadge + strings.Repeat(" ", max(0, maxRepoWidth-len(sourceName)))
+				line = fmt.Sprintf("  • %s %s %s", paddedSourceBadge, packageNameStyle.Render(pkg.Name), packageVersionStyle.Render(pkg.Version))
 			} else if pkg.Version == "HEADER" {
 				line = lipgloss.NewStyle().Bold(true).Foreground(currentTheme.TitleColor).Render(pkg.Name)
 			} else if m.confirmType == confirmCleanRemoved || m.confirmType == confirmCleanSelective {
@@ -1658,6 +1672,15 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 		content.WriteString(fmt.Sprintf("  The following %s system updates are available:\n\n", countStyle.Render(fmt.Sprintf("%d", len(m.pendingUpdates)))))
 		innerContentHeight += 2
 
+		// Calculate max repo width for alignment
+		maxRepoWidth := 0
+		for _, pkg := range m.pendingUpdates {
+			w := len(pkg.Source) + 2 // [source]
+			if w > maxRepoWidth {
+				maxRepoWidth = w
+			}
+		}
+
 		// Calculate available lines for the list
 		// panelHeight is TOTAL height of the panel including borders
 		// Inner height is panelHeight - 2
@@ -1693,13 +1716,21 @@ func (m *model) renderSimpleUpdateView(helpText string, innerWidth, innerHeight 
 			}
 			pkg := m.pendingUpdates[pkgIndex]
 			sourceBadge := ""
+			sourceName := fmt.Sprintf("[%s]", pkg.Source)
 			if color, ok := sourceColors[pkg.Source]; ok {
-				sourceBadge = lipgloss.NewStyle().Foreground(color).Render(fmt.Sprintf("[%s]", pkg.Source))
+				sourceBadge = lipgloss.NewStyle().Foreground(color).Render(sourceName)
 			} else {
-				sourceBadge = fmt.Sprintf("[%s]", pkg.Source)
+				sourceBadge = sourceName
 			}
 
-			line := fmt.Sprintf("    • %s %s %s", sourceBadge, lipgloss.NewStyle().Foreground(currentTheme.TextColor).Render(pkg.Name), lipgloss.NewStyle().Foreground(currentTheme.DimText).Render(pkg.Version))
+			// Add padding to align repo and package name in columns with 1 space separation
+			paddedSourceBadge := sourceBadge + strings.Repeat(" ", max(0, maxRepoWidth-len(sourceName)))
+
+			line := fmt.Sprintf("    • %s %s %s",
+				paddedSourceBadge,
+				lipgloss.NewStyle().Foreground(currentTheme.TextColor).Render(pkg.Name),
+				lipgloss.NewStyle().Foreground(currentTheme.DimText).Render(pkg.Version),
+			)
 			// Truncate to fit innerWidth-8 (accounting for scrollbar space)
 			if lipgloss.Width(line) > innerWidth-8 {
 				line = truncateWithAnsi(line, innerWidth-11) + "..."
