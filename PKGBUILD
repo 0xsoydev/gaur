@@ -14,7 +14,7 @@ optdepends=(
     'reflector: mirror list updates'
 )
 source=("$pkgname-$pkgver.tar.gz::https://github.com/prbhtkumr/gaur/archive/v$pkgver.tar.gz")
-sha256sums=('SKIP')
+sha256sums=('153aa8ec5724d8506ec4ad621173f12346fbd7a28d89e057665283de8b1abc3d')
 
 prepare() {
     cd "$pkgname-$pkgver"
