@@ -318,10 +318,19 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.err == nil {
 			m.pendingUpdates = msg.packages
 			m.updatableAll = msg.packages
+			// Build updatableVersions map
+			m.updatableVersions = make(map[string]string, len(msg.packages))
+			for _, pkg := range msg.packages {
+				m.updatableVersions[pkg.Name] = extractUpdateVersion(pkg.Version)
+			}
 			if len(msg.packages) == 0 {
 				m.statusMessage = "System is up to date"
 			} else {
 				m.statusMessage = fmt.Sprintf("%d updates available", len(msg.packages))
+			}
+			// Re-filter install list so update badges and sorting take effect
+			if m.mode == modeInstall {
+				return m, m.performFiltering()
 			}
 		} else {
 			m.statusMessage = "Failed to check for updates"
@@ -390,6 +399,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.installed = msg.packages
 			// Always initialize the filtered list so it's ready even if we aren't in remove mode yet
 			m.filteredInstalled = m.installed
+			// Build installedVersions map for update badges in install mode
+			m.installedVersions = make(map[string]string, len(msg.packages))
+			for _, pkg := range msg.packages {
+				m.installedVersions[pkg.Name] = pkg.Version
+			}
 			m.statusMessage = fmt.Sprintf("Loaded %d installed packages", len(msg.packages))
 			return m, m.performFiltering()
 		} else {
@@ -613,7 +627,20 @@ func (m *model) handleActionTrigger() (tea.Model, tea.Cmd) {
 			m.showConfirmation = true
 			m.confirmPackages = pkgs
 			if m.mode == modeInstall {
-				m.confirmType = confirmInstall
+				// If any selected package has an update available, use the upgrade path
+				// so --needed doesn't silently skip it.
+				hasUpdate := false
+				for _, name := range pkgs {
+					if m.updatableVersions[name] != "" {
+						hasUpdate = true
+						break
+					}
+				}
+				if hasUpdate {
+					m.confirmType = confirmSelectiveUpdate
+				} else {
+					m.confirmType = confirmInstall
+				}
 			}
 			if m.mode == modeRemove {
 				m.confirmType = confirmRemove
@@ -1050,4 +1077,14 @@ func (m *model) adjustMirrorOption(delta int) {
 			m.mirrorConfig.Protocol = 0
 		}
 	}
+}
+
+// extractUpdateVersion strips the "old -> new" arrow format that paru/yay -Qu
+// sometimes emits, returning only the new version string.
+func extractUpdateVersion(v string) string {
+	// paru -Qu output: "1.0-1 -> 2.0-1"
+	if idx := strings.Index(v, "->"); idx != -1 {
+		return strings.TrimSpace(v[idx+2:])
+	}
+	return v
 }

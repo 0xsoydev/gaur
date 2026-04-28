@@ -54,6 +54,14 @@ func BuildAURCommand(c *Config, action string, args ...string) []string {
 		cmd = []string{helper, "-Sy"}
 	case "full-update":
 		cmd = []string{helper, "-Syu"}
+	case "upgrade":
+		// Same as install but strips --needed so outdated packages actually upgrade
+		cmd = []string{helper, "-S"}
+		for _, f := range TokenizeFlags(c.Commands.InstallFlags) {
+			if f != "--needed" && f != "-needed" {
+				cmd = append(cmd, f)
+			}
+		}
 	default:
 		cmd = []string{helper}
 	}
@@ -330,7 +338,7 @@ func executeSelectiveUpdateInTerminal(m *model, packages []string) tea.Cmd {
 		}
 	}
 
-	args := BuildAURCommand(&m.config, "install", validNames...)
+	args := BuildAURCommand(&m.config, "upgrade", validNames...)
 	return runner.Interactive(func(err error) tea.Msg {
 		return execCompleteMsg{operation: confirmSelectiveUpdate, packages: validNames, err: err}
 	}, args[0], args[1:]...)

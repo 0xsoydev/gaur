@@ -917,8 +917,12 @@ func (m *model) renderPackageListLayout(innerWidth, innerHeight int, activeColor
 				styleWithForeground(colorMediumGray).Render(pkg.Version),
 			)
 
-			if pkg.Installed && m.mode == modeInstall {
-				line += " " + installedBadge.Render("[installed]")
+			if m.mode == modeInstall {
+				if newVer := m.updatableVersions[pkg.Name]; newVer != "" {
+					line += " " + updateBadge.Render("["+newVer+"]")
+				} else if m.installedVersions[pkg.Name] != "" {
+					line += " " + installedBadge.Render("[installed]")
+				}
 			}
 
 			// Truncate to fit innerWidth-6 (accounting for scrollbar space)

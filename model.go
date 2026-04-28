@@ -78,6 +78,9 @@ type model struct {
 	mirrorError           string
 	mirrorProgressCurrent int // Current number of mirrors processed
 	mirrorProgressTotal   int // Total number of mirrors to process
+	// Version tracking for update badges in install mode
+	installedVersions map[string]string // name → installed version
+	updatableVersions map[string]string // name → available update version
 }
 
 func initialModel(initialMode viewMode, cfg Config, tl *ThemeLoader) *model {
@@ -90,22 +93,24 @@ func initialModel(initialMode viewMode, cfg Config, tl *ThemeLoader) *model {
 	s.Style = lipgloss.NewStyle().Foreground(currentTheme.SpinnerColor)
 
 	m := &model{
-		config:         cfg,
-		keys:           NewKeyMap(cfg.Keys),
-		themeLoader:    tl,
-		textInput:      ti,
-		repoPackages:   []Package{},
-		installedSet:   make(map[string]bool),
-		packages:       []Package{},
-		filtered:       []Package{},
-		installed:      []Package{},
-		markedPackages: make(map[string]bool),
-		detailsCache:   make(map[string]string),
-		selectedIndex:  0,
-		mode:           initialMode,
-		loading:        true,
-		spinner:        s,
-		mirrorConfig:   DefaultMirrorConfig(),
+		config:            cfg,
+		keys:              NewKeyMap(cfg.Keys),
+		themeLoader:       tl,
+		textInput:         ti,
+		repoPackages:      []Package{},
+		installedSet:      make(map[string]bool),
+		packages:          []Package{},
+		filtered:          []Package{},
+		installed:         []Package{},
+		markedPackages:    make(map[string]bool),
+		detailsCache:      make(map[string]string),
+		selectedIndex:     0,
+		mode:              initialMode,
+		loading:           true,
+		spinner:           s,
+		mirrorConfig:      DefaultMirrorConfig(),
+		installedVersions: make(map[string]string),
+		updatableVersions: make(map[string]string),
 	}
 
 	m.updatePlaceholder()
@@ -135,12 +140,11 @@ func (m *model) Init() tea.Cmd {
 		m.spinner.Tick,
 		loadRepoPackages(),
 		getInstalledPackages(),
+		checkUpdates(&m.config),
 		func() tea.Msg {
 			switch m.mode {
 			case modeDashboard:
 				return getDashboardData(&m.config)()
-			case modeUpdate:
-				return checkUpdates(&m.config)()
 			}
 			return nil
 		},

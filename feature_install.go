@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -94,6 +95,32 @@ func (m *model) filterAllPackages(query string) {
 	}
 
 	m.filtered = fuzzyFilter(allPackages, searchQuery)
+
+	// Sort updateable packages to the top while preserving fzf relevance within each group.
+	if len(m.updatableVersions) > 0 {
+		// Remember the currently selected package name so we can restore
+		// the cursor after re-sorting.
+		var selectedName string
+		if m.selectedIndex >= 0 && m.selectedIndex < len(m.filtered) {
+			selectedName = m.filtered[m.selectedIndex].Name
+		}
+
+		sort.SliceStable(m.filtered, func(i, j int) bool {
+			iHas := m.updatableVersions[m.filtered[i].Name] != ""
+			jHas := m.updatableVersions[m.filtered[j].Name] != ""
+			return iHas && !jHas
+		})
+
+		// Restore selection index
+		if selectedName != "" {
+			for i, pkg := range m.filtered {
+				if pkg.Name == selectedName {
+					m.selectedIndex = i
+					break
+				}
+			}
+		}
+	}
 
 	m.matchIndices = computeAllMatchIndices(m.filtered, searchQuery)
 }

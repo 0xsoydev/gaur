@@ -95,6 +95,10 @@ var (
 			Foreground(currentTheme.SuccessColor).
 			Bold(true)
 
+	updateBadge = lipgloss.NewStyle().
+			Foreground(currentTheme.WarningColor).
+			Bold(true)
+
 	matchHighlightStyle = lipgloss.NewStyle().
 				Foreground(currentTheme.HighlightColor).
 				Bold(true)
